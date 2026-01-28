@@ -52,7 +52,7 @@ jobs:
       - publish-to-pypi
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Docker meta
         id: meta
