@@ -1,5 +1,11 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs", "build", "twine"]
+requires = [
+    "hatchling",
+    "hatch-vcs",
+    "build",
+    "twine",
+    "reqstool-python-hatch-plugin==0.1.4",
+]
 build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
@@ -70,7 +76,6 @@ source = "vcs"
 local_scheme = "no-local-version"
 
 [tool.hatch.build.hooks.reqstool]
-dependencies = ["reqstool-python-hatch-plugin==0.1.4"]
 sources = ["src", "tests"]
 test_results = "build/junit.xml"
 dataset_directory = "docs/reqstool"
