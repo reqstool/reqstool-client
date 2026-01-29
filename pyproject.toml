@@ -56,7 +56,7 @@ dependencies = [
     "maven-artifact==0.3.5",
     "pygit2==1.19.1",
     "referencing==0.36.2",
-    "requests-file==2.1.0",
+    "requests-file==3.0.1",
     "ruamel.yaml==0.18.15",
     "tabulate==0.9.0",
     "xmldict==0.4.1",
