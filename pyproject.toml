@@ -60,7 +60,7 @@ dependencies = [
     "ruamel.yaml==0.19.1",
     "tabulate==0.9.0",
     "xmldict==0.4.1",
-    "reqstool-python-decorators==0.0.8",
+    "reqstool-python-decorators==0.0.9",
     "packaging==26.0",
     "requests==2.32.5",
     "beautifulsoup4==4.14.3",
