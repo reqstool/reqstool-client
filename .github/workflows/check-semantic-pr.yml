@@ -1,0 +1,10 @@
+name: Check Semantic PR
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check:
+    uses: reqstool/.github/.github/workflows/check-semantic-pr.yml@main
