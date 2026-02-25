@@ -48,7 +48,6 @@ requires-python = ">=3.10"
 
 dependencies = [
     "colorama==0.4.6",
-    "distlib==0.4.0",
     "Jinja2==3.1.6",
     "jsonpickle==4.1.1",
     "jsonschema[format-nongpl]==4.26.0",
@@ -59,7 +58,6 @@ dependencies = [
     "requests-file==3.0.1",
     "ruamel.yaml==0.19.1",
     "tabulate==0.9.0",
-    "xmldict==0.4.1",
     "reqstool-python-decorators==0.0.9",
     "packaging==26.0",
     "requests==2.32.5",
