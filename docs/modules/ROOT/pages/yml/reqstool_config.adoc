@@ -2,7 +2,7 @@
 ----
 
 
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Luftfartsverket/reqstool-client/main/src/reqstool/resources/schemas/v1/reqstool_config.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/reqstool_config.json
 
 
 type: custom # custom|java-maven|java-maven-docs|python-pyproject

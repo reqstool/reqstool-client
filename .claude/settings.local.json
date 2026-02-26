@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 --version && python3.10 --version 2>&1 || python3.11 --version 2>&1 || python3.12 --version 2>&1)",
+      "Bash(gh issue:*)",
+      "Bash(python3:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(head:*)",
+      "Bash(git reset:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

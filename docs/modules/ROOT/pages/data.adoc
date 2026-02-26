@@ -133,7 +133,7 @@ The tree below shows where the dynamic files will reside after the Maven project
 [[maven-artifact-zip-directory-structure]]
 === Maven Artifact Zip Directory Structure
 
-In order to produce a Maven Artifact Zip, you will need to incorporate the https://github.com/Luftfartsverket/reqstool-java-maven-plugin[Reqstool Java Maven Plugin] into your build process. 
+In order to produce a Maven Artifact Zip, you will need to incorporate the https://github.com/reqstool/reqstool-java-maven-plugin[Reqstool Java Maven Plugin] into your build process. 
 
 During the build process, the plugin creates a zipfile with the static and dynamic files. The zipfile will be named like <<project-id>>-<<version>>-reqstool.zip and will be published under the target/reqstool folder.
 The plugin will also combine the svcs_annotations.yml and the equirements_annotations.yml into one yml file called annotations.yml.
@@ -179,7 +179,7 @@ The tree below shows where the dynamic files will reside after a Hatch or Poetry
 [[hatch-poetry-pypi-package-directory-structure]]
 === Python Package Directory Structure
 
-In order to run reqstool directly on or from the tar.gz file, a custom reqstool_config.yml is added to the tar.gz file by incorporating the https://github.com/luftfartsverket/reqstool-python-hatch-plugin[Reqstool Python Hatch Plugin] or the https://github.com/luftfartsverket/reqstool-python-poetry-plugin[Reqstool Python Poetry Plugin] into your build process. 
+In order to run reqstool directly on or from the tar.gz file, a custom reqstool_config.yml is added to the tar.gz file by incorporating the https://github.com/reqstool/reqstool-python-hatch-plugin[Reqstool Python Hatch Plugin] or the https://github.com/reqstool/reqstool-python-poetry-plugin[Reqstool Python Poetry Plugin] into your build process. 
 
 During the build process, the plugin creates a custom reqstool_config.yml file with paths based on the tar.gz file structure to the static and dynamic files. The reqstool_config.yml file will be located in the root directory of the tar.gz file.
 
@@ -248,7 +248,7 @@ If no authentication is required in order to access the repository, the field `e
 ```yaml
 imports:
   git:
-    - url: https://github.com/Luftfartsverket/reqstool-demo
+    - url: https://github.com/reqstool/reqstool-demo
       branch: main
       path: docs/reqstool
       env_token: SECRET_TOKEN
@@ -264,7 +264,7 @@ To import content from other sources (systems) using Maven.
 ```yaml
 imports:
   maven:
-    - url: https://maven.pkg.github.com/Luftfartsverket/reqstool-client
+    - url: https://maven.pkg.github.com/reqstool/reqstool-client
       group_id: se.lfv.reqstool.testdata
       artifact_id: reqstool-testdata-test-basic-ms101
       path: ""
@@ -293,7 +293,7 @@ imports:
   local:
     - path: ../sys-001
   git:
-    - url: https://github.com/Luftfartsverket/reqstool-demo
+    - url: https://github.com/reqstool/reqstool-demo
       branch: main
       path: docs/reqstool
 ```

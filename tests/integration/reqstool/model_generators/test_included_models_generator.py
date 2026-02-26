@@ -32,7 +32,7 @@ def test_basic_git():
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
         initial_location=GitLocation(
             env_token=choose_token(),
-            url="https://github.com/luftfartsverket/reqstool-client.git",
+            url="https://github.com/reqstool/reqstool-client.git",
             path="tests/resources/test_data/data/remote/test_standard/test_standard_maven_git/ms-001",
             branch="main",
         ),
@@ -54,7 +54,7 @@ def test_basic_maven():
         # Setup
         initial_location=MavenLocation(
             env_token=choose_token(),
-            url="https://maven.pkg.github.com/Luftfartsverket/reqstool-demo",
+            url="https://maven.pkg.github.com/reqstool/reqstool-demo",
             group_id="se.lfv.reqstool",
             artifact_id="reqstool-demo",
             version="0.0.4",

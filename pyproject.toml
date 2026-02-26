@@ -28,24 +28,15 @@ markers = [
 [project]
 name = "reqstool"
 dynamic = ["version"]
-authors = [{ name = "LFV", email = "info@lfv.se" }]
+authors = [{ name = "reqstool" }]
 description = "A tool for managing requirements with related tests and test results."
 readme = "README.md"
-
-homepage = "https://github.com/Luftfartsverket/reqstool-client"
-repository = "https://github.com/Luftfartsverket/reqstool-client"
-documentation = "https://github.com/Luftfartsverket/reqstool-client"
-
-urls.Source = 'https://github.com/Luftfartsverket/reqstool-client'
-
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
 ]
-
 requires-python = ">=3.10"
-
 dependencies = [
     "colorama==0.4.6",
     "Jinja2==3.1.6",
@@ -63,6 +54,12 @@ dependencies = [
     "requests==2.32.5",
     "beautifulsoup4==4.14.3",
 ]
+
+[project.urls]
+Homepage = "https://reqstool.github.io"
+Repository = "https://github.com/reqstool/reqstool-client"
+Documentation = "https://github.com/reqstool/reqstool-client"
+Source = "https://github.com/reqstool/reqstool-client"
 
 [project.scripts]
 reqstool = "reqstool.command:main"

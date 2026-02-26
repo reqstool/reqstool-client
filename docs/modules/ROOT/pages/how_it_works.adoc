@@ -4,8 +4,8 @@ Reqstool generates reports and updates on progression of requirement implementat
 
 In order to use the reqstool, you will need to create a requirements.yml file along with a software_verification_cases.yml and/or a manual_verification_results.yml. 
 
-* Examples: https://github.com/Luftfartsverket/reqstool-client/tree/main/docs/modules/examples/partials/requirements
-* Demo: https://github.com/Luftfartsverket/reqstool-demo
+* Examples: https://github.com/reqstool/reqstool-client/tree/main/docs/modules/examples/partials/requirements
+* Demo: https://github.com/reqstool/reqstool-demo
 
 === How it works
 
@@ -105,7 +105,7 @@ Reqstool relies on it's annotation framework in order to couple Requirements and
 
 In order to couple Requirements and Software Verification Cases you will need to install and import a Reqstool annotation framework for your specific project. 
 
-Currently https://github.com/luftfartsverket/reqstool-java-annotations[Java] and https://github.com/luftfartsverket/reqstool-python-decorators[Python] is supported. Please read through those projects installation instructions in order to use them properly.  
+Currently https://github.com/reqstool/reqstool-java-annotations[Java] and https://github.com/reqstool/reqstool-python-decorators[Python] is supported. Please read through those projects installation instructions in order to use them properly.  
 
 Whit the correct annotation framework installed, you'll use the `@Requirements` annotation to couple a specific requirement to a piece of code. 
 In this example, the requirement with id `REQ_111` is coupled with the function somefunction(). This is also possible to do on a class level if that's desired. 
