@@ -39,6 +39,19 @@ def requirements_data(requirement_data, implementations_data, maven_import_data)
     )
 
 
+def test_reference_data_default_is_empty_set():
+    ref = ReferenceData()
+    assert isinstance(ref.requirement_ids, set)
+    assert len(ref.requirement_ids) == 0
+
+
+def test_reference_data_instances_do_not_share_default():
+    ref1 = ReferenceData()
+    ref2 = ReferenceData()
+    ref1.requirement_ids.add("REQ_001")
+    assert "REQ_001" not in ref2.requirement_ids
+
+
 def test_reference_data(reference_data):
     assert reference_data.requirement_ids.issubset({"REQ_001", "REQ_002"})
 
@@ -52,6 +65,13 @@ def test_requirement_data(requirement_data, reference_data):
     assert requirement_data.categories == ["maintainability", "functional-suitability"]
     assert requirement_data.references == [reference_data]
     assert requirement_data.revision == "0.0.1"
+
+
+def test_requirements_data_filters_default_is_empty_dict():
+    metadata = MetaData(urn="URN_TEST", variant=VARIANTS.MICROSERVICE, title="title", url="https://example.com")
+    rd = RequirementsData(metadata=metadata)
+    assert isinstance(rd.filters, dict)
+    assert len(rd.filters) == 0
 
 
 def test_requirements_data(
