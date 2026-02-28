@@ -404,7 +404,7 @@ class CombinedIndexedDatasetGenerator:
         )
         # compute lark_tree if custom exclude exists
         tree_custom_exclude = (
-            None if req_filter.custom_imports is None else RequirementsELTransformer.parse_el(req_filter.custom_exclude)
+            None if req_filter.custom_exclude is None else RequirementsELTransformer.parse_el(req_filter.custom_exclude)
         )
 
         # iterate over _all accessible_ requirements
@@ -539,7 +539,7 @@ class CombinedIndexedDatasetGenerator:
         )
         # compute lark_tree if custom exclude exists
         tree_custom_exclude = (
-            None if svc_filter.custom_imports is None else SVCsELTransformer.parse_el(svc_filter.custom_exclude)
+            None if svc_filter.custom_exclude is None else SVCsELTransformer.parse_el(svc_filter.custom_exclude)
         )
 
         # iterate over _all accessible_ svcs
