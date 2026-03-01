@@ -17,7 +17,8 @@ if __package__ is None or len(__package__) == 0:
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.commands.exit_codes import EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED
+from reqstool.commands.exit_codes import EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED, EXIT_CODE_MISSING_REQUIREMENTS_FILE
+from reqstool.common.exceptions import MissingRequirementsFileError
 from reqstool.commands.generate_json.generate_json import GenerateJsonCommand
 from reqstool.commands.report import report
 from reqstool.commands.report.criterias.group_by import GroupbyOptions
@@ -290,14 +291,18 @@ def main():
 
     exit_code: int = 0
 
-    if args.command == "report-asciidoc":
-        command.command_report(report_args=args)
-    elif args.command == "generate-json":
-        command.command_generate_json(generate_json_args=args)
-    elif args.command == "status":
-        exit_code = command.command_status(status_args=args)
-    else:
-        command.print_help()
+    try:
+        if args.command == "report-asciidoc":
+            command.command_report(report_args=args)
+        elif args.command == "generate-json":
+            command.command_generate_json(generate_json_args=args)
+        elif args.command == "status":
+            exit_code = command.command_status(status_args=args)
+        else:
+            command.print_help()
+    except MissingRequirementsFileError as exc:
+        logging.fatal(str(exc))
+        sys.exit(EXIT_CODE_MISSING_REQUIREMENTS_FILE)
 
     sys.exit(exit_code)
 
