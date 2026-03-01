@@ -43,7 +43,7 @@ def _build_table(
     row.append(f"{req_id_color}{req_id}{Style.RESET_ALL}")
 
     # Perform check for implementations
-    if implementation is IMPLEMENTATION.NOT_APPLICABLE:
+    if implementation == IMPLEMENTATION.NOT_APPLICABLE:
         row.extend(["N/A"])
     else:
         row.extend(
