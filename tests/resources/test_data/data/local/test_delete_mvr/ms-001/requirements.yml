@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Luftfartsverket/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
+
+metadata:
+  urn: ms-001
+  variant: microservice
+  title: Microservice
+  url: https://example.com
+
+imports:
+  local:
+    - path: ../sys-001
+
+requirements:
+  - id: REQ_ms001_001
+    title: MS Requirement 001
+    significance: shall
+    description: Description
+    rationale: Rationale
+    categories: ["functional-suitability"]
+    revision: 0.0.1
