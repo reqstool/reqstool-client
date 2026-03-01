@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Luftfartsverket/reqstool-client/main/src/reqstool/resources/schemas/v1/manual_verification_results.schema.json
+
+results:
+  # MVR referencing only the excluded SVC — should be excluded
+  - id: MVR_ms001_001
+    svc_ids: ["sys-001:SVC_sys001_B"]
+    pass: true
+
+  # MVR referencing both the excluded and included SVC — should be included
+  - id: MVR_ms001_002
+    svc_ids: ["sys-001:SVC_sys001_A", "sys-001:SVC_sys001_B"]
+    pass: true
