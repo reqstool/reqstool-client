@@ -104,19 +104,19 @@ class CombinedIndexedDatasetGenerator:
         # if initial urn is not a system then do nothing
         self.__initial_urn_is_variant_ms = self.initial_urn_is_ms = (
             self._crd.raw_datasets[self._crd.initial_model_urn].requirements_data.metadata.variant
-            is VARIANTS.MICROSERVICE
+            == VARIANTS.MICROSERVICE
         )
 
         self.__initial_urn_accessible_urns_non_ms: set[str] = {self._crd.initial_model_urn} | {
             node
             for node in self._accessible_nodes_dict[self._crd.initial_model_urn]
-            if self._crd.raw_datasets[node].requirements_data.metadata.variant is not VARIANTS.MICROSERVICE
+            if self._crd.raw_datasets[node].requirements_data.metadata.variant != VARIANTS.MICROSERVICE
         }
 
         self.__initial_urn_accessible_urns_ms: set[str] = {
             node
             for node in self._accessible_nodes_dict[self._crd.initial_model_urn]
-            if self._crd.raw_datasets[node].requirements_data.metadata.variant is VARIANTS.MICROSERVICE
+            if self._crd.raw_datasets[node].requirements_data.metadata.variant == VARIANTS.MICROSERVICE
         }
 
         self.__process_reqs()
@@ -130,12 +130,12 @@ class CombinedIndexedDatasetGenerator:
             self.__process_filters()
 
     def __is_urn_ms(self, urn: str) -> bool:
-        return self._crd.raw_datasets[urn].requirements_data.metadata.variant is VARIANTS.MICROSERVICE
+        return self._crd.raw_datasets[urn].requirements_data.metadata.variant == VARIANTS.MICROSERVICE
 
     def __process_reqs(self):
         for urn, rds in self._crd.raw_datasets.items():
             # if requirements defined in then only add if ms is initial urn
-            if self.__is_urn_ms(urn) and self._crd.initial_model_urn is not urn:
+            if self.__is_urn_ms(urn) and self._crd.initial_model_urn != urn:
                 continue
 
             self._reqs_from_urn[urn] = []
@@ -154,7 +154,7 @@ class CombinedIndexedDatasetGenerator:
                     assert svcdata.id not in self._svcs
 
                     # if urn is ms and urn is initial urn - remove svc references to reqs from not visited urns
-                    if self.__is_urn_ms(urn) and self._crd.initial_model_urn is not urn:
+                    if self.__is_urn_ms(urn) and self._crd.initial_model_urn != urn:
                         remove_req_ids_from_svcdata: Set[UrnId] = set()
                         for req_urn_id in svcdata.requirement_ids:
                             if req_urn_id.urn not in self.__initial_urn_accessible_urns_non_ms:
@@ -191,7 +191,7 @@ class CombinedIndexedDatasetGenerator:
                     assert mvrdata.id not in self._mvrs
 
                     # if urn is ms and urn is initial urn - remove mvr references to svc from not visited urns
-                    if self.__is_urn_ms(urn) and self._crd.initial_model_urn is not urn:
+                    if self.__is_urn_ms(urn) and self._crd.initial_model_urn != urn:
                         remove_svc_ids_from_mvrdata: Set[UrnId] = set()
                         for svc_urn_id in mvrdata.svc_ids:
                             if svc_urn_id.urn not in self.__initial_urn_accessible_urns_non_ms:

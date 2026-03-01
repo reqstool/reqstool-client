@@ -125,7 +125,7 @@ class SemanticValidator:
         # get urn and model
         for model, model_data in combined_raw_dataset.raw_datasets.items():
             # Continue if model is not inital_urn
-            if model is not combined_raw_dataset.initial_model_urn:
+            if model != combined_raw_dataset.initial_model_urn:
                 continue
             if model_data.svcs_data is not None:
                 for svc_urn_id, svc_data in model_data.svcs_data.cases.items():
@@ -153,7 +153,7 @@ class SemanticValidator:
         for model, model_data in combined_raw_dataset.raw_datasets.items():
             # Continue if model is not inital_urn
             if (
-                model is not combined_raw_dataset.initial_model_urn
+                model != combined_raw_dataset.initial_model_urn
                 or not model_data.annotations_data
                 or not model_data.annotations_data.implementations
             ):
@@ -197,7 +197,7 @@ class SemanticValidator:
         errors: List[ValidationError] = []
         for model, model_data in combined_raw_dataset.raw_datasets.items():
             # Continue if model is not inital_urn
-            if model is not combined_raw_dataset.initial_model_urn or not model_data.mvrs_data:
+            if model != combined_raw_dataset.initial_model_urn or not model_data.mvrs_data:
                 continue
             for mvr_data in model_data.mvrs_data.results.values():
                 for svc_id in mvr_data.svc_ids:

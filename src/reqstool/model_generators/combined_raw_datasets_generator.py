@@ -109,14 +109,14 @@ class CombinedRawDatasetsGenerator:
             raw_datasets[current_urn] = current_imported_model
 
             assert (
-                current_imported_model.requirements_data.metadata.variant is VARIANTS.SYSTEM
-                or current_imported_model.requirements_data.metadata.variant is VARIANTS.EXTERNAL
+                current_imported_model.requirements_data.metadata.variant == VARIANTS.SYSTEM
+                or current_imported_model.requirements_data.metadata.variant == VARIANTS.EXTERNAL
             )
 
             # if current source type is system or external import systems recursively
             if (
-                current_imported_model.requirements_data.metadata.variant is VARIANTS.SYSTEM
-                or current_imported_model.requirements_data.metadata.variant is VARIANTS.EXTERNAL
+                current_imported_model.requirements_data.metadata.variant == VARIANTS.SYSTEM
+                or current_imported_model.requirements_data.metadata.variant == VARIANTS.EXTERNAL
             ):
                 imported_systems = self.__import_systems(
                     raw_datasets=raw_datasets, parent_rd=current_imported_model.requirements_data

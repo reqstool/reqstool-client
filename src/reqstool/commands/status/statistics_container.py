@@ -64,10 +64,10 @@ class TotalStatisticsItem:
         self.nr_of_reqs_with_implementation += combined_req_test_item.nr_of_implementations
 
         # Some requirements could be completed without any implementation
-        if completed and combined_req_test_item.implementation is IMPLEMENTATION.NOT_APPLICABLE:
+        if completed and combined_req_test_item.implementation == IMPLEMENTATION.NOT_APPLICABLE:
             self.nr_of_completed_reqs_no_implementation += 1
 
-        if combined_req_test_item.implementation is IMPLEMENTATION.NOT_APPLICABLE:
+        if combined_req_test_item.implementation == IMPLEMENTATION.NOT_APPLICABLE:
             self.nr_of_total_reqs_no_implementation += 1
 
         if completed:
