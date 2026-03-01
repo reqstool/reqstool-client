@@ -14,7 +14,7 @@ from reqstool.filters.requirements_filters import RequirementFilter
 from reqstool.filters.svcs_filters import SVCFilter
 from reqstool.models.mvrs import MVRData
 from reqstool.models.raw_datasets import CombinedRawDataset
-from reqstool.models.requirements import VARIANTS, RequirementsData
+from reqstool.models.requirements import VARIANTS, RequirementData, RequirementsData
 from reqstool.models.svcs import SVCData, SVCsData
 
 
@@ -22,7 +22,7 @@ from reqstool.models.svcs import SVCData, SVCsData
 class _IndexedDatasetFilterProcessor:
     _crd: CombinedRawDataset
 
-    _requirements: Dict[UrnId, object]  # shared reference
+    _requirements: Dict[UrnId, RequirementData]  # shared reference
     _svcs: Dict[UrnId, SVCData]  # shared reference
     _mvrs: Dict[UrnId, MVRData]  # shared reference
     _reqs_from_urn: Dict[str, List[UrnId]]  # shared reference
