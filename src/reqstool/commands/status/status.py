@@ -112,7 +112,7 @@ def _status_table(stats_container: StatisticsContainer) -> str:
     col_align = ["center"] * len(headers) if table_data else []
     table = tabulate(tablefmt="fancy_grid", tabular_data=table_data, headers=headers, colalign=col_align)
     table_with_title = f"{title}\n{table}\n"
-    statisics = _summarize_statisics(
+    statistics = _summarize_statistics(
         nr_of_total_reqs=stats_container._total_statistics.nr_of_total_requirements,
         nr_of_completed_reqs=stats_container._total_statistics.nr_of_completed_requirements,
         implemented=stats_container._total_statistics.nr_of_reqs_with_implementation,
@@ -146,12 +146,12 @@ def _status_table(stats_container: StatisticsContainer) -> str:
 
     legend_table_data = tabulate(tablefmt="fancy_grid", tabular_data=legend)
 
-    status = table_with_title + legend_table_data + statisics
+    status = table_with_title + legend_table_data + statistics
 
     return status
 
 
-def _summarize_statisics(
+def _summarize_statistics(
     nr_of_total_reqs: int,
     nr_of_completed_reqs: int,
     implemented: int,
@@ -249,7 +249,7 @@ def _summarize_statisics(
         "SVCs missing MVRs",
     ]
 
-    svc_table = svc_table = tabulate(
+    svc_table = tabulate(
         tablefmt="fancy_grid",
         tabular_data=table_svc_data,
         headers=svc_headers,

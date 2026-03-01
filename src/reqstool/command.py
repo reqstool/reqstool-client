@@ -93,13 +93,14 @@ class Command:
         )
         return argument_parser
 
-    def _add_subparsers_source(self, parser):
+    def _add_subparsers_source(self, parser, include_report_options=True):
         # Subparser for local report
         local_report_parser = parser.add_parser("local", help="local source")
         local_report_parser.add_argument("-p", "--path", help="path description", required=True)
         self._add_argument_output(local_report_parser)
-        self._add_group_by(local_report_parser)
-        self._add_sort_by(local_report_parser)
+        if include_report_options:
+            self._add_group_by(local_report_parser)
+            self._add_sort_by(local_report_parser)
 
         # Subparser for git report
         git_report_parser = parser.add_parser("git", help="git source")
@@ -108,8 +109,9 @@ class Command:
         git_report_parser.add_argument("-b", "--branch", help="branch description")
         git_report_parser.add_argument("-t", "--env_token", help="env_token description")
         self._add_argument_output(git_report_parser)
-        self._add_group_by(git_report_parser)
-        self._add_sort_by(git_report_parser)
+        if include_report_options:
+            self._add_group_by(git_report_parser)
+            self._add_sort_by(git_report_parser)
 
         # Subparser for maven report
         maven_report_parser = parser.add_parser("maven", help="maven source")
@@ -120,8 +122,9 @@ class Command:
         maven_report_parser.add_argument("--version", help="version description", required=True)
         maven_report_parser.add_argument("--classifier", help="classifier description")
         self._add_argument_output(maven_report_parser)
-        self._add_group_by(maven_report_parser)
-        self._add_sort_by(maven_report_parser)
+        if include_report_options:
+            self._add_group_by(maven_report_parser)
+            self._add_sort_by(maven_report_parser)
 
         # Subparser for pypi report
         pypi_report_parser = parser.add_parser("pypi", help="pypi source")
@@ -130,8 +133,9 @@ class Command:
         pypi_report_parser.add_argument("--package", help="package", required=True)
         pypi_report_parser.add_argument("--version", help="version description", required=True)
         self._add_argument_output(pypi_report_parser)
-        self._add_group_by(pypi_report_parser)
-        self._add_sort_by(pypi_report_parser)
+        if include_report_options:
+            self._add_group_by(pypi_report_parser)
+            self._add_sort_by(pypi_report_parser)
 
     def _add_argument_version(self, argument_parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         ver = Utils.get_version()
@@ -186,7 +190,7 @@ class Command:
         )
 
         generate_json_source_subparsers = generate_json_parser.add_subparsers(dest="source", required=True)
-        self._add_subparsers_source(generate_json_source_subparsers)
+        self._add_subparsers_source(generate_json_source_subparsers, include_report_options=False)
 
         # command: status
         status_parser = subparsers.add_parser("status", help="Status on implementations and tests of requirements")
