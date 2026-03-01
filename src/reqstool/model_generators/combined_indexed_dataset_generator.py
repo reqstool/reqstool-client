@@ -113,11 +113,11 @@ class CombinedIndexedDatasetGenerator:
             if self._crd.raw_datasets[node].requirements_data.metadata.variant is not VARIANTS.MICROSERVICE
         }
 
-        self.__initial_urn_accessible_urns_ms: set(str) = [
+        self.__initial_urn_accessible_urns_ms: set[str] = {
             node
             for node in self._accessible_nodes_dict[self._crd.initial_model_urn]
             if self._crd.raw_datasets[node].requirements_data.metadata.variant is VARIANTS.MICROSERVICE
-        ]
+        }
 
         self.__process_reqs()
         self.__process_svcs()
@@ -307,7 +307,7 @@ class CombinedIndexedDatasetGenerator:
         kept_requirements, filtered_out_reqs = self.__process_req_filters_per_urn(self._crd.initial_model_urn)
 
         # use dict comphrehension to find requirements to be removed
-        filtered_out_reqs: List(UrnId) = [
+        filtered_out_reqs: List[UrnId] = [
             req_urn_id for req_urn_id in self._requirements.keys() if req_urn_id not in kept_requirements
         ]
 
@@ -490,7 +490,7 @@ class CombinedIndexedDatasetGenerator:
             kept_svcs_imports.update(kept_svcs_per_import_urn)
             filtered_out_svcs_imports.update(filtered_out_svcs_per_import_urn)
 
-        filtered_out_svcs: Set(UrnId) = set()
+        filtered_out_svcs: Set[UrnId] = set()
 
         svcdata: SVCsData = self._crd.raw_datasets[urn].svcs_data
         if svcdata:
