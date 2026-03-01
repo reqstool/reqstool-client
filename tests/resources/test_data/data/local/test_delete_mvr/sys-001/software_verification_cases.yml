@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Luftfartsverket/reqstool-client/main/src/reqstool/resources/schemas/v1/software_verification_cases.schema.json
+
+cases:
+  - id: SVC_sys001_A
+    requirement_ids: ["REQ_sys001_001"]
+    title: "SVC A - included by ms-001 SVC filter"
+    verification: manual-test
+    revision: "0.0.1"
+
+  - id: SVC_sys001_B
+    requirement_ids: ["REQ_sys001_001"]
+    title: "SVC B - excluded by ms-001 SVC filter"
+    verification: manual-test
+    revision: "0.0.1"
