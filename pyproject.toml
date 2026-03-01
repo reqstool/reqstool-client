@@ -88,14 +88,6 @@ dependencies = [
     "flake8-pyproject==1.2.3",
 ]
 
-[tool.hatch.envs.dev.scripts]
-# Fast unit tests only (default — no external dependencies required)
-test = "pytest -m 'not integration' --cov=reqstool --cov-report=html -o junit_family=xunit2 --junitxml=build/junit.xml"
-# Integration tests (requires GITHUB_TOKEN environment variable)
-test-integration = "pytest -m 'integration' -v --junitxml=build/junit-integration.xml"
-# Full suite including integration tests
-test-all = "pytest --junitxml=build/junit-all.xml"
-
 [tool.black]
 line-length = 120
 target-version = ['py310']
