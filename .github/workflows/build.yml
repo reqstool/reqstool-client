@@ -43,3 +43,33 @@ jobs:
         with:
           name: dist
           path: dist/
+
+  integration-tests:
+    name: Integration tests
+    needs: build
+    runs-on: ubuntu-latest
+    # Only run on pushes to main or manual dispatch (integration tests require external resources)
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: pip install hatch
+      - name: Run integration tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: hatch run dev:test-integration
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: integration-test-results
+          path: build/junit-integration.xml

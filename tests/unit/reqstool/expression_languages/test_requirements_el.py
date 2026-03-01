@@ -126,3 +126,32 @@ def test_id_op_not(create_tree, requirement_data):
     tree = create_tree(el)
 
     assert RequirementsELTransformer(urn="urn", data=requirement_data("urn:REQ_001")).transform(tree) is False
+
+
+# ---------------------------------------------------------------------------
+# Negative-path: parse errors
+# ---------------------------------------------------------------------------
+
+
+def test_parse_el_invalid_operator_raises():
+    """An unsupported operator raises a parse error."""
+    with pytest.raises(Exception):
+        RequirementsELTransformer.parse_el('ids > "REQ_001"')
+
+
+def test_parse_el_unbalanced_parens_raises():
+    """Unbalanced parentheses raise a parse error."""
+    with pytest.raises(Exception):
+        RequirementsELTransformer.parse_el('(ids == "REQ_001"')
+
+
+def test_parse_el_empty_string_raises():
+    """An empty expression string raises a parse error."""
+    with pytest.raises(Exception):
+        RequirementsELTransformer.parse_el("")
+
+
+def test_parse_el_garbage_syntax_raises():
+    """Completely invalid syntax raises a parse error."""
+    with pytest.raises(Exception):
+        RequirementsELTransformer.parse_el("not a valid expression !!!")
