@@ -129,3 +129,28 @@ def test_req_custom_includes_without_custom_excludes_does_not_crash(
     ).combined_raw_datasets
     cids = CombinedIndexedDatasetGenerator(_crd=crd, _filtered=True).combined_indexed_dataset
     assert cids is not None
+
+
+def test_deleted_req_not_in_remaining_svc_requirement_ids(cids_mvr_exclusion):
+    for svc_urn_id, svcdata in cids_mvr_exclusion.svcs.items():
+        for req_id in svcdata.requirement_ids:
+            assert req_id in cids_mvr_exclusion.requirements
+
+
+def test_deleted_svc_not_in_remaining_mvr_svc_ids(cids_mvr_exclusion):
+    for mvr_urn_id, mvrdata in cids_mvr_exclusion.mvrs.items():
+        for svc_id in mvrdata.svc_ids:
+            assert svc_id in cids_mvr_exclusion.svcs
+
+
+def test_reqs_from_urn_consistent_after_filtering(cids_mvr_exclusion):
+    for urn, req_ids in cids_mvr_exclusion.reqs_from_urn.items():
+        for req_id in req_ids:
+            assert req_id in cids_mvr_exclusion.requirements
+
+
+def test_svcs_from_req_consistent_after_filtering(cids_mvr_exclusion):
+    for req_id, svc_ids in cids_mvr_exclusion.svcs_from_req.items():
+        assert req_id in cids_mvr_exclusion.requirements
+        for svc_id in svc_ids:
+            assert svc_id in cids_mvr_exclusion.svcs
