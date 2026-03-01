@@ -365,7 +365,7 @@ class CombinedIndexedDatasetGenerator:
             # check filters against accessible requirements, log errors if requirements are not found
             # requirements that will log a warning will not be processed.
             self.__check_defined_requirements_in_filter(
-                filter=req_filter, accessable_urns=accessible_requirements_per_filter_urn
+                filter=req_filter, accessible_urns=accessible_requirements_per_filter_urn
             )
 
             filtered_out_reqs_per_filter_urn = self.__get_filtered_out_requirements_for_filter_urn(
@@ -502,7 +502,7 @@ class CombinedIndexedDatasetGenerator:
                 # check filters against accessible requirements, log errors if requirements are not found
                 # svcs that will log a warning will not be processed.
                 self.__check_defined_requirements_in_filter(
-                    filter=svc_filter, accessable_urns=accessible_svcs_per_filter_urn
+                    filter=svc_filter, accessible_urns=accessible_svcs_per_filter_urn
                 )
 
                 filtered_out_svcs_per_filter_urn = self.__get_filtered_out_svcs_for_filter_urn(
@@ -640,12 +640,12 @@ class CombinedIndexedDatasetGenerator:
         for svc_urn_id in mvrdata.svc_ids:
             self._mvrs_from_svc[svc_urn_id].remove(mvr_urn_id)
 
-    def __check_defined_requirements_in_filter(self, filter: IDFilters, accessable_urns: Set[UrnId]):
+    def __check_defined_requirements_in_filter(self, filter: IDFilters, accessible_urns: Set[UrnId]):
         if filter.urn_ids_imports:
             for urn_id in filter.urn_ids_imports:
-                if urn_id not in accessable_urns:
-                    logging.warning(f"Cannot import: {urn_id} does not exist or is not accessable")
+                if urn_id not in accessible_urns:
+                    logging.warning(f"Cannot import: {urn_id} does not exist or is not accessible")
         elif filter.urn_ids_excludes:
             for urn_id in filter.urn_ids_excludes:
-                if urn_id not in accessable_urns:
-                    logging.warning(f"Cannot exclude: {urn_id} does not exist or is not accessable")
+                if urn_id not in accessible_urns:
+                    logging.warning(f"Cannot exclude: {urn_id} does not exist or is not accessible")
