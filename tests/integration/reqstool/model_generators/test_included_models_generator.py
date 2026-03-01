@@ -20,7 +20,6 @@ def choose_token() -> str:
 
 
 @SVCs("SVC_002")
-@pytest.mark.slow
 @pytest.mark.integration
 @pytest.mark.skipif(
     not (os.getenv("GITHUB_TOKEN")),
@@ -41,7 +40,6 @@ def test_basic_git():
 
 
 @SVCs("SVC_003", "SVC_008")
-@pytest.mark.slow
 @pytest.mark.integration
 @pytest.mark.skipif(
     not (os.getenv("GITHUB_TOKEN")),

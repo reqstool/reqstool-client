@@ -15,13 +15,12 @@ addopts = [
     "-s",
     "--import-mode=importlib",
     "--log-cli-level=DEBUG",
-    '-m not slow and not integration',
+    '-m not integration',
 ]
 pythonpath = [".", "src", "tests"]
 testpaths = ["tests"]
 markers = [
     "flaky: tests that can randomly fail through no change to the code",
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: tests that require external resources",
 ]
 
@@ -99,7 +98,7 @@ addopts = [
     "-s",
     "--import-mode=importlib",
     "--log-cli-level=DEBUG",
-    #    '-m not slow or not integration',
+    #    '-m not integration',
 ]
 pythonpath = [".", "src", "tests"]
 max-line-length = 125
