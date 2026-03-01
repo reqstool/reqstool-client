@@ -103,3 +103,29 @@ def test_excluded_svc_not_present_after_filtering(cids_mvr_exclusion):
 
 def test_included_svc_present_after_filtering(cids_mvr_exclusion):
     assert UrnId.instance("sys-001:SVC_sys001_A") in cids_mvr_exclusion.svcs
+
+
+def test_svc_custom_includes_without_custom_excludes_does_not_crash(
+    resource_funcname_rootdir, local_testdata_resources_rootdir_w_path
+):
+    """Regression test for #233: SVC filter with custom includes but no custom excludes must not crash."""
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    crd: CombinedRawDataset = CombinedRawDatasetsGenerator(
+        initial_location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
+        semantic_validator=semantic_validator,
+    ).combined_raw_datasets
+    cids = CombinedIndexedDatasetGenerator(_crd=crd, _filtered=True).combined_indexed_dataset
+    assert cids is not None
+
+
+def test_req_custom_includes_without_custom_excludes_does_not_crash(
+    resource_funcname_rootdir, local_testdata_resources_rootdir_w_path
+):
+    """Regression test for #233: requirement filter with custom includes but no custom excludes must not crash."""
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    crd: CombinedRawDataset = CombinedRawDatasetsGenerator(
+        initial_location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/sys-001")),
+        semantic_validator=semantic_validator,
+    ).combined_raw_datasets
+    cids = CombinedIndexedDatasetGenerator(_crd=crd, _filtered=True).combined_indexed_dataset
+    assert cids is not None

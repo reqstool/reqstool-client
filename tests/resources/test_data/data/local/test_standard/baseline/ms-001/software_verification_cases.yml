@@ -4,6 +4,8 @@ filters:
   sys-001:
     svc_ids:
       includes: ["SVC_sys001_500", "SVC_sys001_600"]
+    custom:
+      includes: 'ids == "SVC_sys001_500" or ids == "SVC_sys001_600"'
 
 cases:
   - id: SVC_010
