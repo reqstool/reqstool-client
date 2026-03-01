@@ -15,13 +15,12 @@ addopts = [
     "-s",
     "--import-mode=importlib",
     "--log-cli-level=DEBUG",
-    '-m not slow and not integration',
+    '-m not integration',
 ]
 pythonpath = [".", "src", "tests"]
 testpaths = ["tests"]
 markers = [
     "flaky: tests that can randomly fail through no change to the code",
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: tests that require external resources",
 ]
 
@@ -91,10 +90,10 @@ dependencies = [
 
 [tool.hatch.envs.dev.scripts]
 # Fast unit tests only (default — no external dependencies required)
-test = "pytest -m 'not slow and not integration' --cov=reqstool --cov-report=html -o junit_family=xunit2 --junitxml=build/junit.xml"
+test = "pytest -m 'not integration' --cov=reqstool --cov-report=html -o junit_family=xunit2 --junitxml=build/junit.xml"
 # Integration tests (requires GITHUB_TOKEN environment variable)
 test-integration = "pytest -m 'integration' -v --junitxml=build/junit-integration.xml"
-# Full suite including slow and integration tests
+# Full suite including integration tests
 test-all = "pytest --junitxml=build/junit-all.xml"
 
 [tool.black]
@@ -107,7 +106,7 @@ addopts = [
     "-s",
     "--import-mode=importlib",
     "--log-cli-level=DEBUG",
-    #    '-m not slow or not integration',
+    #    '-m not integration',
 ]
 pythonpath = [".", "src", "tests"]
 max-line-length = 125

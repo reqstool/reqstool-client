@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: pip install hatch
       - name: Run unit tests
-        run: hatch run dev:pytest -m "not slow and not integration" --cov=reqstool --cov-report=html -o junit_family=xunit2 --junitxml=build/junit.xml
+        run: hatch run dev:pytest -m "not integration" --cov=reqstool --cov-report=html -o junit_family=xunit2 --junitxml=build/junit.xml
       - name: Build project
         run: hatch build
       - name: Test reqstool-client from build by installing and running
