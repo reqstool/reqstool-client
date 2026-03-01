@@ -102,7 +102,7 @@ class CombinedIndexedDatasetGenerator:
 
     def process(self):
         # if initial urn is not a system then do nothing
-        self.__initial_urn_is_variant_ms = self.initial_urn_is_ms = (
+        self.initial_urn_is_ms = (
             self._crd.raw_datasets[self._crd.initial_model_urn].requirements_data.metadata.variant
             == VARIANTS.MICROSERVICE
         )
@@ -333,7 +333,7 @@ class CombinedIndexedDatasetGenerator:
 
         # for each import urn where it accessible by initial urn
         for import_urn in self._crd.parsing_graph[urn]:
-            if self._crd.raw_datasets[import_urn].requirements_data.metadata.variant is VARIANTS.MICROSERVICE:
+            if self._crd.raw_datasets[import_urn].requirements_data.metadata.variant == VARIANTS.MICROSERVICE:
                 continue
 
             logging.debug(f"Applying requirements filters for import urn {import_urn}")
@@ -475,7 +475,7 @@ class CombinedIndexedDatasetGenerator:
 
         # for each import urn in the initial urn
         for import_urn in self._crd.parsing_graph[urn]:
-            if self._crd.raw_datasets[import_urn].requirements_data.metadata.variant is VARIANTS.MICROSERVICE:
+            if self._crd.raw_datasets[import_urn].requirements_data.metadata.variant == VARIANTS.MICROSERVICE:
                 continue
 
             logging.debug(f"Applying svcs filters for import urn {import_urn}")
