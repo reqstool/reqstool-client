@@ -476,7 +476,7 @@ class CombinedIndexedDatasetGenerator:
         # for each import urn in the initial urn
         for import_urn in self._crd.parsing_graph[urn]:
             if self._crd.raw_datasets[import_urn].requirements_data.metadata.variant is VARIANTS.MICROSERVICE:
-                break
+                continue
 
             logging.debug(f"Applying svcs filters for import urn {import_urn}")
 
