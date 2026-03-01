@@ -148,7 +148,7 @@ class CombinedRawDatasetsGenerator:
 
             raw_datasets[current_urn] = parsed_model
 
-        self.__level += 1
+        self.__level -= 1
 
         return parsed_urns
 
