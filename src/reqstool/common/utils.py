@@ -3,7 +3,6 @@
 import logging
 import os
 import tempfile
-from dataclasses import dataclass
 from importlib.metadata import version
 from itertools import chain
 from pathlib import Path
@@ -19,7 +18,6 @@ from reqstool.models.requirements import VARIANTS, RequirementData
 from reqstool.models.svcs import SVCData
 
 
-@dataclass(kw_only=True)
 class Utils:
 
     is_installed_package: bool = True
@@ -314,18 +312,24 @@ class Utils:
 
 
 class TempDirectoryUtil:
-    tmpdir: tempfile.TemporaryDirectory = tempfile.TemporaryDirectory()
+    tmpdir: tempfile.TemporaryDirectory = None
     count: int = 0
 
     @staticmethod
+    def _get_tmpdir() -> tempfile.TemporaryDirectory:
+        if TempDirectoryUtil.tmpdir is None:
+            TempDirectoryUtil.tmpdir = tempfile.TemporaryDirectory()
+        return TempDirectoryUtil.tmpdir
+
+    @staticmethod
     def get_path() -> Path:
-        return Path(TempDirectoryUtil.tmpdir.name)
+        return Path(TempDirectoryUtil._get_tmpdir().name)
 
     @staticmethod
     def get_suffix_path(suffix: str) -> Path:
         new_path = Path(
             os.path.join(
-                TempDirectoryUtil.tmpdir.name,
+                TempDirectoryUtil._get_tmpdir().name,
                 str(TempDirectoryUtil.count),
                 suffix,
             )
