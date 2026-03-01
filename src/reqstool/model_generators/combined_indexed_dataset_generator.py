@@ -638,8 +638,7 @@ class CombinedIndexedDatasetGenerator:
 
         # 3 remove from mvrs_from_svc
         for svc_urn_id in mvrdata.svc_ids:
-            for index_list in self._mvrs_from_svc[svc_urn_id]:
-                index_list.remove(mvr_urn_id)
+            self._mvrs_from_svc[svc_urn_id].remove(mvr_urn_id)
 
     def __check_defined_requirements_in_filter(self, filter: IDFilters, accessable_urns: Set[UrnId]):
         if filter.urn_ids_imports:
