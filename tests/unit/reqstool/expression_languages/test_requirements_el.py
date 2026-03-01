@@ -3,6 +3,7 @@
 import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
+from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.expression_languages.requirements_el import RequirementsELTransformer
 from reqstool.models.requirements import SIGNIFANCETYPES, RequirementData
 
@@ -21,7 +22,7 @@ def create_tree():
 def requirement_data():
     def closure(req_id: str):
         return RequirementData(
-            id=req_id,
+            id=UrnId.instance(req_id),
             title="some title",
             significance=SIGNIFANCETYPES("shall"),
             description="some description",

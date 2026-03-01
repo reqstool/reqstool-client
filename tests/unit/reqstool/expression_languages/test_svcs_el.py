@@ -3,6 +3,7 @@
 import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
+from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.expression_languages.svcs_el import SVCsELTransformer
 from reqstool.models.svcs import VERIFICATIONTYPES, SVCData
 
@@ -20,7 +21,7 @@ def create_tree():
 def svc_data():
     def closure(svc_id: str):
         return SVCData(
-            id=svc_id,
+            id=UrnId.instance(svc_id),
             requirement_ids=["SVC_001", "SVC_002"],
             title="some title",
             description="some description",

@@ -22,7 +22,7 @@ from reqstool.models.test_data import TEST_RUN_STATUS
 
 class UrnIdHandler(jsonpickle.handlers.BaseHandler):
     def flatten(self, obj, data) -> str:
-        return UrnId.assure_urn_id(obj.urn, obj.id)
+        return str(UrnId.assure_urn_id(obj.urn, obj.id))
 
 
 class RevisionHandler(jsonpickle.handlers.BaseHandler):
