@@ -236,9 +236,9 @@ class Utils:
     def check_ids_to_filter(ids: Sequence[str], current_urn: str) -> Sequence[str]:
         checked_ids: List[str] = []
         for id in ids:
-            if ":" in ids:
+            if ":" in id:
                 split = id.split(":")
-                if split[0] is not current_urn:
+                if split[0] != current_urn:
                     logging.error(
                         f"Id cannot contain a ':' and a reference to another urn. The {id} will be filtered out"
                     )

@@ -1,5 +1,6 @@
 # Copyright © LFV
 
+import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
 from reqstool.common.dataclasses.urn_id import UrnId
@@ -65,3 +66,40 @@ def test_standard_baseline_sys001(resource_funcname_rootdir, local_testdata_reso
     cids = CombinedIndexedDatasetGenerator(_crd=crd, _filtered=True).combined_indexed_dataset
 
     assert cids.initial_model_urn == "sys-001"
+
+
+@pytest.fixture
+def cids_mvr_exclusion(local_testdata_resources_rootdir_w_path):
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    crd: CombinedRawDataset = CombinedRawDatasetsGenerator(
+        initial_location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_delete_mvr/ms-001")),
+        semantic_validator=semantic_validator,
+    ).combined_raw_datasets
+    return CombinedIndexedDatasetGenerator(_crd=crd, _filtered=True).combined_indexed_dataset
+
+
+def test_mvr_excluded_when_sole_referenced_svc_is_excluded(cids_mvr_exclusion):
+    # MVR_ms001_001 references only SVC_sys001_B which is excluded by the SVC filter
+    # since its only referenced SVC is excluded, the MVR is cascade-excluded
+    assert UrnId.instance("ms-001:MVR_ms001_001") not in cids_mvr_exclusion.mvrs
+
+
+def test_mvr_included_when_at_least_one_referenced_svc_is_included(cids_mvr_exclusion):
+    # MVR_ms001_002 references both SVC_sys001_A (included) and SVC_sys001_B (excluded)
+    # since one referenced SVC remains, the MVR is included
+    assert UrnId.instance("ms-001:MVR_ms001_002") in cids_mvr_exclusion.mvrs
+
+
+def test_excluded_svc_removed_from_included_mvr_svc_ids(cids_mvr_exclusion):
+    # after SVC_sys001_B is excluded, MVR_ms001_002's svc_ids should only contain SVC_sys001_A
+    mvr = cids_mvr_exclusion.mvrs[UrnId.instance("ms-001:MVR_ms001_002")]
+    assert UrnId.instance("sys-001:SVC_sys001_B") not in mvr.svc_ids
+    assert UrnId.instance("sys-001:SVC_sys001_A") in mvr.svc_ids
+
+
+def test_excluded_svc_not_present_after_filtering(cids_mvr_exclusion):
+    assert UrnId.instance("sys-001:SVC_sys001_B") not in cids_mvr_exclusion.svcs
+
+
+def test_included_svc_present_after_filtering(cids_mvr_exclusion):
+    assert UrnId.instance("sys-001:SVC_sys001_A") in cids_mvr_exclusion.svcs
