@@ -184,8 +184,8 @@ class CombinedRawDatasetsGenerator:
             self.__initial_source_type = rmg.requirements_data.metadata.variant
 
         if (
-            rmg.requirements_data.metadata.variant is VARIANTS.SYSTEM
-            or rmg.requirements_data.metadata.variant is VARIANTS.MICROSERVICE
+            rmg.requirements_data.metadata.variant == VARIANTS.SYSTEM
+            or rmg.requirements_data.metadata.variant == VARIANTS.MICROSERVICE
         ):
             # parse file sources other than requirements.yml
             annotations_data, svcs_data, automated_tests, mvrs_data = self.__parse_source_other(
@@ -247,7 +247,7 @@ class CombinedRawDatasetsGenerator:
             ).model
 
             # requirement annotations (impls) - only for microservices
-            if rmg.requirements_data.metadata.variant is not VARIANTS.MICROSERVICE:
+            if rmg.requirements_data.metadata.variant != VARIANTS.MICROSERVICE:
                 assert not annotations_data.implementations
 
         return annotations_data, svcs_data, automated_tests, mvrs_data
