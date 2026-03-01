@@ -3,6 +3,7 @@
 import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
+from reqstool.common.exceptions import MissingRequirementsFileError
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.local_location import LocalLocation
@@ -74,13 +75,12 @@ def test_standard_sys001_initial(local_testdata_resources_rootdir_w_path):
 
 @SVCs("SVC_020")
 def test_missing_requirements_file(local_testdata_resources_rootdir_w_path):
-    with pytest.raises(SystemExit) as excinfo:
-        semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    with pytest.raises(MissingRequirementsFileError) as excinfo:
         combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
             initial_location=LocalLocation(
                 path=local_testdata_resources_rootdir_w_path("this/path/does/not/have/a/requirements/file")
             ),
             semantic_validator=semantic_validator,
         )
-    assert excinfo.type == SystemExit
-    assert excinfo.value.code == 1
+    assert "this/path/does/not/have/a/requirements/file" in str(excinfo.value)

@@ -1,11 +1,11 @@
 # Copyright © LFV
 
 import logging
-import sys
 from typing import Dict, List
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
+from reqstool.common.exceptions import MissingRequirementsFileError
 from reqstool.common.utils import TempDirectoryUtil, Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.location_resolver.location_resolver import LocationResolver
@@ -166,10 +166,7 @@ class CombinedRawDatasetsGenerator:
         requirements_indata = RequirementsIndata(dst_path=actual_tmp_path, location=current_location_handler.current)
 
         if not requirements_indata.requirements_indata_paths.requirements_yml.exists:
-            logging.fatal(
-                f"Missing requirements file:  {requirements_indata.requirements_indata_paths.requirements_yml.path}"
-            )
-            sys.exit(1)
+            raise MissingRequirementsFileError(path=requirements_indata.requirements_indata_paths.requirements_yml.path)
 
         rmg = RequirementsModelGenerator(
             parent=current_location_handler.current,
