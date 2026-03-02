@@ -30,16 +30,12 @@ dynamic = ["version"]
 authors = [{ name = "reqstool" }]
 description = "A tool for managing requirements with related tests and test results."
 readme = "README.md"
-requires-python = ">=3.10"
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
 ]
-
-requires-python = ">=3.13"
-
+requires-python = ">=3.10"
 dependencies = [
     "colorama==0.4.6",
     "Jinja2==3.1.6",
@@ -60,8 +56,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://reqstool.github.io"
-Source = "https://github.com/reqstool/reqstool-client.git"
-Documentation = "https://github.com/reqstool/reqstool-client.git"
+Repository = "https://github.com/reqstool/reqstool-client"
+Documentation = "https://github.com/reqstool/reqstool-client"
+Source = "https://github.com/reqstool/reqstool-client"
 
 [project.scripts]
 reqstool = "reqstool.command:main"
@@ -90,7 +87,7 @@ dependencies = [
 
 [tool.black]
 line-length = 120
-target-version = ['py313']
+target-version = ['py310']
 
 [tool.flake8]
 ignore = ["W503"]
@@ -101,6 +98,6 @@ addopts = [
     #    '-m not integration',
 ]
 pythonpath = [".", "src", "tests"]
-max-line-length = 120
+max-line-length = 125
 # exclude = tests/*
 max-complexity = 10
