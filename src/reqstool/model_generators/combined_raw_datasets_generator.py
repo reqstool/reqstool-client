@@ -1,11 +1,11 @@
 # Copyright © LFV
 
 import logging
-import sys
 from typing import Dict, List
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
+from reqstool.common.exceptions import MissingRequirementsFileError
 from reqstool.common.utils import TempDirectoryUtil, Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.location_resolver.location_resolver import LocationResolver
@@ -109,14 +109,14 @@ class CombinedRawDatasetsGenerator:
             raw_datasets[current_urn] = current_imported_model
 
             assert (
-                current_imported_model.requirements_data.metadata.variant is VARIANTS.SYSTEM
-                or current_imported_model.requirements_data.metadata.variant is VARIANTS.EXTERNAL
+                current_imported_model.requirements_data.metadata.variant == VARIANTS.SYSTEM
+                or current_imported_model.requirements_data.metadata.variant == VARIANTS.EXTERNAL
             )
 
             # if current source type is system or external import systems recursively
             if (
-                current_imported_model.requirements_data.metadata.variant is VARIANTS.SYSTEM
-                or current_imported_model.requirements_data.metadata.variant is VARIANTS.EXTERNAL
+                current_imported_model.requirements_data.metadata.variant == VARIANTS.SYSTEM
+                or current_imported_model.requirements_data.metadata.variant == VARIANTS.EXTERNAL
             ):
                 imported_systems = self.__import_systems(
                     raw_datasets=raw_datasets, parent_rd=current_imported_model.requirements_data
@@ -148,7 +148,7 @@ class CombinedRawDatasetsGenerator:
 
             raw_datasets[current_urn] = parsed_model
 
-        self.__level += 1
+        self.__level -= 1
 
         return parsed_urns
 
@@ -166,10 +166,7 @@ class CombinedRawDatasetsGenerator:
         requirements_indata = RequirementsIndata(dst_path=actual_tmp_path, location=current_location_handler.current)
 
         if not requirements_indata.requirements_indata_paths.requirements_yml.exists:
-            logging.fatal(
-                f"Missing requirements file:  {requirements_indata.requirements_indata_paths.requirements_yml.path}"
-            )
-            sys.exit(1)
+            raise MissingRequirementsFileError(path=requirements_indata.requirements_indata_paths.requirements_yml.path)
 
         rmg = RequirementsModelGenerator(
             parent=current_location_handler.current,
@@ -187,8 +184,8 @@ class CombinedRawDatasetsGenerator:
             self.__initial_source_type = rmg.requirements_data.metadata.variant
 
         if (
-            rmg.requirements_data.metadata.variant is VARIANTS.SYSTEM
-            or rmg.requirements_data.metadata.variant is VARIANTS.MICROSERVICE
+            rmg.requirements_data.metadata.variant == VARIANTS.SYSTEM
+            or rmg.requirements_data.metadata.variant == VARIANTS.MICROSERVICE
         ):
             # parse file sources other than requirements.yml
             annotations_data, svcs_data, automated_tests, mvrs_data = self.__parse_source_other(
@@ -250,7 +247,7 @@ class CombinedRawDatasetsGenerator:
             ).model
 
             # requirement annotations (impls) - only for microservices
-            if rmg.requirements_data.metadata.variant is not VARIANTS.MICROSERVICE:
+            if rmg.requirements_data.metadata.variant != VARIANTS.MICROSERVICE:
                 assert not annotations_data.implementations
 
         return annotations_data, svcs_data, automated_tests, mvrs_data

@@ -17,14 +17,11 @@ class UrnId:
         return UrnId(urn=urn, id=id_)
 
     @staticmethod
-    def assure_urn_id(urn: str, id: str) -> str:
-        urn_id = None
+    def assure_urn_id(urn: str, id: str) -> "UrnId":
         if URN_ID_SEPARATOR in id:
-            urn_id = id
+            return UrnId.instance(id)
         else:
-            urn_id = f"{urn}:{id}"
-
-        return urn_id
+            return UrnId(urn=urn, id=id)
 
     def __lt__(self, other: "UrnId"):
         if not isinstance(other, UrnId):

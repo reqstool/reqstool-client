@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Luftfartsverket/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
+
+metadata:
+  urn: sys-001
+  variant: system
+  title: System Requirements
+  url: https://example.com
+
+requirements:
+  - id: REQ_sys001_001
+    title: System Requirement 001
+    significance: shall
+    description: Description
+    rationale: Rationale
+    categories: ["functional-suitability"]
+    revision: 0.0.1

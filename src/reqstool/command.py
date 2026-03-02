@@ -17,7 +17,8 @@ if __package__ is None or len(__package__) == 0:
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.commands.exit_codes import EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED
+from reqstool.commands.exit_codes import EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED, EXIT_CODE_MISSING_REQUIREMENTS_FILE
+from reqstool.common.exceptions import MissingRequirementsFileError
 from reqstool.commands.generate_json.generate_json import GenerateJsonCommand
 from reqstool.commands.report import report
 from reqstool.commands.report.criterias.group_by import GroupbyOptions
@@ -93,13 +94,14 @@ class Command:
         )
         return argument_parser
 
-    def _add_subparsers_source(self, parser):
+    def _add_subparsers_source(self, parser, include_report_options=True):
         # Subparser for local report
         local_report_parser = parser.add_parser("local", help="local source")
         local_report_parser.add_argument("-p", "--path", help="path description", required=True)
         self._add_argument_output(local_report_parser)
-        self._add_group_by(local_report_parser)
-        self._add_sort_by(local_report_parser)
+        if include_report_options:
+            self._add_group_by(local_report_parser)
+            self._add_sort_by(local_report_parser)
 
         # Subparser for git report
         git_report_parser = parser.add_parser("git", help="git source")
@@ -108,8 +110,9 @@ class Command:
         git_report_parser.add_argument("-b", "--branch", help="branch description")
         git_report_parser.add_argument("-t", "--env_token", help="env_token description")
         self._add_argument_output(git_report_parser)
-        self._add_group_by(git_report_parser)
-        self._add_sort_by(git_report_parser)
+        if include_report_options:
+            self._add_group_by(git_report_parser)
+            self._add_sort_by(git_report_parser)
 
         # Subparser for maven report
         maven_report_parser = parser.add_parser("maven", help="maven source")
@@ -120,8 +123,9 @@ class Command:
         maven_report_parser.add_argument("--version", help="version description", required=True)
         maven_report_parser.add_argument("--classifier", help="classifier description")
         self._add_argument_output(maven_report_parser)
-        self._add_group_by(maven_report_parser)
-        self._add_sort_by(maven_report_parser)
+        if include_report_options:
+            self._add_group_by(maven_report_parser)
+            self._add_sort_by(maven_report_parser)
 
         # Subparser for pypi report
         pypi_report_parser = parser.add_parser("pypi", help="pypi source")
@@ -130,8 +134,9 @@ class Command:
         pypi_report_parser.add_argument("--package", help="package", required=True)
         pypi_report_parser.add_argument("--version", help="version description", required=True)
         self._add_argument_output(pypi_report_parser)
-        self._add_group_by(pypi_report_parser)
-        self._add_sort_by(pypi_report_parser)
+        if include_report_options:
+            self._add_group_by(pypi_report_parser)
+            self._add_sort_by(pypi_report_parser)
 
     def _add_argument_version(self, argument_parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         ver = Utils.get_version()
@@ -186,7 +191,7 @@ class Command:
         )
 
         generate_json_source_subparsers = generate_json_parser.add_subparsers(dest="source", required=True)
-        self._add_subparsers_source(generate_json_source_subparsers)
+        self._add_subparsers_source(generate_json_source_subparsers, include_report_options=False)
 
         # command: status
         status_parser = subparsers.add_parser("status", help="Status on implementations and tests of requirements")
@@ -286,14 +291,18 @@ def main():
 
     exit_code: int = 0
 
-    if args.command == "report-asciidoc":
-        command.command_report(report_args=args)
-    elif args.command == "generate-json":
-        command.command_generate_json(generate_json_args=args)
-    elif args.command == "status":
-        exit_code = command.command_status(status_args=args)
-    else:
-        command.print_help()
+    try:
+        if args.command == "report-asciidoc":
+            command.command_report(report_args=args)
+        elif args.command == "generate-json":
+            command.command_generate_json(generate_json_args=args)
+        elif args.command == "status":
+            exit_code = command.command_status(status_args=args)
+        else:
+            command.print_help()
+    except MissingRequirementsFileError as exc:
+        logging.fatal(str(exc))
+        sys.exit(EXIT_CODE_MISSING_REQUIREMENTS_FILE)
 
     sys.exit(exit_code)
 

@@ -128,12 +128,12 @@ class StatisticsGenerator:
         implementation_ok = False
         if (
             nr_of_implementations > 0
-            and implementation is IMPLEMENTATION.IN_CODE
+            and implementation == IMPLEMENTATION.IN_CODE
             or nr_of_implementations == 0
-            and implementation is IMPLEMENTATION.NOT_APPLICABLE
+            and implementation == IMPLEMENTATION.NOT_APPLICABLE
         ):
             implementation_ok = True
-        elif nr_of_implementations > 0 and implementation is IMPLEMENTATION.NOT_APPLICABLE:
+        elif nr_of_implementations > 0 and implementation == IMPLEMENTATION.NOT_APPLICABLE:
             # Throw error if there are implementations of a requirement that does not expect it
             raise TypeError(f"Requirement {urn_id} should not have an implementation")
 

@@ -78,12 +78,12 @@ class GenericELTransformer(
 
     @v_args(inline=True)
     def comp_id_regex_equals(self, regexp: re.Pattern) -> bool:
-        return bool(regexp.match(self._data.id))
+        return bool(regexp.match(str(self._data.id)))
 
     def parenthesis(self, operands) -> bool:
         return operands[0]
 
-    def value(self, item) -> list:
+    def value(self, item) -> UrnId:
         urnid_item = UrnId.assure_urn_id(urn=self._urn, id=item[0])
         return urnid_item
 

@@ -1,9 +1,13 @@
 # Copyright © LFV
 
+import logging
+
 import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
-from reqstool.common.validators.semantic_validator import SemanticValidator, ValidationErrorHolder
+from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.validator_error_holder import ValidationError, ValidationErrorHolder
+from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.local_location import LocalLocation
 from reqstool.model_generators import combined_raw_datasets_generator
 
@@ -208,3 +212,113 @@ def test_validate_req_filter_exlude_xor_import(get_systems_data_raw):
     errors = semantic_validator._validation_error_holder.get_errors()
     assert has_errors > 0
     assert expected_error in errors[0].msg
+
+
+# ---------------------------------------------------------------------------
+# Happy-path tests (no errors)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_no_duplicate_reqs_unique_ids_no_error():
+    """Unique requirement IDs produce no error."""
+    data = {
+        "metadata": {"urn": "ms-001"},
+        "requirements": [{"id": "REQ_A"}, {"id": "REQ_B"}],
+    }
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_no_duplicate_requirement_ids(data)
+    assert holder.get_no_of_errors() == 0
+
+
+def test_validate_no_duplicate_reqs_systems_key_no_error():
+    """Dict with 'systems' key but no 'requirements' does not trigger error."""
+    data = {"metadata": {"urn": "ms-sys"}, "systems": {"local": []}}
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_no_duplicate_requirement_ids(data)
+    assert holder.get_no_of_errors() == 0
+
+
+def test_validate_no_duplicate_reqs_neither_key_adds_error():
+    """Dict with neither 'requirements' nor 'systems' key adds an error."""
+    data = {"metadata": {"urn": "ms-bad"}}
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_no_duplicate_requirement_ids(data)
+    assert holder.get_no_of_errors() == 1
+    assert "No requirements found" in holder.get_errors()[0].msg
+
+
+def test_validate_no_duplicate_svcs_unique_ids_no_error():
+    """Unique SVC IDs produce no error."""
+    data = {
+        "cases": [
+            {"id": "SVC_001", "requirement_ids": []},
+            {"id": "SVC_002", "requirement_ids": []},
+        ]
+    }
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_no_duplicate_svc_ids(data)
+    assert holder.get_no_of_errors() == 0
+
+
+def test_validate_no_duplicate_svcs_no_cases_adds_error():
+    """Dict with no 'cases' key adds an error."""
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_no_duplicate_svc_ids({})
+    assert holder.get_no_of_errors() == 1
+    assert "No svc cases found" in holder.get_errors()[0].msg
+
+
+def test_validate_svc_filter_only_includes_no_error():
+    """SVC filter with only includes (no excludes) produces no error."""
+    data = {
+        "filters": {"sys-001": {"svc_ids": {"includes": ["SVC_001"]}}},
+        "cases": {},
+    }
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_svc_imports_filter_has_excludes_xor_includes(data)
+    assert holder.get_no_of_errors() == 0
+
+
+def test_validate_req_filter_only_excludes_no_error():
+    """Req filter with only excludes (no includes) produces no error."""
+    data = {
+        "filters": {"sys-001": {"requirement_ids": {"excludes": ["REQ_001"]}}},
+    }
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_req_imports_filter_has_excludes_xor_includes(data)
+    assert holder.get_no_of_errors() == 0
+
+
+# ---------------------------------------------------------------------------
+# prettify_urn_id
+# ---------------------------------------------------------------------------
+
+
+def test_prettify_urn_id():
+    """prettify_urn_id formats as <urn:id>."""
+    sv = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    assert sv.prettify_urn_id(UrnId(urn="ms-001", id="REQ_001")) == "<ms-001:REQ_001>"
+
+
+# ---------------------------------------------------------------------------
+# _log_all_errors
+# ---------------------------------------------------------------------------
+
+
+def test_log_all_errors_pass_when_no_errors(caplog):
+    """_log_all_errors logs VALIDATION: PASS when there are no errors."""
+    holder = ValidationErrorHolder()
+    sv = SemanticValidator(validation_error_holder=holder)
+    with caplog.at_level(logging.INFO):
+        sv._log_all_errors()
+    assert "VALIDATION" in caplog.text
+
+
+def test_log_all_errors_includes_error_message(caplog):
+    """_log_all_errors includes the error message when errors are present."""
+    holder = ValidationErrorHolder()
+    holder.add_error(ValidationError(msg="something went wrong"))
+    sv = SemanticValidator(validation_error_holder=holder)
+    with caplog.at_level(logging.INFO):
+        sv._log_all_errors()
+    assert "something went wrong" in caplog.text

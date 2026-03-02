@@ -60,7 +60,7 @@ class IMPLEMENTATION(Enum):
 
 @dataclass
 class ReferenceData:
-    requirement_ids: Set[UrnId] = set[UrnId]
+    requirement_ids: Set[UrnId] = field(default_factory=set)
 
 
 @dataclass
@@ -91,5 +91,5 @@ class RequirementsData:
     implementations: List[ImplementationDataInterface] = field(default_factory=list)
     imports: List[ImportDataInterface] = field(default_factory=list)
     # key: urn
-    filters: Dict[str, RequirementFilter] = field(default_factory=list)
+    filters: Dict[str, RequirementFilter] = field(default_factory=dict)
     requirements: Dict[str, RequirementData] = field(default_factory=dict)
