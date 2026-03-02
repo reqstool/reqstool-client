@@ -5,7 +5,7 @@ from packaging.version import Version
 from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.filters.requirements_filters import RequirementFilter
 from reqstool.filters.svcs_filters import SVCFilter
-from reqstool.model_generators.combined_indexed_dataset_generator import CombinedIndexedDatasetGenerator
+from reqstool.model_generators.indexed_dataset_filter_processor import _IndexedDatasetFilterProcessor
 from reqstool.models.requirements import IMPLEMENTATION, SIGNIFANCETYPES, RequirementData
 from reqstool.models.svcs import VERIFICATIONTYPES, SVCData
 
@@ -43,26 +43,26 @@ def _svc(urn_id: UrnId) -> SVCData:
     )
 
 
-def _make_gen(requirements: dict = None, svcs: dict = None) -> CombinedIndexedDatasetGenerator:
-    """Construct a partial CombinedIndexedDatasetGenerator, bypassing __post_init__."""
-    gen = object.__new__(CombinedIndexedDatasetGenerator)
-    gen._requirements = requirements or {}
-    gen._svcs = svcs or {}
-    return gen
+def _make_processor(requirements: dict = None, svcs: dict = None) -> _IndexedDatasetFilterProcessor:
+    """Construct a partial _IndexedDatasetFilterProcessor, bypassing __post_init__."""
+    proc = object.__new__(_IndexedDatasetFilterProcessor)
+    proc._requirements = requirements or {}
+    proc._svcs = svcs or {}
+    return proc
 
 
 # ---------------------------------------------------------------------------
 # __get_filtered_out_requirements_for_filter_urn
 # ---------------------------------------------------------------------------
 
-_FILTER_REQS = "_CombinedIndexedDatasetGenerator__get_filtered_out_requirements_for_filter_urn"
-_FILTER_SVCS = "_CombinedIndexedDatasetGenerator__get_filtered_out_svcs_for_filter_urn"
+_FILTER_REQS = "_IndexedDatasetFilterProcessor__get_filtered_out_requirements_for_filter_urn"
+_FILTER_SVCS = "_IndexedDatasetFilterProcessor__get_filtered_out_svcs_for_filter_urn"
 
 
 def test_req_filter_all_none_imports_everything():
     """No filter criteria: nothing is filtered out."""
-    gen = _make_gen({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
-    result = getattr(gen, _FILTER_REQS)(
+    proc = _make_processor({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
+    result = getattr(proc, _FILTER_REQS)(
         accessible_requirements={REQ_A, REQ_B},
         urn=URN,
         req_filter=RequirementFilter(),
@@ -72,8 +72,8 @@ def test_req_filter_all_none_imports_everything():
 
 def test_req_filter_urn_ids_excludes_removes_matching():
     """urn_ids_excludes: matching req is excluded, non-matching is kept."""
-    gen = _make_gen({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
-    result = getattr(gen, _FILTER_REQS)(
+    proc = _make_processor({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
+    result = getattr(proc, _FILTER_REQS)(
         accessible_requirements={REQ_A, REQ_B},
         urn=URN,
         req_filter=RequirementFilter(urn_ids_excludes={REQ_A}),
@@ -84,8 +84,8 @@ def test_req_filter_urn_ids_excludes_removes_matching():
 
 def test_req_filter_urn_ids_imports_keeps_only_matching():
     """urn_ids_imports: only the listed req survives; the other is filtered out."""
-    gen = _make_gen({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
-    result = getattr(gen, _FILTER_REQS)(
+    proc = _make_processor({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
+    result = getattr(proc, _FILTER_REQS)(
         accessible_requirements={REQ_A, REQ_B},
         urn=URN,
         req_filter=RequirementFilter(urn_ids_imports={REQ_A}),
@@ -96,8 +96,8 @@ def test_req_filter_urn_ids_imports_keeps_only_matching():
 
 def test_req_filter_custom_exclude_el_removes_matching():
     """custom_exclude EL: req matching the expression is filtered out."""
-    gen = _make_gen({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
-    result = getattr(gen, _FILTER_REQS)(
+    proc = _make_processor({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
+    result = getattr(proc, _FILTER_REQS)(
         accessible_requirements={REQ_A, REQ_B},
         urn=URN,
         req_filter=RequirementFilter(custom_exclude=f'ids == "{URN}:{REQ_A.id}"'),
@@ -108,8 +108,8 @@ def test_req_filter_custom_exclude_el_removes_matching():
 
 def test_req_filter_custom_imports_el_keeps_only_matching():
     """custom_imports EL: only the matching req survives."""
-    gen = _make_gen({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
-    result = getattr(gen, _FILTER_REQS)(
+    proc = _make_processor({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
+    result = getattr(proc, _FILTER_REQS)(
         accessible_requirements={REQ_A, REQ_B},
         urn=URN,
         req_filter=RequirementFilter(custom_imports=f'ids == "{URN}:{REQ_A.id}"'),
@@ -120,8 +120,8 @@ def test_req_filter_custom_imports_el_keeps_only_matching():
 
 def test_req_filter_urn_ids_excludes_combined_with_custom_exclude():
     """urn_ids_excludes OR custom_exclude: req is excluded if either matches."""
-    gen = _make_gen({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
-    result = getattr(gen, _FILTER_REQS)(
+    proc = _make_processor({REQ_A: _req(REQ_A), REQ_B: _req(REQ_B)})
+    result = getattr(proc, _FILTER_REQS)(
         accessible_requirements={REQ_A, REQ_B},
         urn=URN,
         req_filter=RequirementFilter(
@@ -140,8 +140,8 @@ def test_req_filter_urn_ids_excludes_combined_with_custom_exclude():
 
 def test_svc_filter_all_none_imports_everything():
     """No filter criteria: nothing is filtered out."""
-    gen = _make_gen(svcs={SVC_A: _svc(SVC_A), SVC_B: _svc(SVC_B)})
-    result = getattr(gen, _FILTER_SVCS)(
+    proc = _make_processor(svcs={SVC_A: _svc(SVC_A), SVC_B: _svc(SVC_B)})
+    result = getattr(proc, _FILTER_SVCS)(
         accessible_svcs={SVC_A, SVC_B},
         urn=URN,
         svc_filter=SVCFilter(),
@@ -151,8 +151,8 @@ def test_svc_filter_all_none_imports_everything():
 
 def test_svc_filter_urn_ids_excludes_removes_matching():
     """urn_ids_excludes: matching SVC is excluded, non-matching is kept."""
-    gen = _make_gen(svcs={SVC_A: _svc(SVC_A), SVC_B: _svc(SVC_B)})
-    result = getattr(gen, _FILTER_SVCS)(
+    proc = _make_processor(svcs={SVC_A: _svc(SVC_A), SVC_B: _svc(SVC_B)})
+    result = getattr(proc, _FILTER_SVCS)(
         accessible_svcs={SVC_A, SVC_B},
         urn=URN,
         svc_filter=SVCFilter(urn_ids_excludes={SVC_A}),
@@ -163,8 +163,8 @@ def test_svc_filter_urn_ids_excludes_removes_matching():
 
 def test_svc_filter_urn_ids_imports_keeps_only_matching():
     """urn_ids_imports: only the listed SVC survives."""
-    gen = _make_gen(svcs={SVC_A: _svc(SVC_A), SVC_B: _svc(SVC_B)})
-    result = getattr(gen, _FILTER_SVCS)(
+    proc = _make_processor(svcs={SVC_A: _svc(SVC_A), SVC_B: _svc(SVC_B)})
+    result = getattr(proc, _FILTER_SVCS)(
         accessible_svcs={SVC_A, SVC_B},
         urn=URN,
         svc_filter=SVCFilter(urn_ids_imports={SVC_A}),
