@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Luftfartsverket/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
 
 metadata:
   urn: sys-001
@@ -20,7 +20,7 @@ implementations:
   git:
     - branch: main
       env_token: GITLAB_TOKEN
-      url: "https://github.com/Luftfartsverket/requirements-tool-testdata.git"
+      url: "https://github.com/reqstool/requirements-tool-testdata.git"
       path: "data/remote/test_standard/test_standard_maven_git/ms-001"
 
   local:

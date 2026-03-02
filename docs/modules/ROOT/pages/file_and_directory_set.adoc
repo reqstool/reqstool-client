@@ -1,11 +1,11 @@
 == Standard File and Directory Set
 
-All files have a JSON Schema: https://github.com/Luftfartsverket/reqstool-client/tree/main/src/reqstool/resources/schemas/v1
+All files have a JSON Schema: https://github.com/reqstool/reqstool-client/tree/main/src/reqstool/resources/schemas/v1
 
 For examples see:
 
-* docs/examples https://github.com/luftfartsverket/reqstool-client/tree/main/docs/examples/requirements[examples]
-* unit tests: https://github.com/luftfartsverket/reqstool-client/tree/main/tests/resources/test_data/data/local[test data]
+* docs/examples https://github.com/reqstool/reqstool-client/tree/main/docs/examples/requirements[examples]
+* unit tests: https://github.com/reqstool/reqstool-client/tree/main/tests/resources/test_data/data/local[test data]
 
 [[reqstool_config]]
 === reqstool_config.yml
@@ -22,7 +22,7 @@ If no reqstool_config.yml file is present in the folder that contains the xref:d
 If you are using a regular xref:data.adoc#java-maven-directory-structure[Maven] project, It is recommended to let all the xref:data.adoc#static-directory-structure[static files] be placed in a folder in the root of the project called 'requirements'. Your reqstool_config.yml file should also be placed in this folder, and would then only need to include the following:
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Luftfartsverket/reqstool-client/main/src/reqstool/resources/schemas/v1/reqstool_config.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/reqstool_config.schema.json
 
 language: java
 build: maven
@@ -34,7 +34,7 @@ Below is an example on how to change the default paths to the required *.yml fil
 In this case the reqstool_config.yml file is two dirs deep from project root.
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Luftfartsverket/reqstool-client/main/src/reqstool/resources/schemas/v1/reqstool_config.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/reqstool_config.schema.json
 
 type: java 
 build: maven
