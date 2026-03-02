@@ -15,7 +15,7 @@ def git_impl_data() -> GitImplData:
         _current_unresolved=GitLocation(
             env_token="GITLAB_TOKEN",
             branch="main",
-            url="https://github.com/Luftfartsverket/reqstool-client",
+            url="https://github.com/reqstool/reqstool-client",
             path="/examples/README.adoc",
         ),
     )
@@ -50,7 +50,7 @@ def test_git_impl_data(git_impl_data):
     assert git_impl_data.parent is None
     assert git_impl_data.current.env_token == "GITLAB_TOKEN"
     assert git_impl_data.current.branch == "main"
-    assert git_impl_data.current.url == "https://github.com/Luftfartsverket/reqstool-client"
+    assert git_impl_data.current.url == "https://github.com/reqstool/reqstool-client"
     assert git_impl_data.current.path == "/examples/README.adoc"
 
 
