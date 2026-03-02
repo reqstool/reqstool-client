@@ -67,8 +67,8 @@ All domain objects are frozen/plain `@dataclass`s:
 
 Variants (defined in `requirements.yml` metadata): `SYSTEM`, `MICROSERVICE`, `EXTERNAL`.
 
-### Indexing & Filtering (`model_generators/combined_indexed_dataset_generator.py`)
-`CombinedIndexedDatasetGenerator` takes a `CombinedRawDataset` and produces a `CombinedIndexedDataset` with cross-reference indexes (e.g. `svcs_from_req`, `mvrs_from_svc`). If `_filtered=True`, it applies requirement and SVC filters defined in the YAML using the expression language.
+### Indexing & Filtering (`model_generators/`)
+`CombinedIndexedDatasetGenerator` (`combined_indexed_dataset_generator.py`) takes a `CombinedRawDataset` and produces a `CombinedIndexedDataset` with cross-reference indexes (e.g. `svcs_from_req`, `mvrs_from_svc`). If `_filtered=True`, it delegates filter application to `IndexedDatasetFilterProcessor` (`indexed_dataset_filter_processor.py`), which applies requirement and SVC filters defined in the YAML using the expression language.
 
 ### Expression Language (`expression_languages/`)
 Custom Lark-based DSL for filter expressions in `requirements.yml` / `svcs.yml`. Grammar supports `and`, `or`, `not`, `ids ==`, `ids !=`, and regex matching. `GenericELTransformer[T]` is the base; `RequirementsELTransformer` and `SVCsELTransformer` are thin subclasses.
