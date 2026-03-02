@@ -1,10 +1,10 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Luftfartsverket/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
 
 metadata:
   urn: reqstool-client
   variant: microservice
   title: Reqstool client
-  url: https://github.com/Luftfartsverket/reqstool-client
+  url: https://github.com/reqstool/reqstool-client
 
 requirements:
   - id: REQ_001
@@ -106,7 +106,7 @@ requirements:
   - id: REQ_017
     title: Parse requirements from a maven artifact
     significance: shall
-    description: "Reqstool client should be able to parse requirements data from a Maven artifact that follows the correct structure described in the documentation. See: https://luftfartsverket.github.io/reqstool-client/reqstool-client/0.3.0/data.html#maven-artifact-zip-directory-structure"
+    description: "Reqstool client should be able to parse requirements data from a Maven artifact that follows the correct structure described in the documentation. See: https://reqstool.github.io/reqstool-client/reqstool-client/0.3.0/data.html#maven-artifact-zip-directory-structure"
     categories: [functional-suitability]
     revision: 0.0.1
   - id: REQ_018
