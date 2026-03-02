@@ -39,7 +39,8 @@ class PypiLocation(LocationInterface):
         if not package_url:
             token_info = f"(with token in environment variable '{self.env_token}')" if self.env_token else ""
             raise RuntimeError(
-                f"Unable to find a sdist pypi package for {self.package} == {self.version} in repo {self.url}{token_info}"
+                f"Unable to find a sdist pypi package for {self.package} == {self.version}"
+                f" in repo {self.url}{token_info}"
             )
 
         logging.debug(f"Downloading {self.package} from {self.url} to {dst_path}\n")
@@ -107,7 +108,8 @@ class PypiLocation(LocationInterface):
         for link in soup.find_all("a"):
             href = link.get("href")
             if href and f"{version}.tar.gz" in href:
-                # Normalize the URL by removing the has suffix if present (e.g. md5, sha1, sha224, sha256, sha384, sha512)
+                # Normalize the URL by removing the hash suffix if present
+                # (e.g. md5, sha1, sha224, sha256, sha384, sha512)
                 if "#" in href:
                     href = href.split("#")[0]  # Remove the hash suffix
 
