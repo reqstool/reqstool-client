@@ -34,9 +34,9 @@ class Utils:
     def extract_zip(zip_path: str, dst_path: str) -> str:
         with ZipFile(zip_path, "r") as zip_ref:
             top_level_dirs = {name.split("/")[0] for name in zip_ref.namelist() if "/" in name}
+            if len(top_level_dirs) != 1:
+                raise ValueError(f"ZIP artifact did not have exactly one top-level directory: {top_level_dirs}")
             zip_ref.extractall(path=dst_path)
-        if len(top_level_dirs) != 1:
-            raise ValueError(f"ZIP artifact did not have exactly one top-level directory: {top_level_dirs}")
         top_level_dir = os.path.join(dst_path, top_level_dirs.pop())
         logging.debug(f"Extracted {zip_path} to {top_level_dir}")
         return top_level_dir
@@ -44,12 +44,10 @@ class Utils:
     @staticmethod
     def extract_targz(targz_path: str, dst_path: str) -> str:
         with tarfile.open(targz_path, "r:gz") as tar_ref:
-            top_level_dirs = {
-                member.name.split("/")[0] for member in tar_ref.getmembers() if member.name.count("/") > 0
-            }
+            top_level_dirs = {member.name.split("/")[0] for member in tar_ref.getmembers() if "/" in member.name}
+            if len(top_level_dirs) != 1:
+                raise ValueError(f"tar.gz artifact did not have exactly one top-level directory: {top_level_dirs}")
             tar_ref.extractall(path=dst_path, filter="data")
-        if len(top_level_dirs) != 1:
-            raise ValueError(f"tar.gz artifact did not have exactly one top-level directory: {top_level_dirs}")
         top_level_dir = os.path.join(dst_path, top_level_dirs.pop())
         logging.debug(f"Extracted {targz_path} to {top_level_dir}")
         return top_level_dir

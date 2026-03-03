@@ -16,5 +16,5 @@ class LOCATIONTYPES(Enum):
 @dataclass(kw_only=True)
 class LocationInterface(ABC):
     @abstractmethod
-    def _make_available_on_localdisk(self, dst_path: str):
+    def _make_available_on_localdisk(self, dst_path: str) -> str:
         pass
