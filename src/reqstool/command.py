@@ -30,6 +30,8 @@ from reqstool.common.validators.syntax_validator import JsonSchemaItem
 # from reqstool.common.validators.syntax_validator import JsonSchemaItem
 from reqstool.locations.git_location import GitLocation
 from reqstool.locations.local_location import LocalLocation
+from reqstool.locations.local_maven_location import LocalMavenLocation
+from reqstool.locations.local_pypi_location import LocalPypiLocation
 from reqstool.locations.location import LocationInterface
 from reqstool.locations.maven_location import MavenLocation
 from reqstool.locations.pypi_location import PypiLocation
@@ -97,7 +99,10 @@ class Command:
     def _add_subparsers_source(self, parser, include_report_options=True):
         # Subparser for local report
         local_report_parser = parser.add_parser("local", help="local source")
-        local_report_parser.add_argument("-p", "--path", help="path description", required=True)
+        local_group = local_report_parser.add_mutually_exclusive_group(required=True)
+        local_group.add_argument("-p", "--path", help="path to a local directory")
+        local_group.add_argument("--maven", metavar="PATH", help="path to a local Maven ZIP artifact (.zip)")
+        local_group.add_argument("--pypi", metavar="PATH", help="path to a local PyPI sdist tarball (.tar.gz)")
         self._add_argument_output(local_report_parser)
         if include_report_options:
             self._add_group_by(local_report_parser)
@@ -234,7 +239,12 @@ class Command:
                 env_token=args_source.env_token if args_source.env_token else None,
             )
         elif "local" in args_source.source:
-            location = LocalLocation(path=args_source.path)
+            if args_source.maven:
+                location = LocalMavenLocation(path=args_source.maven)
+            elif args_source.pypi:
+                location = LocalPypiLocation(path=args_source.pypi)
+            else:
+                location = LocalLocation(path=args_source.path)
 
         return location
 
