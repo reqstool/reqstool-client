@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import sys
+import tarfile
 from dataclasses import dataclass, field
 from typing import Optional
 from urllib.parse import urljoin
@@ -47,7 +48,7 @@ class PypiLocation(LocationInterface):
             downloaded_file = Utils.download_file(url=package_url, dst_path=dst_path, token=token)
             logging.debug(f"Extracting {downloaded_file} to {dst_path}\n")
             return Utils.extract_targz(downloaded_file, dst_path)
-        except ValueError as e:
+        except (ValueError, tarfile.TarError) as e:
             logging.fatal(str(e))
             sys.exit(1)
         except Exception as e:

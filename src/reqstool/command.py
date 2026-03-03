@@ -239,9 +239,9 @@ class Command:
                 env_token=args_source.env_token if args_source.env_token else None,
             )
         elif "local" in args_source.source:
-            if getattr(args_source, "maven", None):
+            if args_source.maven:
                 location = LocalMavenLocation(path=args_source.maven)
-            elif getattr(args_source, "pypi", None):
+            elif args_source.pypi:
                 location = LocalPypiLocation(path=args_source.pypi)
             else:
                 location = LocalLocation(path=args_source.path)

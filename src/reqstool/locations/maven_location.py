@@ -51,5 +51,5 @@ class MavenLocation(LocationInterface):
         try:
             return Utils.extract_zip(artifact.get_filename(dst_path), dst_path)
         except ValueError as e:
-            logging.fatal(str(e))
+            logging.fatal(f"Maven artifact {artifact} from {self.url}: {e}")
             sys.exit(1)
