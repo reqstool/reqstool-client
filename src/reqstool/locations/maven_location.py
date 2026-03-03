@@ -5,11 +5,11 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
-from zipfile import ZipFile
 
 from maven_artifact import Artifact, Downloader, RequestException
 from reqstool_python_decorators.decorators.decorators import Requirements
 
+from reqstool.common.utils import Utils
 from reqstool.locations.location import LocationInterface
 
 
@@ -48,24 +48,8 @@ class MavenLocation(LocationInterface):
 
         logging.debug(f"Unzipping {artifact.get_filename(dst_path)} to {dst_path}\n")
 
-        with ZipFile(artifact.get_filename(dst_path), "r") as zip_ref:
-            # Extracting all the members of the zip
-            # into a specific location.
-            top_level_dirs = {name.split("/")[0] for name in zip_ref.namelist() if "/" in name}
-
-            zip_ref.extractall(path=dst_path)
-
-        if len(top_level_dirs) != 1:
-            logging.fatal(
-                f"Maven zip artifact {artifact} from {self.url} did not have one and only one"
-                f" top level directory: {top_level_dirs}"
-            )
+        try:
+            return Utils.extract_zip(artifact.get_filename(dst_path), dst_path)
+        except ValueError as e:
+            logging.fatal(str(e))
             sys.exit(1)
-
-        top_level_dir = os.path.join(dst_path, top_level_dirs.pop())
-
-        # os.remove(artifact.get_filename(dst_path))
-
-        logging.debug(f"Unzipped {artifact.get_filename(dst_path)} to {top_level_dir}\n")
-
-        return top_level_dir
