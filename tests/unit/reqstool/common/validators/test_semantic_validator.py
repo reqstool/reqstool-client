@@ -289,6 +289,73 @@ def test_validate_req_filter_only_excludes_no_error():
     assert holder.get_no_of_errors() == 0
 
 
+def test_validate_svc_filter_custom_only_no_error():
+    """SVC filter with only custom (no svc_ids) must not crash and produces no error."""
+    data = {
+        "filters": {"sys-001": {"custom": {"includes": "ids == /SVC_CORE_.*/"}}},
+        "cases": {},
+    }
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_svc_imports_filter_has_excludes_xor_includes(data)
+    assert holder.get_no_of_errors() == 0
+
+
+def test_validate_req_filter_custom_only_no_error():
+    """Req filter with only custom (no requirement_ids) must not crash and produces no error."""
+    data = {
+        "filters": {"sys-001": {"custom": {"includes": "ids == /CORE_.*/"}}},
+    }
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_req_imports_filter_has_excludes_xor_includes(data)
+    assert holder.get_no_of_errors() == 0
+
+
+def test_validate_svc_filter_custom_both_includes_and_excludes_error():
+    """SVC filter with custom having both includes and excludes reports an error."""
+    data = {
+        "filters": {"sys-001": {"custom": {"includes": "ids == /SVC_001/", "excludes": "ids == /SVC_002/"}}},
+        "cases": {},
+    }
+    holder = ValidationErrorHolder()
+    sv = SemanticValidator(validation_error_holder=holder)
+    sv._validate_svc_imports_filter_has_excludes_xor_includes(data)
+    assert holder.get_no_of_errors() > 0
+    assert "Both custom imports and exclude filters applied to svc! (urn: sys-001)" in holder.get_errors()[0].msg
+
+
+def test_validate_req_filter_custom_both_includes_and_excludes_error():
+    """Req filter with custom having both includes and excludes reports an error."""
+    data = {
+        "filters": {"sys-001": {"custom": {"includes": "ids == /REQ_001/", "excludes": "ids == /REQ_002/"}}},
+    }
+    holder = ValidationErrorHolder()
+    sv = SemanticValidator(validation_error_holder=holder)
+    sv._validate_req_imports_filter_has_excludes_xor_includes(data)
+    assert holder.get_no_of_errors() > 0
+    assert "Both custom imports and exclude filters applied to req! (urn: sys-001)" in holder.get_errors()[0].msg
+
+
+def test_validate_svc_filter_empty_no_error():
+    """SVC filter with empty dict (no svc_ids, no custom) must not crash and produces no error."""
+    data = {
+        "filters": {"sys-001": {}},
+        "cases": {},
+    }
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_svc_imports_filter_has_excludes_xor_includes(data)
+    assert holder.get_no_of_errors() == 0
+
+
+def test_validate_req_filter_empty_no_error():
+    """Req filter with empty dict (no requirement_ids, no custom) must not crash and produces no error."""
+    data = {
+        "filters": {"sys-001": {}},
+    }
+    holder = ValidationErrorHolder()
+    SemanticValidator(validation_error_holder=holder)._validate_req_imports_filter_has_excludes_xor_includes(data)
+    assert holder.get_no_of_errors() == 0
+
+
 # ---------------------------------------------------------------------------
 # prettify_urn_id
 # ---------------------------------------------------------------------------

@@ -212,7 +212,11 @@ class SemanticValidator:
         if "filters" in svc_data:
             for urn in svc_data["filters"].keys():
                 urn_filter = svc_data["filters"][urn]
-                if "includes" in urn_filter["svc_ids"] and "excludes" in urn_filter["svc_ids"]:
+                if (
+                    "svc_ids" in urn_filter
+                    and "includes" in urn_filter["svc_ids"]
+                    and "excludes" in urn_filter["svc_ids"]
+                ):
                     self._validation_error_holder.add_error(
                         ValidationError(
                             msg=f"""Both imports and exclude filters applied to svc! (urn: {urn})
@@ -236,7 +240,11 @@ class SemanticValidator:
         if "filters" in req_data:
             for urn in req_data["filters"].keys():
                 urn_filter = req_data["filters"][urn]
-                if "includes" in urn_filter["requirement_ids"] and "excludes" in urn_filter["requirement_ids"]:
+                if (
+                    "requirement_ids" in urn_filter
+                    and "includes" in urn_filter["requirement_ids"]
+                    and "excludes" in urn_filter["requirement_ids"]
+                ):
                     self._validation_error_holder.add_error(
                         ValidationError(
                             msg=f"""Both imports and exclude filters applied to req! (urn: {urn})
