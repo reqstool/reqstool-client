@@ -15,13 +15,12 @@ addopts = [
     "-s",
     "--import-mode=importlib",
     "--log-cli-level=DEBUG",
-    '-m not integration',
 ]
 pythonpath = [".", "src", "tests"]
 testpaths = ["tests"]
 markers = [
-    "flaky: tests that can randomly fail through no change to the code",
     "integration: tests that require external resources",
+    "e2e: end-to-end tests that run the full pipeline locally",
 ]
 
 [project]
