@@ -3,7 +3,7 @@
 [![GitHub Issues](https://img.shields.io/github/issues/reqstool/reqstool-client?style=for-the-badge&logo=github)](https://github.com/reqstool/reqstool-client/issues)
 [![License](https://img.shields.io/github/license/reqstool/reqstool-client?style=for-the-badge&logo=opensourceinitiative)](https://opensource.org/license/mit/)
 [![Build](https://img.shields.io/github/actions/workflow/status/reqstool/reqstool-client/build.yml?style=for-the-badge&logo=github)](https://github.com/reqstool/reqstool-client/actions/workflows/build.yml)
-[![Static Badge](https://img.shields.io/badge/Documentation-blue?style=for-the-badge&link=docs)](https://reqstool.github.io/reqstool-client/reqstool-client/0.3.0/index.html)
+[![Documentation](https://img.shields.io/badge/Documentation-blue?style=for-the-badge&link=docs)](https://reqstool.github.io)
 [![GitHub Discussions](https://img.shields.io/github/discussions/reqstool/reqstool-client?style=for-the-badge&logo=github)](https://github.com/reqstool/reqstool-client/discussions)
 
 
@@ -26,12 +26,12 @@ With this information and the actual test results (e.g., JUnit), use Reqstool to
 You need to have the following installed in order to use the tool:
 
 - Python, 3.10 or later
-- pip
+- pip or pipx
 
 To use the tool, you need to install the PyPI package *reqstool*.
 
 ```bash
-pip install -U reqstool
+pipx install reqstool
 reqstool -h # to confirm installation
 ```
 
@@ -45,16 +45,12 @@ Use `-h/--help` for more information about each command and location.
 
 ## Documentation
 
-For full documentation cane be found [here](https://reqstool.github.io/reqstool-docs/reqstool-client/0.3.0/index.html).
+Full documentation can be found [here](https://reqstool.github.io).
 
 ## Contributing
 
-- We adhere to the latest version of [Contributor Covenant](https://www.contributor-covenant.org/).
-- Fork repo
-- Before submitting a PR
-  - Perform formatting (black):  `hatch run lint:black src tests`
-  - Run linter (flake8): `hatch run lint:flake8`
-  - Run tests:
-    - all: `hatch run test:pytest --cov=reqstool`
-    - unit only: `hatch run test:pytest --cov=reqstool  tests/unit`
-    - integration only: `hatch run test:pytest --cov=reqstool  tests/integration`
+See the organization-wide [CONTRIBUTING.md](https://github.com/reqstool/.github/blob/main/CONTRIBUTING.md).
+
+## License
+
+MIT License.
