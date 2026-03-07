@@ -9,43 +9,44 @@
 
 # Reqstool Client
 
-## Overview
+The reqstool command line client is the core tool for managing requirements traceability. It reads requirements, annotations, and test results to generate reports, exports, and status checks.
 
-Reqstool is a tool for managing requirements with related software verification cases (aka tests) and verification results (test results).
-
-- Requirements are defined in YAML files and can reference each other (depending on the variant different data will be parsed).
-- Annotations are then used in code to specify where a requirement is implemented as well as tested.
-
-With this information and the actual test results (e.g., JUnit), use Reqstool to:
-
-- Generate a report (AsciiDoc, which can be transformed into e.g. PDF) listing all requirements, where that requirement is implemented and tested, and whether the tests passed/failed. This report can be used e.g. with auditors ("Yes, we track this requirement, it's implemented (here) and it has been tested with a pass (here).")
-- Status the software, i.e. get a list of all requirements, their status on implementation and tests. Reqstool will exit with a status code equal to the number of requirements that have not been implemented and tested with a pass. Hence, it can be used in a pipeline as a gate for deployment to production.
+- **Status checks** -- verify that all requirements are implemented and tested, with an exit code for CI/CD gates
+- **AsciiDoc reports** -- generate detailed reports for auditors and stakeholders
+- **JSON export** -- export data for custom tooling, with optional requirement/SVC filters
 
 ## Installation
 
-You need to have the following installed in order to use the tool:
+### Prerequisites
 
-- Python, 3.10 or later
+- Python 3.13 or later
 - pip or pipx
 
-To use the tool, you need to install the PyPI package *reqstool*.
+### Install with pipx (recommended)
 
 ```bash
 pipx install reqstool
-reqstool -h # to confirm installation
+reqstool -h  # confirm installation
+```
+
+### Install with pip
+
+```bash
+pip install reqstool
+reqstool -h  # confirm installation
 ```
 
 ## Usage
 
 ```bash
-reqstool [-h] {command: report-asciidoc,generate-json,status} {location: local,git,maven} ...
+reqstool [-h] {export,report-asciidoc,status} {local,git,maven,pypi} ...
 ```
 
 Use `-h/--help` for more information about each command and location.
 
 ## Documentation
 
-Full documentation can be found [here](https://reqstool.github.io).
+Full documentation, including getting started guides for Java, Python, and TypeScript, can be found at [reqstool.github.io](https://reqstool.github.io).
 
 ## Contributing
 
