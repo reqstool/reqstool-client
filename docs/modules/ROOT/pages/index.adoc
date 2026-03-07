@@ -12,7 +12,8 @@ The reqstool command line client is the core tool for managing requirements trac
 
 * xref:installation.adoc[Installation]
 * xref:usage.adoc[Usage reference]
-* xref:data.adoc[Data formats and sources]
+* xref:reqstool::data.adoc[Data formats and sources]
+* xref:reqstool::concepts.adoc[Concepts]
 
 == License
 
