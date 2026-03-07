@@ -24,6 +24,11 @@ from reqstool.models.mvrs import MVRData
 from reqstool.models.svcs import SVCData
 from reqstool.models.test_data import TEST_RUN_STATUS
 
+FORMAT_CONFIG = {
+    "asciidoc": {"template_subdir": "asciidoc", "h1": "= ", "h2": "== "},
+    "markdown": {"template_subdir": "markdown", "h1": "# ", "h2": "## "},
+}
+
 
 class Jinja2Templates(Enum):
     REQUIREMENTS = "requirements", "requirements.j2"
@@ -49,12 +54,17 @@ class ReportCommand:
         location: LocationInterface,
         group_by: GroupbyOptions,
         sort_by: List[SortByOptions],
+        format: str = "asciidoc",
     ):
         self.__initial_location: LocationInterface = location
         self.group_by: GroupbyOptions = group_by
         self.sort_by: List[SortByOptions] = sort_by
+        self.__format_config = FORMAT_CONFIG[format]
         self.jinja2_templates: Dict[Jinja2Templates, Template] = {
-            j2template: Jinja2Utils.create_template(template_name=j2template.filename) for j2template in Jinja2Templates
+            j2template: Jinja2Utils.create_template(
+                template_name=j2template.filename, template_subdir=self.__format_config["template_subdir"]
+            )
+            for j2template in Jinja2Templates
         }
         self.result = self.__run()
 
@@ -73,24 +83,16 @@ class ReportCommand:
             initial_location=self.__initial_location, semantic_validator=semantic_validator
         ).result
 
-        report = self.__generate_asciidoc_information(cid=cid, aggregated_data=aggregated_data, statistics=statistics)
+        report = self.__generate_report(cid=cid, aggregated_data=aggregated_data, statistics=statistics)
 
         return report
 
-    def __generate_asciidoc_information(
+    def __generate_report(
         self,
         cid: CombinedIndexedDataset,
         aggregated_data: Dict[UrnId, Dict[str, Union[str, Dict[str, str]]]],
         statistics: StatisticsContainer,
     ):
-        """Parses the read data from the imported models and creates a AsciiDoc string
-
-        Args:
-            imported_models: All models that should be converted to AsciiDoc
-
-        Returns:
-            str : All data rendered as AsciiDoc
-        """
         statistics_table = Jinja2Utils.render(
             data=statistics._total_statistics, template=self.jinja2_templates[Jinja2Templates.TOTAL_STATISTICS]
         )
@@ -99,50 +101,52 @@ class ReportCommand:
             cid=cid, group_by=self.group_by, sort_by=self.sort_by
         ).grouped_requirements
 
-        # group_by, List(asciidoc for each req)
         template_data: Dict[str, List[str]] = {
             group_by: [self.__extract_template_data(req_template=aggregated_data[urn_id]) for urn_id in urn_ids]
             for group_by, urn_ids in grouped_requirements.items()
         }
 
-        asciidoc: str = "= REQUIREMENTS DOCUMENTATION\n" + statistics_table
+        h1 = self.__format_config["h1"]
+        h2 = self.__format_config["h2"]
+
+        output: str = f"{h1}REQUIREMENTS DOCUMENTATION\n" + statistics_table
 
         for group_by in template_data.keys():
-            asciidoc += f"== {group_by[0].upper() + group_by[1:]}\n"
+            output += f"{h2}{group_by[0].upper() + group_by[1:]}\n"
 
             for template in template_data[group_by]:
 
-                asciidoc += template
+                output += template
 
-        return asciidoc
+        return output
 
     def __extract_template_data(self, req_template) -> str:
-        asciidoc = ""
-        req_as_ascii = Jinja2Utils.render(
+        rendered = ""
+        req_as_text = Jinja2Utils.render(
             data=req_template["requirement"], template=self.jinja2_templates[Jinja2Templates.REQUIREMENTS]
         )
-        annot_impls_as_ascii = Jinja2Utils.render(
+        annot_impls_as_text = Jinja2Utils.render(
             data=req_template["impls"], template=self.jinja2_templates[Jinja2Templates.ANNOTATION_IMPLS]
         )
-        annot_tests_as_ascii = Jinja2Utils.render(
+        annot_tests_as_text = Jinja2Utils.render(
             data=req_template["tests"], template=self.jinja2_templates[Jinja2Templates.ANNOTATION_TESTS]
         )
-        svcs_as_ascii = Jinja2Utils.render(
+        svcs_as_text = Jinja2Utils.render(
             data=req_template["svcs"], template=self.jinja2_templates[Jinja2Templates.SVCS]
         )
-        mvrs_to_ascii = Jinja2Utils.render(
+        mvrs_as_text = Jinja2Utils.render(
             data=req_template["mvrs"], template=self.jinja2_templates[Jinja2Templates.MVRS]
         )
-        asciidoc += (
-            req_as_ascii
-            + (annot_impls_as_ascii if annot_impls_as_ascii else "")
-            + (svcs_as_ascii if svcs_as_ascii else "")
-            + (annot_tests_as_ascii if annot_tests_as_ascii else "")
-            + (mvrs_to_ascii if mvrs_to_ascii else "")
+        rendered += (
+            req_as_text
+            + (annot_impls_as_text if annot_impls_as_text else "")
+            + (svcs_as_text if svcs_as_text else "")
+            + (annot_tests_as_text if annot_tests_as_text else "")
+            + (mvrs_as_text if mvrs_as_text else "")
             + "\n"
         )
 
-        return asciidoc
+        return rendered
 
     def __aggregated_requirements_data(
         self, cid: CombinedIndexedDataset

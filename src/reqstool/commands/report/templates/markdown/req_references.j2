@@ -1,0 +1,9 @@
+{% for req_template in data%}
+{%if req_template.req_refs%}
+| URN | REQS |
+|---|---|
+{%for ref_sys, ref_list in req_template.req_refs.items()%}
+| {{ref_sys}} | {% for req in ref_list %}{{req}}{% if not loop.last %}, {% endif %}{% endfor %} |
+{%endfor%}
+{%endif%}
+{%endfor%}

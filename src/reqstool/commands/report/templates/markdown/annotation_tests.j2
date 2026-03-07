@@ -1,0 +1,9 @@
+{%if data%}
+#### TESTS
+
+| SVC ID | Element Kind | FQN | Result |
+|---|---|---|---|
+{%for test in data%}
+| {{test.svc_id}} | {{test.element_kind}} | {{test.fqn|replace('.', '.​')}} | {{test.test_result}} |
+{%endfor%}
+{%endif%}

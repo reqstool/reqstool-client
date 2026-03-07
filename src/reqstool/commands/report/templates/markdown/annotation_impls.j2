@@ -1,0 +1,9 @@
+{%if data%}
+#### IMPLEMENTATIONS
+
+| Element Kind | FQN |
+|---|---|
+{%for impl in data %}
+| {{impl.element_kind}} | {{impl.fqn|replace('.', '.​')}} |
+{%endfor%}
+{%endif%}

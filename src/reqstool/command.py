@@ -204,10 +204,23 @@ class Command:
 
         subparsers = self.__parser.add_subparsers(dest="command", help="Sub-commands")
 
-        # command: report-asciidoc
-        report_parser = subparsers.add_parser("report-asciidoc", help="Generate a report in AsciiDoc")
+        # command: report
+        report_parser = subparsers.add_parser("report", help="Generate a report")
+        report_parser.add_argument(
+            "--format",
+            choices=["asciidoc", "markdown"],
+            default="asciidoc",
+            help="Output format (default: %(default)s)",
+        )
         report_source_subparsers = report_parser.add_subparsers(dest="source", required=True)
         self._add_subparsers_source(report_source_subparsers)
+
+        # command: report-asciidoc (deprecated, use 'report' instead)
+        report_asciidoc_parser = subparsers.add_parser(
+            "report-asciidoc", help="[DEPRECATED: use 'report --format asciidoc'] Generate a report in AsciiDoc"
+        )
+        report_asciidoc_source_subparsers = report_asciidoc_parser.add_subparsers(dest="source", required=True)
+        self._add_subparsers_source(report_asciidoc_source_subparsers)
 
         # command: export
         export_parser = subparsers.add_parser("export", help="Export data in specified format")
@@ -302,10 +315,12 @@ class Command:
         initial_source = self._get_initial_source(report_args)
 
         output = report_args.output  # where to put the generated report
+        format = getattr(report_args, "format", "asciidoc")
         result = report.ReportCommand(
             location=initial_source,
             group_by=GroupbyOptions(report_args.group_by),
             sort_by=[SortByOptions(s) for s in report_args.sort_by],
+            format=format,
         )
 
         output.write(result.result)
@@ -363,7 +378,13 @@ def main():
     exit_code: int = 0
 
     try:
-        if args.command == "report-asciidoc":
+        if args.command == "report":
+            command.command_report(report_args=args)
+        elif args.command == "report-asciidoc":
+            print(
+                "WARNING: 'report-asciidoc' is deprecated. Use 'report --format asciidoc' instead.",
+                file=sys.stderr,
+            )
             command.command_report(report_args=args)
         elif args.command == "export":
             command.command_export(export_args=args)

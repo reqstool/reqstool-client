@@ -1,0 +1,14 @@
+{%if data%}
+#### MVRS
+{%endif%}
+{%for mvr_info in data%}
+| | |
+|---|---|
+| **MVR ID** | **Result** |
+| {{mvr_info.id.urn}}:{{mvr_info.id.id}} | {%if mvr_info.passed%}passed{% else %}failed{%endif%} |
+| **Comment** | |
+| {{mvr_info.comment}} | |
+| **Referenced SVCs** | |
+| {% for svc in mvr_info.svc_ids %}{{svc.urn}}:{{svc.id}}{% if not loop.last %}, {% endif %}{% endfor %} | |
+{%endfor%}
+
