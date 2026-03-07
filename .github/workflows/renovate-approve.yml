@@ -8,4 +8,5 @@ on:
 
 jobs:
   approve:
+    if: github.event.pull_request.user.login == 'renovate[bot]'
     uses: reqstool/.github/.github/workflows/renovate-approve.yml@main
