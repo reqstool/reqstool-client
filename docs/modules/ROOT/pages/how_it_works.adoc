@@ -99,28 +99,17 @@ When Requirement Tool is reading the data from ext-001, then REQ_101 will not be
 Filters can currently be applied to requirements.yml and software_verification_cases.yml.
 
 
-==== How to use annotations
+==== Linking code with annotations
 
-Reqstool relies on it's annotation framework in order to couple Requirements and Software Verification Cases with code implementation and test results. Reqstool needs the user to manually couple a specific requirement/svc with a function or class using annotations. 
+Reqstool uses annotations to couple requirements and software verification cases (SVCs) with code implementations and test results. You annotate functions or classes with `@Requirements` to mark where a requirement is implemented, and `@SVCs` to mark where an SVC is tested.
 
-In order to couple Requirements and Software Verification Cases you will need to install and import a Reqstool annotation framework for your specific project. 
+Each ecosystem has its own annotation framework:
 
-Currently https://github.com/reqstool/reqstool-java-annotations[Java] and https://github.com/reqstool/reqstool-python-decorators[Python] is supported. Please read through those projects installation instructions in order to use them properly.  
+* **Java** -- https://github.com/reqstool/reqstool-java-annotations[reqstool-java-annotations] (annotations)
+* **Python** -- https://github.com/reqstool/reqstool-python-decorators[reqstool-python-decorators] (decorators)
+* **TypeScript** -- https://github.com/reqstool/reqstool-typescript-tags[reqstool-typescript-tags] (tags)
 
-Whit the correct annotation framework installed, you'll use the `@Requirements` annotation to couple a specific requirement to a piece of code. 
-In this example, the requirement with id `REQ_111` is coupled with the function somefunction(). This is also possible to do on a class level if that's desired. 
-
-```
-@Requirements("REQ_111")
-def somefunction():
-```
-
-Similarly, you will use the `@SVCs` annotation to couple an SVC id to a test method or test class:
-
-```
-@SVCs("SVC_111")
-def test_somefunction():
-```
+See each project's documentation for installation and usage details.
 
 
 ==== Sequence diagram of the program execution

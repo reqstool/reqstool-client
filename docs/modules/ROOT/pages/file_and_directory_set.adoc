@@ -1,4 +1,4 @@
-== Standard File and Directory Set
+== Standard Files and Directory Sets
 
 All files have a JSON Schema: https://github.com/reqstool/reqstool-client/tree/main/src/reqstool/resources/schemas/v1
 
@@ -8,18 +8,19 @@ For examples see:
 * unit tests: https://github.com/reqstool/reqstool-client/tree/main/tests/resources/test_data/data/local[test data]
 
 [[reqstool_config]]
-=== reqstool_config.yml
+=== file: reqstool_config.yml
 Contains file and directory configuration used by `Reqstool`.
 
-The layout of files and directories for a project are depending on any of the following languages:
+The layout of files and directories for a project depends on the language and build tool:
 
-* java (build: maven): xref:data.adoc#dynamic-directory-structure[dynamic files] are relative "../../target" to the xref:data.adoc#static-directory-structure[static files]
-* python (build: hatch/poetry): xref:data.adoc#dynamic-directory-structure[dynamic files] are relative "../../build" to the xref:data.adoc#static-directory-structure[static files]
+* Java (Maven): xref:data.adoc#dynamic-directory-structure[dynamic files] are relative `../../target` to the xref:data.adoc#static-directory-structure[static files]
+* Python (Hatch/Poetry): xref:data.adoc#dynamic-directory-structure[dynamic files] are relative `../../build` to the xref:data.adoc#static-directory-structure[static files]
 
-If no reqstool_config.yml file is present in the folder that contains the xref:data.adoc#static-directory-structure[static files], Reqstool will expect all files and folders, even the dynamic ones, to reside in the path provided to the -p argument when Reqstool is run. This works well with a xref:data.adoc#maven-artifact-zip-directory-structure[Maven zip file directory structure]. 
+By default, Reqstool build plugins place the xref:data.adoc#static-directory-structure[static files] in a `requirements` folder at the root of the project. This is configurable -- see each plugin's documentation for details.
 
+If no `reqstool_config.yml` file is present, Reqstool will expect all files and folders (including dynamic ones) to reside in the path provided to the `-p` argument. This works well with a xref:data.adoc#java-artifact-structure[Maven zip artifact] or xref:data.adoc#python-artifact-structure[PyPI package].
 
-If you are using a regular xref:data.adoc#java-maven-directory-structure[Maven] project, It is recommended to let all the xref:data.adoc#static-directory-structure[static files] be placed in a folder in the root of the project called 'requirements'. Your reqstool_config.yml file should also be placed in this folder, and would then only need to include the following:
+A minimal `reqstool_config.yml` only needs to specify language and build tool:
 
 ```yaml
 # yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/reqstool_config.schema.json
@@ -28,15 +29,12 @@ language: java
 build: maven
 ```
 
-
-Below is an example on how to change the default paths to the required *.yml files and folders that are generated when the artifact is produced by Maven. The path specified for should be relative to the -p argument that you provide when Reqstool is run. 
-
-In this case the reqstool_config.yml file is two dirs deep from project root.
+Below is an example with custom paths. Paths are relative to the `-p` argument provided when Reqstool is run:
 
 ```yaml
 # yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/reqstool_config.schema.json
 
-type: java 
+type: java
 build: maven
 resources:
   requirements: ../../target/some_folder/requirements.yml
@@ -47,11 +45,11 @@ resources:
     - ../../target/**/*.xml
 ```
 
-=== requirements.yml
+=== file: requirements.yml
 
 Contains all the requirements.
 
-Below is an example of a requirement.yml file:
+Below is an example of a `requirements.yml` file:
 
 ```yaml
 metadata:
@@ -74,51 +72,47 @@ requirements:
     revision: 0.0.1
 ```
 
-The `metadata` of the requirements.yml is required to describe the application.
+The `metadata` section is required to describe the application.
 
-in the `requirements` section, an array of requirements can be specified. Some of the fields are required
+In the `requirements` section, an array of requirements can be specified.
 
 ==== Required fields
 
-* id: Must be unique within the project.
-* title: A title of the requirement.
-* significance: Could be `shall, should`` or `may`.
-* description: Short text to describe the requirement.
-* categories: Which categories the requirement relates to.
-* revision: In which version of Reqstool client the requirement was introduced.
+* `id` -- Must be unique within the project.
+* `title` -- A title of the requirement.
+* `significance` -- Could be `shall`, `should`, or `may`.
+* `description` -- Short text to describe the requirement.
+* `categories` -- Which categories the requirement relates to.
+* `revision` -- In which version the requirement was introduced.
 
 ==== Optional fields
 
-* rationale: Why this requirement is important.
-* implementation: If this requirement requires a source code implementation or not. Currently, there are two acceptable values: in-code or N/A. This defaults to `in-code` if omitted. 
-* lifecycle: Provides four options: "draft", "effective", "obsolete", "deprecated". Effective is the default if lifecycle is omitted. If set to obsolete or deprecated, reqstool will throw a waring during parsing when a requirement or svc is referenced in code or by other requirements, SVCs, or MVRs.
+* `rationale` -- Why this requirement is important.
+* `implementation` -- If this requirement requires a source code implementation or not. Acceptable values: `in-code` or `N/A`. Defaults to `in-code` if omitted.
+* `lifecycle` -- Provides four options: `draft`, `effective`, `obsolete`, `deprecated`. Defaults to `effective` if omitted. If set to `obsolete` or `deprecated`, Reqstool will issue a warning during parsing when referenced in code or by other requirements, SVCs, or MVRs.
 
-
-=== software_verification_cases.yml
+=== file: software_verification_cases.yml
 
 Contains information about how specific requirements should be verified.
 
-One of the fields to be set on a software verification case is the verification type which can be selected from five different pre-defined values (automated-test, manual-test, review, platform, other).
+One of the fields to be set on a software verification case is the verification type which can be selected from five pre-defined values: `automated-test`, `manual-test`, `review`, `platform`, `other`.
 
-All but the automated-test value expects at least one manual verification entry of that particular software verification case. The automated test value expects at least one automated test should exist and preferably pass. 
+All but `automated-test` expect at least one manual verification entry for that particular software verification case. The `automated-test` value expects at least one automated test to exist and preferably pass.
 
-=== manual_verification_results.yml
-Contains information and the result of a manual verification case
+=== file: manual_verification_results.yml
 
-=== requirement_annotations.yml
+Contains information and the result of a manual verification case.
 
-Typically generated by an annotations parser and lists all requirement annotations 
+=== file: requirement_annotations.yml
 
-NOTE: JSON Schema
+Typically generated by an annotations parser and lists all requirement annotations.
 
-=== svcs_annotations.yml
+=== file: svcs_annotations.yml
 
 Typically generated by an annotations parser and lists all software verification cases annotations.
 
-=== annotations.yml
+=== file: annotations.yml
 
 Lists all annotations, containing both requirements and software verification cases annotations.
 
-Generated by default by python annotations parser.
-
-Generated by Maven plugin for Java projects that combines requirements_annotations.yml and svcs_annotations.yml
+Generated by default by the Python decorators parser. For Java projects, the Maven and Gradle plugins combine `requirements_annotations.yml` and `svcs_annotations.yml` into this file.

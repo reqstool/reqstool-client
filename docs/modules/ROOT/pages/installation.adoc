@@ -20,6 +20,6 @@ Alternatively, install with pip:
 
 [source,bash]
 ----
-pip install -U reqstool
+pip install reqstool
 reqstool -h  # confirm installation
 ----
