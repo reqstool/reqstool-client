@@ -213,8 +213,8 @@ class StatisticsGenerator:
                         test_urn_id = UrnId(urn=urn_id.urn, id=test.fully_qualified_name)
                         results = self.__get_annotated_test_results(urn_id=test_urn_id)
                         automated_test_results.extend(results)
-            else:
-                # No tests found for this SVC - create TestData with missing status
+            elif urn_id in self.cid.svcs and self.cid.svcs[urn_id].verification in EXPECTS_AUTOMATED_TESTS:
+                # Only count as missing if this SVC expects automated tests
                 automated_test_results.append(TestData(fully_qualified_name="", status=TEST_RUN_STATUS.MISSING))
 
         return automated_test_results
