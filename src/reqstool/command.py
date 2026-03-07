@@ -238,8 +238,9 @@ class Command:
         )
 
         generate_json_parser.add_argument(
-            "--no-filters",
+            "--no-filter",
             action="store_true",
+            dest="no_filters",
             help="Do not filter data",
             default=False,
             required=False,
