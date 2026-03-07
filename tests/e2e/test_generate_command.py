@@ -22,8 +22,8 @@ def _run_reqstool(*args):
 
 
 @pytest.mark.e2e
-def test_generate_no_filters_returns_all_data():
-    result = _run_reqstool("generate", "local", "-p", TESTDATA_PATH)
+def test_export_no_filters_returns_all_data():
+    result = _run_reqstool("export", "local", "-p", TESTDATA_PATH)
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert "ms-001:REQ_010" in data["requirements"]
@@ -33,8 +33,8 @@ def test_generate_no_filters_returns_all_data():
 
 
 @pytest.mark.e2e
-def test_generate_single_req_id():
-    result = _run_reqstool("generate", "local", "-p", TESTDATA_PATH, "--req-ids", "REQ_010")
+def test_export_single_req_id():
+    result = _run_reqstool("export", "local", "-p", TESTDATA_PATH, "--req-ids", "REQ_010")
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert "ms-001:REQ_010" in data["requirements"]
@@ -45,8 +45,8 @@ def test_generate_single_req_id():
 
 
 @pytest.mark.e2e
-def test_generate_multiple_req_ids():
-    result = _run_reqstool("generate", "local", "-p", TESTDATA_PATH, "--req-ids", "REQ_010", "REQ_020")
+def test_export_multiple_req_ids():
+    result = _run_reqstool("export", "local", "-p", TESTDATA_PATH, "--req-ids", "REQ_010", "REQ_020")
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert "ms-001:REQ_010" in data["requirements"]
@@ -54,8 +54,8 @@ def test_generate_multiple_req_ids():
 
 
 @pytest.mark.e2e
-def test_generate_single_svc_id():
-    result = _run_reqstool("generate", "local", "-p", TESTDATA_PATH, "--svc-ids", "SVC_010")
+def test_export_single_svc_id():
+    result = _run_reqstool("export", "local", "-p", TESTDATA_PATH, "--svc-ids", "SVC_010")
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert "ms-001:SVC_010" in data["svcs"]
@@ -63,8 +63,8 @@ def test_generate_single_svc_id():
 
 
 @pytest.mark.e2e
-def test_generate_multiple_svc_ids():
-    result = _run_reqstool("generate", "local", "-p", TESTDATA_PATH, "--svc-ids", "SVC_010", "SVC_020")
+def test_export_multiple_svc_ids():
+    result = _run_reqstool("export", "local", "-p", TESTDATA_PATH, "--svc-ids", "SVC_010", "SVC_020")
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert "ms-001:SVC_010" in data["svcs"]
@@ -72,8 +72,8 @@ def test_generate_multiple_svc_ids():
 
 
 @pytest.mark.e2e
-def test_generate_both_req_and_svc_ids():
-    result = _run_reqstool("generate", "local", "-p", TESTDATA_PATH, "--req-ids", "REQ_010", "--svc-ids", "SVC_022")
+def test_export_both_req_and_svc_ids():
+    result = _run_reqstool("export", "local", "-p", TESTDATA_PATH, "--req-ids", "REQ_010", "--svc-ids", "SVC_022")
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert "ms-001:REQ_010" in data["requirements"]
@@ -83,8 +83,8 @@ def test_generate_both_req_and_svc_ids():
 
 
 @pytest.mark.e2e
-def test_generate_nonexistent_id_warns():
-    result = _run_reqstool("generate", "local", "-p", TESTDATA_PATH, "--req-ids", "REQ_NONEXISTENT")
+def test_export_nonexistent_id_warns():
+    result = _run_reqstool("export", "local", "-p", TESTDATA_PATH, "--req-ids", "REQ_NONEXISTENT")
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert len(data["requirements"]) == 0
@@ -101,16 +101,16 @@ def test_generate_json_deprecated():
 
 
 @pytest.mark.e2e
-def test_generate_format_json_explicit():
-    result = _run_reqstool("generate", "--format", "json", "local", "-p", TESTDATA_PATH)
+def test_export_format_json_explicit():
+    result = _run_reqstool("export", "--format", "json", "local", "-p", TESTDATA_PATH)
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert "requirements" in data
 
 
 @pytest.mark.e2e
-def test_generate_requirement_ids_alias():
-    result = _run_reqstool("generate", "local", "-p", TESTDATA_PATH, "--requirement-ids", "REQ_010")
+def test_export_requirement_ids_alias():
+    result = _run_reqstool("export", "local", "-p", TESTDATA_PATH, "--requirement-ids", "REQ_010")
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert "ms-001:REQ_010" in data["requirements"]

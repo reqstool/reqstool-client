@@ -209,17 +209,17 @@ class Command:
         report_source_subparsers = report_parser.add_subparsers(dest="source", required=True)
         self._add_subparsers_source(report_source_subparsers)
 
-        # command: generate
-        generate_parser = subparsers.add_parser("generate", help="Generate output in specified format")
+        # command: export
+        export_parser = subparsers.add_parser("export", help="Export data in specified format")
 
-        generate_parser.add_argument(
+        export_parser.add_argument(
             "--format",
             choices=["json"],
             default="json",
             help="Output format",
         )
 
-        generate_parser.add_argument(
+        export_parser.add_argument(
             "--no-filters",
             action="store_true",
             help="Do not filter data",
@@ -227,14 +227,12 @@ class Command:
             required=False,
         )
 
-        generate_source_subparsers = generate_parser.add_subparsers(dest="source", required=True)
-        self._add_subparsers_source(
-            generate_source_subparsers, include_report_options=False, include_filter_options=True
-        )
+        export_source_subparsers = export_parser.add_subparsers(dest="source", required=True)
+        self._add_subparsers_source(export_source_subparsers, include_report_options=False, include_filter_options=True)
 
-        # command: generate-json (deprecated, use 'generate' instead)
+        # command: generate-json (deprecated, use 'export' instead)
         generate_json_parser = subparsers.add_parser(
-            "generate-json", help="[DEPRECATED: use 'generate --format json'] Generate JSON"
+            "generate-json", help="[DEPRECATED: use 'export --format json'] Export JSON"
         )
 
         generate_json_parser.add_argument(
@@ -312,16 +310,16 @@ class Command:
 
         output.write(result.result)
 
-    def command_generate(self, generate_args: argparse.Namespace):
-        initial_source = self._get_initial_source(generate_args)
+    def command_export(self, export_args: argparse.Namespace):
+        initial_source = self._get_initial_source(export_args)
 
-        filter_data = not generate_args.no_filters
-        req_ids = getattr(generate_args, "req_ids", None)
-        svc_ids = getattr(generate_args, "svc_ids", None)
+        filter_data = not export_args.no_filters
+        req_ids = getattr(export_args, "req_ids", None)
+        svc_ids = getattr(export_args, "svc_ids", None)
 
         result = GenerateJsonCommand(location=initial_source, filter_data=filter_data, req_ids=req_ids, svc_ids=svc_ids)
 
-        output = generate_args.output
+        output = export_args.output
         output.write(result.result)
 
     @Requirements("REQ_031")
@@ -367,11 +365,11 @@ def main():
     try:
         if args.command == "report-asciidoc":
             command.command_report(report_args=args)
-        elif args.command == "generate":
-            command.command_generate(generate_args=args)
+        elif args.command == "export":
+            command.command_export(export_args=args)
         elif args.command == "generate-json":
             print(
-                "WARNING: 'generate-json' is deprecated. Use 'generate --format json' instead.",
+                "WARNING: 'generate-json' is deprecated. Use 'export --format json' instead.",
                 file=sys.stderr,
             )
             command.command_generate_json(generate_json_args=args)

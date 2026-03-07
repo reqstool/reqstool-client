@@ -81,8 +81,8 @@ Custom Lark-based DSL for filter expressions in `requirements.yml` / `svcs.yml`.
 ### Commands (`commands/`)
 Four commands, each consuming a `CombinedIndexedDataset`:
 - `report-asciidoc` — Jinja2 template rendering (`common/jinja2.py`) → AsciiDoc
-- `generate` — JSON output with optional `--req-ids` / `--svc-ids` filters (replaces `generate-json`)
-- `generate-json` — *deprecated*, use `generate --format json` instead
+- `export` — JSON output with optional `--req-ids` / `--svc-ids` filters (replaces `generate-json`)
+- `generate-json` — *deprecated*, use `export --format json` instead
 - `status` — tabular summary, exit code = number of unmet requirements
 
 ## Key Conventions

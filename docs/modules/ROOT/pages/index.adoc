@@ -1,27 +1,7 @@
 = Reqstool Client
 
-:keywords: Docs as Code, DocOps, content management system, docs writers, publish software documentation, CI and docs, CD and docs
-
-== Known bugs and issues
-
-* None (fingers-crossed) 
-
-== Limitations
-
-TBA
-
-== Contributing
-
- * We adhere to the latest version of https://www.contributor-covenant.org/[Contributor Covenant]
- * Fork repo
- * Before submitting a PR
-   * Perform formatting (black):  `hatch run lint:black src tests`
-   * Run linter (flake8): `hatch run lint:flake8`
-   * Run tests:
-     * all: `hatch run test:pytest --cov=reqstool`
-     * unit only: `hatch run test:pytest --cov=reqstool  tests/unit`
-     * integration only: `hatch run test:pytest --cov=reqstool  tests/integration` 
+A CLI tool for managing software requirements, linking them to implementation annotations, software verification cases (SVCs), manual verification results (MVRs), and automated test results. It generates AsciiDoc reports, JSON exports, and requirement status checks for use in CI/CD pipelines.
 
 == License
 
-Licensed under [MIT](LICENSE)
+MIT License.
