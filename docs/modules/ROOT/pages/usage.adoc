@@ -2,7 +2,7 @@
 
 [source,bash]
 ----
-reqstool [-h] {command: export,report-asciidoc,status} {location: local,git,maven,pypi} ...
+reqstool [-h] {command: report,export,status} {location: local,git,maven,pypi} ...
 ----
 
 Use `-h/--help` for more information about each command and location.
@@ -19,7 +19,7 @@ Each command accepts a location argument that specifies where the reqstool data 
 *Example with git location:*
 [source,bash]
 ----
-reqstool report-asciidoc git -u URL_TO_REPOSITORY.git -t ACCESS_TOKEN -p PATH_TO_DIR -b BRANCH_NAME
+reqstool report git -u URL_TO_REPOSITORY.git -t ACCESS_TOKEN -p PATH_TO_DIR -b BRANCH_NAME
 ----
 
 [[status]]
@@ -70,17 +70,31 @@ The requirements table shows for each requirement:
 The exit code equals the number of unmet requirements, making it suitable for CI/CD gates (`exit 0` = all requirements met).
 
 [[report]]
-== Command: report-asciidoc
+== Command: report
 
-Generates a detailed report in AsciiDoc format, suitable for auditors and stakeholders.
+Generates a detailed report suitable for auditors and stakeholders. Supports AsciiDoc and Markdown output formats.
 
 *Usage:*
 [source,bash]
 ----
-reqstool report-asciidoc local -p path_to_requirements_dir -o path_to_output_file.adoc
+reqstool report local -p path_to_requirements_dir -o path_to_output_file.adoc
+reqstool report --format markdown local -p path_to_requirements_dir -o path_to_output_file.md
 ----
 
-IMPORTANT: The report-asciidoc command relies on PosixPath which _could_ result in issues when running on Windows machines. If an error occurs, don't hesitate to file a bug report!
+Options:
+
+* `--format` -- output format: `asciidoc` (default) or `markdown`
+* `--group-by` -- grouping option (default: `initial_imports`)
+* `--sort-by` -- sorting options (default: `id`)
+
+IMPORTANT: The report command relies on PosixPath which _could_ result in issues when running on Windows machines. If an error occurs, don't hesitate to file a bug report!
+
+[[report-asciidoc]]
+== Command: report-asciidoc (deprecated)
+
+WARNING: `report-asciidoc` is deprecated. Use `report --format asciidoc` instead.
+
+This command still works but delegates to the `report` command with `--format asciidoc`.
 
 [[export]]
 == Command: export
@@ -126,5 +140,5 @@ You can also run reqstool from a container, using the same commands as above. Mo
 docker run --rm \
   -v path_to_requirements_files_folder:/input \
   -v path_to_output_folder:/output \
-  <containerId/tag> sh -c "reqstool report-asciidoc local -p ./input -o ./output/report.adoc"
+  <containerId/tag> sh -c "reqstool report --format asciidoc local -p ./input -o ./output/report.adoc"
 ----

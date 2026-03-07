@@ -1,0 +1,17 @@
+{%if data%}
+#### SVCS
+{%endif%}
+{% for svc in data%}
+| | |
+|---|---|
+| **Identifier** | **Title** |
+| {{svc.id.urn}}:{{svc.id.id}} | {{svc.title}} |
+| **Description** | |
+| {{svc.description}} | |
+| **Instructions** | |
+| {{svc.instructions}} | |
+| **Requirements** | **Verification** |
+| {% for svc_req in svc.requirement_ids %}{{svc_req.urn}}:{{svc_req.id}}{% if not loop.last %}, {% endif %}{% endfor %} | {{svc.verification.value}} |
+| **Revision** | {{svc.revision}} |
+{%endfor%}
+

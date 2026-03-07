@@ -12,7 +12,7 @@
 The reqstool command line client is the core tool for managing requirements traceability. It reads requirements, annotations, and test results to generate reports, exports, and status checks.
 
 - **Status checks** -- verify that all requirements are implemented and tested, with an exit code for CI/CD gates
-- **AsciiDoc reports** -- generate detailed reports for auditors and stakeholders
+- **Reports** -- generate detailed reports in AsciiDoc or Markdown for auditors and stakeholders
 - **JSON export** -- export data for custom tooling, with optional requirement/SVC filters
 
 ## Installation
@@ -39,7 +39,7 @@ reqstool -h  # confirm installation
 ## Usage
 
 ```bash
-reqstool [-h] {export,report-asciidoc,status} {local,git,maven,pypi} ...
+reqstool [-h] {report,export,status} {local,git,maven,pypi} ...
 ```
 
 Use `-h/--help` for more information about each command and location.

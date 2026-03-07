@@ -80,10 +80,27 @@ Custom Lark-based DSL for filter expressions in `requirements.yml` / `svcs.yml`.
 
 ### Commands (`commands/`)
 Four commands, each consuming a `CombinedIndexedDataset`:
-- `report-asciidoc` — Jinja2 template rendering (`common/jinja2.py`) → AsciiDoc
+- `report` — Jinja2 template rendering (`common/jinja2.py`) → AsciiDoc or Markdown via `--format`
+- `report-asciidoc` — *deprecated*, use `report --format asciidoc` instead
 - `export` — JSON output with optional `--req-ids` / `--svc-ids` filters (replaces `generate-json`)
 - `generate-json` — *deprecated*, use `export --format json` instead
 - `status` — tabular summary, exit code = number of unmet requirements
+
+## Manual CLI Testing with reqstool-demo
+
+The sibling project `reqstool-demo` (`../reqstool-demo`) provides a real-world test fixture with requirements, SVCs, MVRs, annotations, and JUnit test results. Prerequisites: run `./mvnw verify` in reqstool-demo first to generate `target/` artifacts.
+
+```bash
+# Run commands against reqstool-demo (use default hatch env, not dev)
+hatch run python src/reqstool/command.py report --format markdown local -p ../reqstool-demo/docs/reqstool
+hatch run python src/reqstool/command.py report --format asciidoc local -p ../reqstool-demo/docs/reqstool
+hatch run python src/reqstool/command.py report local -p ../reqstool-demo/docs/reqstool  # defaults to asciidoc
+hatch run python src/reqstool/command.py status local -p ../reqstool-demo/docs/reqstool
+hatch run python src/reqstool/command.py export local -p ../reqstool-demo/docs/reqstool
+
+# Write output to file
+hatch run python src/reqstool/command.py report --format markdown local -p ../reqstool-demo/docs/reqstool -o /tmp/report.md
+```
 
 ## Key Conventions
 
