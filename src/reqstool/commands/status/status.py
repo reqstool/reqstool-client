@@ -49,50 +49,132 @@ def _build_table(
         row.extend(
             [Fore.GREEN + "Implemented" + Style.RESET_ALL if impls > 0 else Fore.RED + "Missing" + Style.RESET_ALL]
         )
-    _extend_row(tests, row)
-    _extend_row(mvrs, row)
+    _extend_row(tests, row, kind="automated")
+    _extend_row(mvrs, row, kind="manual")
     return row
 
 
 def _get_row_with_totals(stats_container: StatisticsContainer) -> List[str]:
-    total_automatic = (
-        stats_container._total_statistics.nr_of_passed_automatic_tests
-        + stats_container._total_statistics.nr_of_failed_automatic_tests
-    )
-    total_manual = (
-        stats_container._total_statistics.nr_of_passed_manual_tests
-        + stats_container._total_statistics.nr_of_failed_manual_tests
-    )
+    ts = stats_container._total_statistics
+    total_automatic = ts.nr_of_passed_automatic_tests + ts.nr_of_failed_automatic_tests
+    total_manual = ts.nr_of_passed_manual_tests + ts.nr_of_failed_manual_tests
     return [
         "Total",
         "",
         "",
-        # Column: Automatic
-        f"T{total_automatic} "
-        f"{Fore.GREEN}P{stats_container._total_statistics.nr_of_passed_automatic_tests} "
-        f"{Fore.RED}F{stats_container._total_statistics.nr_of_failed_automatic_tests} "
-        f"{Fore.YELLOW}S{stats_container._total_statistics.nr_of_skipped_tests} "
-        f"{Fore.RED}M{stats_container._total_statistics.nr_of_missing_automated_tests}{Style.RESET_ALL}",
-        # Column: Manual
-        f"T{total_manual}"
-        f" {Fore.GREEN}P{stats_container._total_statistics.nr_of_passed_manual_tests} "
-        f"{Fore.RED}F{stats_container._total_statistics.nr_of_failed_manual_tests} "
-        f"{Fore.RED}M{stats_container._total_statistics.nr_of_missing_manual_tests}{Style.RESET_ALL}",
+        _format_cell(total_automatic),
+        _format_cell(ts.nr_of_passed_automatic_tests, Fore.GREEN),
+        _format_cell(ts.nr_of_failed_automatic_tests, Fore.RED),
+        _format_cell(ts.nr_of_skipped_tests, Fore.YELLOW),
+        _format_cell(ts.nr_of_missing_automated_tests, Fore.RED),
+        _format_cell(total_manual),
+        _format_cell(ts.nr_of_passed_manual_tests, Fore.GREEN),
+        _format_cell(ts.nr_of_failed_manual_tests, Fore.RED),
+        "-",
+        _format_cell(ts.nr_of_missing_manual_tests, Fore.RED),
     ]
+
+
+def _build_merged_headers(col_widths: List[int]) -> str:
+    """Build a 3-line merged header block with group headers spanning sub-columns."""
+    # col_widths: widths for all 13 columns (content width, not including borders)
+    # Columns 0-2: URN, ID, Implementation (vertically centered)
+    # Columns 3-7: Automated Tests (T, P, F, S, M)
+    # Columns 8-12: Manual Tests (T, P, F, S, M)
+    sub_headers = ["T", "P", "F", "S", "M"]
+
+    def center(text: str, width: int) -> str:
+        return text.center(width)
+
+    # Top border
+    top = "╒"
+    for i, w in enumerate(col_widths):
+        top += "═" * (w + 2)
+        if i == 2 or i == 7:
+            top += "╤"
+        elif i == len(col_widths) - 1:
+            top += "╕"
+        else:
+            top += "═" if i < 2 or (3 <= i < 7) or (8 <= i < 12) else "╤"
+    # Rebuild top border properly
+    top = "╒"
+    # URN
+    top += "═" * (col_widths[0] + 2) + "╤"
+    # ID
+    top += "═" * (col_widths[1] + 2) + "╤"
+    # Implementation
+    top += "═" * (col_widths[2] + 2) + "╤"
+    # Automated Tests group (cols 3-7, merged)
+    auto_width = sum(col_widths[3:8]) + 2 * 5 + 4  # 5 cols * 2 padding + 4 inner separators
+    top += "═" * auto_width + "╤"
+    # Manual Tests group (cols 8-13, merged)
+    manual_width = sum(col_widths[8:13]) + 2 * 5 + 4
+    top += "═" * manual_width + "╕"
+
+    # Row 1: group headers
+    row1 = "│"
+    row1 += center("", col_widths[0] + 2) + "│"
+    row1 += center("", col_widths[1] + 2) + "│"
+    row1 += center("", col_widths[2] + 2) + "│"
+    row1 += center("Automated Tests", auto_width) + "│"
+    row1 += center("Manual Tests", manual_width) + "│"
+
+    # Divider between row1 and row2
+    div = "│"
+    div += " " * (col_widths[0] + 2) + "│"
+    div += " " * (col_widths[1] + 2) + "│"
+    div += " " * (col_widths[2] + 2) + "├"
+    for i in range(3, 8):
+        div += "─" * (col_widths[i] + 2)
+        div += "┬" if i < 7 else "┤"
+    for i in range(8, 13):
+        div += "─" * (col_widths[i] + 2)
+        div += "┬" if i < 12 else "┤"
+
+    # Row 2: sub-headers
+    row2 = "│"
+    row2 += center("URN", col_widths[0] + 2) + "│"
+    row2 += center("ID", col_widths[1] + 2) + "│"
+    row2 += center("Implementation", col_widths[2] + 2) + "│"
+    for i, h in enumerate(sub_headers):
+        row2 += center(h, col_widths[3 + i] + 2) + "│"
+    for i, h in enumerate(sub_headers):
+        row2 += center(h, col_widths[8 + i] + 2) + "│"
+
+    return f"{top}\n{row1}\n{div}\n{row2}"
+
+
+def _parse_col_widths(sep_line: str) -> List[int]:
+    """Parse column content widths from a tabulate separator line like ╞═══╪═══╡."""
+    col_widths = []
+    current_width = 0
+    for ch in sep_line[1:-1]:
+        if ch == "╪":
+            col_widths.append(current_width)
+            current_width = 0
+        else:
+            current_width += 1
+    col_widths.append(current_width)
+    return [w - 2 for w in col_widths]
+
+
+def _replace_header_with_merged(table: str) -> tuple:
+    """Replace tabulate's flat header with a two-row merged header. Returns (table, lines)."""
+    lines = table.split("\n")
+    sep_line = next((line for line in lines if "╞" in line), None)
+    if sep_line:
+        col_widths = _parse_col_widths(sep_line)
+        merged_header = _build_merged_headers(col_widths)
+        sep_idx = next(i for i, line in enumerate(lines) if "╞" in line)
+        lines = [merged_header] + lines[sep_idx:]
+        table = "\n".join(lines)
+    return table, lines
 
 
 # builds the status table
 def _status_table(stats_container: StatisticsContainer) -> str:
     table_data = []
-    headers = ["URN", "ID", "Implementation", "Automated Tests", "Manual Tests"]
-    header_req_data = (
-        "\b" * len(str(stats_container._total_statistics.nr_of_total_requirements))
-    ) + f"REQUIREMENTS: {str(stats_container._total_statistics.nr_of_total_requirements)}"
-    title = (
-        "╒═════════════════════════════════════════════════════════════════════════╕"
-        f"\n│                              {header_req_data}                             │"
-        "\n╘═════════════════════════════════════════════════════════════════════════╛"
-    )
+    headers = ["URN", "ID", "Implementation", "T", "P", "F", "S", "M", "T", "P", "F", "S", "M"]
 
     for req, stats in stats_container._requirement_statistics.items():
         table_data.append(
@@ -111,7 +193,28 @@ def _status_table(stats_container: StatisticsContainer) -> str:
 
     col_align = ["center"] * len(headers) if table_data else []
     table = tabulate(tablefmt="fancy_grid", tabular_data=table_data, headers=headers, colalign=col_align)
+
+    table, lines = _replace_header_with_merged(table)
+
+    # Find a line without ANSI codes to measure visible width
+    visible_table_width = 75
+    for line in lines:
+        if "╞" in line or "╘" in line:
+            visible_table_width = len(line)
+            break
+
+    header_req_data = (
+        "\b" * len(str(stats_container._total_statistics.nr_of_total_requirements))
+    ) + f"REQUIREMENTS: {str(stats_container._total_statistics.nr_of_total_requirements)}"
+    inner_width = visible_table_width - 2  # subtract ╒ and ╕
+    title = (
+        "╒" + "═" * inner_width + "╕" + f"\n│{header_req_data.center(inner_width)}│" + "\n╘" + "═" * inner_width + "╛"
+    )
+
     table_with_title = f"{title}\n{table}\n"
+
+    legend_line = "T = Total, P = Passed, F = Failed, S = Skipped, M = Missing"
+
     statistics = _summarize_statistics(
         nr_of_total_reqs=stats_container._total_statistics.nr_of_total_requirements,
         nr_of_completed_reqs=stats_container._total_statistics.nr_of_completed_requirements,
@@ -134,19 +237,7 @@ def _status_table(stats_container: StatisticsContainer) -> str:
         ),
     )
 
-    legend = [
-        [
-            "T = Total",
-            Fore.GREEN + "P = Passed" + Style.RESET_ALL,
-            Fore.RED + "F = Failed" + Style.RESET_ALL,
-            Fore.YELLOW + "S = Skipped" + Style.RESET_ALL,
-            Fore.RED + "M = Missing" + Style.RESET_ALL,
-        ],
-    ]
-
-    legend_table_data = tabulate(tablefmt="fancy_grid", tabular_data=legend)
-
-    status = table_with_title + legend_table_data + statistics
+    status = table_with_title + legend_line + statistics
 
     return status
 
@@ -315,24 +406,23 @@ def __colorize_headers(
     return CODE, NA, IMPLEMENTATIONS
 
 
-def _extend_row(result: TestStatisticsItem, row: List[str]) -> None:
-    colored_item = ""
+def _format_cell(value: int, color: str = "") -> str:
+    if value == 0:
+        return "-"
+    return f"{color}{value}{Style.RESET_ALL}" if color else str(value)
+
+
+def _extend_row(result: TestStatisticsItem, row: List[str], kind: str) -> None:
     if result.not_applicable:
-        colored_item = f"{'N/A'}"
+        row.extend(["-", "-", "-", "-", "-"])
+        return
+
+    row.append(_format_cell(result.nr_of_total_tests))
+    row.append(_format_cell(result.nr_of_passed_tests, Fore.GREEN))
+    row.append(_format_cell(result.nr_of_failed_tests, Fore.RED))
+    row.append(_format_cell(result.nr_of_skipped_tests, Fore.YELLOW))
+
+    if kind == "automated":
+        row.append(_format_cell(result.nr_of_missing_automated_tests, Fore.RED))
     else:
-        colored_item = f"{'T'}{str(result.nr_of_total_tests)}"
-
-    if result.nr_of_passed_tests > 0:
-        colored_item += f"{Fore.GREEN}{' P'}{str(result.nr_of_passed_tests)}{Style.RESET_ALL}"
-    if result.nr_of_failed_tests > 0:
-        colored_item += f"{Fore.RED}{' F'}{str(result.nr_of_failed_tests)}{Style.RESET_ALL}"
-    if result.nr_of_skipped_tests > 0:
-        colored_item += f"{Fore.YELLOW}{' S'}{str(result.nr_of_skipped_tests)}{Style.RESET_ALL}"
-
-    if result.nr_of_missing_automated_tests > 0:
-        colored_item += f"{Fore.RED}{' M'}{str(result.nr_of_missing_automated_tests)}{Style.RESET_ALL}"
-
-    if result.nr_of_missing_manual_tests > 0:
-        colored_item += f"{Fore.RED}{' M'}{str(result.nr_of_missing_manual_tests)}{Style.RESET_ALL}"
-
-    row.append(colored_item)
+        row.append(_format_cell(result.nr_of_missing_manual_tests, Fore.RED))

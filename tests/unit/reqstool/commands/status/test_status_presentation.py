@@ -3,8 +3,27 @@
 from colorama import Fore
 
 from reqstool.commands.status.statistics_container import TestStatisticsItem
-from reqstool.commands.status.status import _build_table, _extend_row, _summarize_statistics
+from reqstool.commands.status.status import _build_table, _extend_row, _format_cell, _summarize_statistics
 from reqstool.models.requirements import IMPLEMENTATION
+
+
+# ---------------------------------------------------------------------------
+# _format_cell
+# ---------------------------------------------------------------------------
+
+
+def test_format_cell_zero_returns_dash():
+    assert _format_cell(0) == "-"
+
+
+def test_format_cell_nonzero_without_color():
+    assert _format_cell(5) == "5"
+
+
+def test_format_cell_nonzero_with_color():
+    result = _format_cell(3, Fore.GREEN)
+    assert Fore.GREEN in result
+    assert "3" in result
 
 
 # ---------------------------------------------------------------------------
@@ -13,57 +32,69 @@ from reqstool.models.requirements import IMPLEMENTATION
 
 
 def test_extend_row_not_applicable():
-    """not_applicable=True appends literal 'N/A'."""
+    """not_applicable=True appends five dashes."""
     row = []
-    _extend_row(TestStatisticsItem(not_applicable=True), row)
-    assert row[0] == "N/A"
+    _extend_row(TestStatisticsItem(not_applicable=True), row, kind="automated")
+    assert len(row) == 5
+    assert all(cell == "-" for cell in row)
 
 
 def test_extend_row_total_count():
-    """Total test count is prefixed with 'T'."""
+    """Total test count appears in first cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=5), row)
-    assert "T5" in row[0]
+    _extend_row(TestStatisticsItem(nr_of_total_tests=5), row, kind="automated")
+    assert row[0] == "5"
 
 
 def test_extend_row_passed_tests_green():
-    """Passed tests produce a green 'P' segment."""
+    """Passed tests produce a green cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=2, nr_of_passed_tests=2), row)
-    assert Fore.GREEN in row[0]
-    assert "P2" in row[0]
+    _extend_row(TestStatisticsItem(nr_of_total_tests=2, nr_of_passed_tests=2), row, kind="automated")
+    assert Fore.GREEN in row[1]
+    assert "2" in row[1]
 
 
 def test_extend_row_failed_tests_red():
-    """Failed tests produce a red 'F' segment."""
+    """Failed tests produce a red cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=1, nr_of_failed_tests=1), row)
-    assert Fore.RED in row[0]
-    assert "F1" in row[0]
+    _extend_row(TestStatisticsItem(nr_of_total_tests=1, nr_of_failed_tests=1), row, kind="automated")
+    assert Fore.RED in row[2]
+    assert "1" in row[2]
 
 
 def test_extend_row_skipped_tests_yellow():
-    """Skipped tests produce a yellow 'S' segment."""
+    """Skipped tests produce a yellow cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=1, nr_of_skipped_tests=1), row)
-    assert Fore.YELLOW in row[0]
-    assert "S1" in row[0]
+    _extend_row(TestStatisticsItem(nr_of_total_tests=1, nr_of_skipped_tests=1), row, kind="automated")
+    assert Fore.YELLOW in row[3]
+    assert "1" in row[3]
 
 
 def test_extend_row_missing_automated_tests_red():
-    """Missing automated tests produce a red 'M' segment."""
+    """Missing automated tests produce a red cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_missing_automated_tests=3), row)
-    assert Fore.RED in row[0]
-    assert "M3" in row[0]
+    _extend_row(TestStatisticsItem(nr_of_missing_automated_tests=3), row, kind="automated")
+    assert Fore.RED in row[4]
+    assert "3" in row[4]
 
 
 def test_extend_row_missing_manual_tests_red():
-    """Missing manual tests produce a red 'M' segment."""
+    """Missing manual tests produce a red cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_missing_manual_tests=2), row)
-    assert Fore.RED in row[0]
-    assert "M2" in row[0]
+    _extend_row(TestStatisticsItem(nr_of_missing_manual_tests=2), row, kind="manual")
+    assert Fore.RED in row[4]
+    assert "2" in row[4]
+
+
+def test_extend_row_zero_values_show_dash():
+    """Zero values display as dash."""
+    row = []
+    _extend_row(
+        TestStatisticsItem(nr_of_total_tests=0, nr_of_passed_tests=0, nr_of_failed_tests=0, nr_of_skipped_tests=0),
+        row,
+        kind="automated",
+    )
+    assert all(cell == "-" for cell in row)
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +187,20 @@ def test_build_table_urn_is_first_column():
         implementation=IMPLEMENTATION.IN_CODE,
     )
     assert row[0] == "ms-001"
+
+
+def test_build_table_returns_13_columns():
+    """Row has 13 elements: URN + ID + Impl + 5 automated + 5 manual."""
+    row = _build_table(
+        req_id="REQ_001",
+        urn="ms-001",
+        impls=1,
+        tests=TestStatisticsItem(nr_of_total_tests=3, nr_of_passed_tests=2, nr_of_failed_tests=1),
+        mvrs=TestStatisticsItem(nr_of_total_tests=1, nr_of_passed_tests=1),
+        completed=True,
+        implementation=IMPLEMENTATION.IN_CODE,
+    )
+    assert len(row) == 13
 
 
 # ---------------------------------------------------------------------------
