@@ -1,6 +1,5 @@
 * xref:index.adoc[Overview]
 * xref:installation.adoc[Installation]
-* xref:quickstart.adoc[Quickstart]
 * xref:usage.adoc[Usage]
 * xref:file_and_directory_set.adoc[Standard Files and Directory Sets]
 * xref:data.adoc[Data]
