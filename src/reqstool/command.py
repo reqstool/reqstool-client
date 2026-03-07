@@ -96,7 +96,24 @@ class Command:
         )
         return argument_parser
 
-    def _add_subparsers_source(self, parser, include_report_options=True):
+    def _add_filter_options(self, parser: argparse.ArgumentParser):
+        parser.add_argument(
+            "--req-ids",
+            "--requirement-ids",
+            nargs="+",
+            dest="req_ids",
+            help="Filter output to specific requirement IDs (e.g. REQ_010 or ms-001:REQ_010)",
+            default=None,
+        )
+        parser.add_argument(
+            "--svc-ids",
+            nargs="+",
+            dest="svc_ids",
+            help="Filter output to specific SVC IDs (e.g. SVC_010 or ms-001:SVC_010)",
+            default=None,
+        )
+
+    def _add_subparsers_source(self, parser, include_report_options=True, include_filter_options=False):
         # Subparser for local report
         local_report_parser = parser.add_parser("local", help="local source")
         local_group = local_report_parser.add_mutually_exclusive_group(required=True)
@@ -107,6 +124,8 @@ class Command:
         if include_report_options:
             self._add_group_by(local_report_parser)
             self._add_sort_by(local_report_parser)
+        if include_filter_options:
+            self._add_filter_options(local_report_parser)
 
         # Subparser for git report
         git_report_parser = parser.add_parser("git", help="git source")
@@ -118,6 +137,8 @@ class Command:
         if include_report_options:
             self._add_group_by(git_report_parser)
             self._add_sort_by(git_report_parser)
+        if include_filter_options:
+            self._add_filter_options(git_report_parser)
 
         # Subparser for maven report
         maven_report_parser = parser.add_parser("maven", help="maven source")
@@ -131,6 +152,8 @@ class Command:
         if include_report_options:
             self._add_group_by(maven_report_parser)
             self._add_sort_by(maven_report_parser)
+        if include_filter_options:
+            self._add_filter_options(maven_report_parser)
 
         # Subparser for pypi report
         pypi_report_parser = parser.add_parser("pypi", help="pypi source")
@@ -142,6 +165,8 @@ class Command:
         if include_report_options:
             self._add_group_by(pypi_report_parser)
             self._add_sort_by(pypi_report_parser)
+        if include_filter_options:
+            self._add_filter_options(pypi_report_parser)
 
     def _add_argument_version(self, argument_parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         ver = Utils.get_version()
@@ -184,8 +209,33 @@ class Command:
         report_source_subparsers = report_parser.add_subparsers(dest="source", required=True)
         self._add_subparsers_source(report_source_subparsers)
 
-        # command: generate-json
-        generate_json_parser = subparsers.add_parser("generate-json", help="Generate JSON")
+        # command: generate
+        generate_parser = subparsers.add_parser("generate", help="Generate output in specified format")
+
+        generate_parser.add_argument(
+            "--format",
+            choices=["json"],
+            default="json",
+            help="Output format",
+        )
+
+        generate_parser.add_argument(
+            "--no-filter",
+            action="store_true",
+            help="Do not filter data",
+            default=False,
+            required=False,
+        )
+
+        generate_source_subparsers = generate_parser.add_subparsers(dest="source", required=True)
+        self._add_subparsers_source(
+            generate_source_subparsers, include_report_options=False, include_filter_options=True
+        )
+
+        # command: generate-json (deprecated, use 'generate' instead)
+        generate_json_parser = subparsers.add_parser(
+            "generate-json", help="[DEPRECATED: use 'generate --format json'] Generate JSON"
+        )
 
         generate_json_parser.add_argument(
             "--no-filter",
@@ -261,6 +311,18 @@ class Command:
 
         output.write(result.result)
 
+    def command_generate(self, generate_args: argparse.Namespace):
+        initial_source = self._get_initial_source(generate_args)
+
+        filter_data = not generate_args.no_filter
+        req_ids = getattr(generate_args, "req_ids", None)
+        svc_ids = getattr(generate_args, "svc_ids", None)
+
+        result = GenerateJsonCommand(location=initial_source, filter_data=filter_data, req_ids=req_ids, svc_ids=svc_ids)
+
+        output = generate_args.output
+        output.write(result.result)
+
     @Requirements("REQ_031")
     def command_generate_json(self, generate_json_args: argparse.Namespace):
         initial_source = self._get_initial_source(generate_json_args)
@@ -304,7 +366,13 @@ def main():
     try:
         if args.command == "report-asciidoc":
             command.command_report(report_args=args)
+        elif args.command == "generate":
+            command.command_generate(generate_args=args)
         elif args.command == "generate-json":
+            print(
+                "WARNING: 'generate-json' is deprecated. Use 'generate --format json' instead.",
+                file=sys.stderr,
+            )
             command.command_generate_json(generate_json_args=args)
         elif args.command == "status":
             exit_code = command.command_status(status_args=args)

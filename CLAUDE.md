@@ -79,9 +79,10 @@ Custom Lark-based DSL for filter expressions in `requirements.yml` / `svcs.yml`.
 - `lifecycle_validator.py` — warns when DEPRECATED/OBSOLETE items are still referenced
 
 ### Commands (`commands/`)
-Three commands, each consuming a `CombinedIndexedDataset`:
+Four commands, each consuming a `CombinedIndexedDataset`:
 - `report-asciidoc` — Jinja2 template rendering (`common/jinja2.py`) → AsciiDoc
-- `generate-json` — JSON serialization via `jsonpickle`
+- `generate` — JSON output with optional `--req-ids` / `--svc-ids` filters (replaces `generate-json`)
+- `generate-json` — *deprecated*, use `generate --format json` instead
 - `status` — tabular summary, exit code = number of unmet requirements
 
 ## Key Conventions
@@ -91,3 +92,4 @@ Three commands, each consuming a `CombinedIndexedDataset`:
 - Data flows are uni-directional: raw parsing → indexing → output. Mutation only happens inside generators before the final `CombinedIndexedDataset` is frozen.
 - `assert` statements are used for invariant checks in the generators (not for user-facing validation).
 - Tests under `tests/unit` use file-based fixtures from `tests/resources/`.
+- After code changes, also verify scenarios in `TEST_MATRIX.md`.
