@@ -1,4 +1,4 @@
-== Quickstart
+= Quickstart
 
 . Create a requirements.yml file (see https://github.com/reqstool/reqstool-client/blob/main/docs/examples/requirements/requirements_microservice.yml[example] or https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/requirements.schema.json[JSON Schema])
 . Add annotations to your code

@@ -1,4 +1,6 @@
-=== What is it?
+= How it Works
+
+== What is it?
 
 Reqstool generates reports and updates on progression of requirement implementations and testing by reading data specified in several *.yml files. 
 
@@ -81,7 +83,8 @@ When the initial source's requirement file are processed, Reqstool will then con
 
 For example, if you want to exclude one requirement from ext-001, then you specify it like this in the requirements.yml file in ms-001 project:
 
-```yaml
+[source,yaml]
+----
 imports:
   local:
     - path: ./ext-001
@@ -92,7 +95,7 @@ filters:
       excludes:
         - REQ_101
 
-```
+----
 
 When Requirement Tool is reading the data from ext-001, then REQ_101 will not be imported in the returning data, but all other requirements specified in ext-001's requirements.yml file will.  
 
