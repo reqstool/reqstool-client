@@ -1,0 +1,11 @@
+name: Renovate auto-approve
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+
+jobs:
+  approve:
+    uses: reqstool/.github/.github/workflows/renovate-approve.yml@main
