@@ -2,7 +2,7 @@
 
 [source,bash]
 ----
-reqstool [-h] {command: report-asciidoc,generate-json,status} {location: local,git,maven,pypi} ...
+reqstool [-h] {command: export,report-asciidoc,status} {location: local,git,maven,pypi} ...
 ----
 
 Use `-h/--help` for more information about each command and location.
@@ -82,8 +82,30 @@ reqstool report-asciidoc local -p path_to_requirements_dir -o path_to_output_fil
 
 IMPORTANT: The report-asciidoc command relies on PosixPath which _could_ result in issues when running on Windows machines. If an error occurs, don't hesitate to file a bug report!
 
+[[export]]
+== Command: export
+
+Exports requirement data in the specified format, with optional filters for specific requirements or SVCs.
+
+*Usage:*
+[source,bash]
+----
+reqstool export local -p path_to_requirements_dir -o path_to_output_file.json
+reqstool export local -p path_to_requirements_dir --req-ids REQ_001 REQ_002
+reqstool export local -p path_to_requirements_dir --svc-ids SVC_001
+----
+
+Options:
+
+* `--format` -- output format (default: `json`)
+* `--req-ids` -- filter by specific requirement IDs
+* `--svc-ids` -- filter by specific SVC IDs
+* `--no-filters` -- disable requirement/SVC filters defined in YAML
+
 [[generate-json]]
-== Command: generate-json
+== Command: generate-json (deprecated)
+
+WARNING: `generate-json` is deprecated. Use `export --format json` instead.
 
 Exports all requirement data as JSON.
 
