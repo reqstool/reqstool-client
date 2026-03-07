@@ -11,12 +11,34 @@ For examples see:
 == file: reqstool_config.yml
 Contains file and directory configuration used by `Reqstool`.
 
-The layout of files and directories for a project depends on the language and build tool:
+The layout of files and directories for a project depends on the language and build tool. The table below shows the default paths that Reqstool uses when only `language` and `build` are specified:
 
-* Java (Maven): xref:data.adoc#dynamic-directory-structure[dynamic files] are relative `../../target` to the xref:data.adoc#static-directory-structure[static files]
-* Python (Hatch/Poetry): xref:data.adoc#dynamic-directory-structure[dynamic files] are relative `../../build` to the xref:data.adoc#static-directory-structure[static files]
+[cols="1,1,2,2"]
+|===
+| Language | Build Tool | Static files (requirements, SVCs, MVRs) | Dynamic files (annotations, test results)
 
-By default, Reqstool build plugins place the xref:data.adoc#static-directory-structure[static files] in a `requirements` folder at the root of the project. This is configurable -- see each plugin's documentation for details.
+| Java
+| Maven
+| `./reqstool/`
+| `../../target/` (relative to static files)
+
+| Java
+| Gradle
+| `./reqstool/`
+| `../../build/` (relative to static files)
+
+| Python
+| Hatch
+| `docs/reqstool/`
+| `../../build/` (relative to static files)
+
+| Python
+| Poetry
+| `docs/reqstool/`
+| `../../build/` (relative to static files)
+|===
+
+These defaults are applied by the build plugins. They are configurable -- see each plugin's documentation for details.
 
 If no `reqstool_config.yml` file is present, Reqstool will expect all files and folders (including dynamic ones) to reside in the path provided to the `-p` argument. This works well with a xref:data.adoc#java-artifact-structure[Maven zip artifact] or xref:data.adoc#python-artifact-structure[PyPI package].
 
