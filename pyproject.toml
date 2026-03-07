@@ -4,7 +4,7 @@ requires = [
     "hatch-vcs",
     "build",
     "twine",
-    "reqstool-python-hatch-plugin==0.1.4",
+    "reqstool-python-hatch-plugin==0.1.5",
 ]
 build-backend = "hatchling.build"
 
