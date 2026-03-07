@@ -1,9 +1,9 @@
 [build-system]
 requires = [
-    "hatchling",
-    "hatch-vcs",
-    "build",
-    "twine",
+    "hatchling==1.29.0",
+    "hatch-vcs==0.5.0",
+    "build==1.4.0",
+    "twine==6.2.0",
     "reqstool-python-hatch-plugin==0.1.5",
 ]
 build-backend = "hatchling.build"
