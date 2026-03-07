@@ -5,4 +5,4 @@ on:
 
 jobs:
   check:
-    uses: reqstool/.github/.github/workflows/check-semantic-pr.yml@33502e31f66fb7e982f48f50e3c6c29b0410a017 # main 2026-03-07
+    uses: reqstool/.github/.github/workflows/check-semantic-pr.yml@main
