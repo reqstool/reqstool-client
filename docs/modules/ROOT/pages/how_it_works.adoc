@@ -2,7 +2,7 @@
 
 == What is it?
 
-Reqstool generates reports and updates on progression of requirement implementations and testing by reading data specified in several *.yml files. 
+reqstool generates reports and updates on progression of requirement implementations and testing by reading data specified in several *.yml files. 
 
 In order to use the reqstool, you will need to create a requirements.yml file along with a software_verification_cases.yml and/or a manual_verification_results.yml. 
 
@@ -11,13 +11,13 @@ In order to use the reqstool, you will need to create a requirements.yml file al
 
 === How it works
 
-All of the commands available for the user requires an argument specifying a path to where Reqstool should start to look for the required files. When a valid path is provided, the CombinedRawDatasetsGenerator component parses all yaml files in the specified path and validates the generated content with the SemanticValidator component. The -h command of the application can assist you regarding what argument you'll need to provide for each command.
+All of the commands available for the user requires an argument specifying a path to where reqstool should start to look for the required files. When a valid path is provided, the CombinedRawDatasetsGenerator component parses all yaml files in the specified path and validates the generated content with the SemanticValidator component. The -h command of the application can assist you regarding what argument you'll need to provide for each command.
 
 What each command actually does is described under xref:usage.adoc[usage]
 
 ==== Resolve custom paths
 
-If you are providing a path to a git repository or a Maven artifact, you can override the xref:file_and_directory_set.adoc#reqstool_config[reqstool_config.yml] of the yaml files by providing a requirements_config.yml file in the same folder as your requirements.yml. In the requirements_config.yml, you are able to describe the structure of your repository/artifact and specify where the required yaml files are located. If the CombinedRawDatasetsGenerator detects such a file, it will try to locate the required files from the path described in the requirements_config.yml instead of the default path using the ReqstoolConfig component. 
+If you are providing a path to a git repository or a Maven artifact, you can override the xref:file_and_directory_set.adoc#reqstool_config[reqstool_config.yml] of the yaml files by providing a requirements_config.yml file in the same folder as your requirements.yml. In the requirements_config.yml, you are able to describe the structure of your repository/artifact and specify where the required yaml files are located. If the CombinedRawDatasetsGenerator detects such a file, it will try to locate the required files from the path described in the requirements_config.yml instead of the default path using the reqstoolConfig component. 
 
 
 ==== What is validated?
@@ -42,7 +42,7 @@ The CombinedIndexedDatasetGenerator prepares the data provided from the Combined
 
 ==== Overview of central components
 
-Below is an breakdown of the cental components of Reqstool
+Below is an breakdown of the cental components of reqstool
 
 [plantuml,format=svg]
 ....
@@ -54,7 +54,7 @@ Component(GenerateJsonCommand, "GenerateJsonCommand", "Generates JSON from impor
 Component(ReportCommand, "ReportCommand", "Generates reports")
 Component(SemanticValidator, "SemanticValidator", "Validates data read from source")
 Component(CombinedRawDatasetsGenerator, "CombinedRawDatasetsGenerator", "Generates imported models") 
-Component(ReqstoolConfig, "ReqstoolConfig", "Resolves paths to yaml files")
+Component(reqstoolConfig, "reqstoolConfig", "Resolves paths to yaml files")
 Component(CombinedIndexedDatasetGenerator, "CombinedIndexedDatasetGenerator", "Prepares data for rendering of Jinja2 templates")
 Component(Command, "Command", "Handles user commands")
 
@@ -62,7 +62,7 @@ Rel(Command, StatusCommand, "Uses")
 Rel(Command, GenerateJsonCommand, "Uses") 
 Rel(Command, ReportCommand, "Uses") 
 Rel(CombinedRawDatasetsGenerator, SemanticValidator, "Depends on") 
-Rel_Right(CombinedRawDatasetsGenerator, ReqstoolConfig, "Uses") 
+Rel_Right(CombinedRawDatasetsGenerator, reqstoolConfig, "Uses") 
 Rel(StatusCommand, CombinedRawDatasetsGenerator, "Uses") 
 Rel(GenerateJsonCommand, CombinedRawDatasetsGenerator, "Uses") 
 Rel(ReportCommand, CombinedRawDatasetsGenerator, "Uses") 
@@ -76,10 +76,10 @@ Rel_Down(CombinedRawDatasetsGenerator, CombinedIndexedDatasetGenerator, "Provide
 
 ==== How parsing is done
 
-If data is retrieved from multiple sources, the parsing begins sequentially from the URI the user provides, and this becomes the initial source of the Reqstool report. 
+If data is retrieved from multiple sources, the parsing begins sequentially from the URI the user provides, and this becomes the initial source of the reqstool report. 
 So, if you have a micro service (let's call i ms-001) that will also inherit requirements from another source (ext-001), you want to start the parsing in the docs/requirements path of ms-001
 
-When the initial source's requirement file are processed, Reqstool will then continue to parse the other sources that are specified within the import parameter of the initial source's requirement file. If filters is applied in the initial source, the data in the following sources will adhere to these settings.
+When the initial source's requirement file are processed, reqstool will then continue to parse the other sources that are specified within the import parameter of the initial source's requirement file. If filters is applied in the initial source, the data in the following sources will adhere to these settings.
 
 For example, if you want to exclude one requirement from ext-001, then you specify it like this in the requirements.yml file in ms-001 project:
 
@@ -104,7 +104,7 @@ Filters can currently be applied to requirements.yml and software_verification_c
 
 ==== Linking code with annotations
 
-Reqstool uses annotations to couple requirements and software verification cases (SVCs) with code implementations and test results. You annotate functions or classes with `@Requirements` to mark where a requirement is implemented, and `@SVCs` to mark where an SVC is tested.
+reqstool uses annotations to couple requirements and software verification cases (SVCs) with code implementations and test results. You annotate functions or classes with `@Requirements` to mark where a requirement is implemented, and `@SVCs` to mark where an SVC is tested.
 
 Each ecosystem has its own annotation framework:
 
@@ -117,7 +117,7 @@ See each project's documentation for installation and usage details.
 
 ==== Sequence diagram of the program execution
 
-Below is an example to illustrate how Reqstool parses data from the initial source. 
+Below is an example to illustrate how reqstool parses data from the initial source. 
 
 [plantuml,format=svg]
 ....
@@ -126,7 +126,7 @@ Below is an example to illustrate how Reqstool parses data from the initial sour
 
 Person(user, "User", "", "")
 
-Container(reqsTool, "Reqstool")
+Container(reqsTool, "reqstool")
 
 Container_Boundary(b, "Requirement files")
   Container_Boundary(b1, "MS-001")

@@ -9,9 +9,9 @@ For examples see:
 
 [[reqstool_config]]
 == file: reqstool_config.yml
-Contains file and directory configuration used by `Reqstool`.
+Contains file and directory configuration used by `reqstool`.
 
-The layout of files and directories for a project depends on the language and build tool. The table below shows the default paths that Reqstool uses when only `language` and `build` are specified:
+The layout of files and directories for a project depends on the language and build tool. The table below shows the default paths that reqstool uses when only `language` and `build` are specified:
 
 [cols="1,1,2,2"]
 |===
@@ -40,7 +40,7 @@ The layout of files and directories for a project depends on the language and bu
 
 These defaults are applied by the build plugins. They are configurable -- see each plugin's documentation for details.
 
-If no `reqstool_config.yml` file is present, Reqstool will expect all files and folders (including dynamic ones) to reside in the path provided to the `-p` argument. This works well with a xref:data.adoc#java-artifact-structure[Maven zip artifact] or xref:data.adoc#python-artifact-structure[PyPI package].
+If no `reqstool_config.yml` file is present, reqstool will expect all files and folders (including dynamic ones) to reside in the path provided to the `-p` argument. This works well with a xref:data.adoc#java-artifact-structure[Maven zip artifact] or xref:data.adoc#python-artifact-structure[PyPI package].
 
 A minimal `reqstool_config.yml` only needs to specify language and build tool:
 
@@ -52,7 +52,7 @@ language: java
 build: maven
 ----
 
-Below is an example with custom paths. Paths are relative to the `-p` argument provided when Reqstool is run:
+Below is an example with custom paths. Paths are relative to the `-p` argument provided when reqstool is run:
 
 [source,yaml]
 ----
@@ -114,7 +114,7 @@ In the `requirements` section, an array of requirements can be specified.
 
 * `rationale` -- Why this requirement is important.
 * `implementation` -- If this requirement requires a source code implementation or not. Acceptable values: `in-code` or `N/A`. Defaults to `in-code` if omitted.
-* `lifecycle` -- Provides four options: `draft`, `effective`, `obsolete`, `deprecated`. Defaults to `effective` if omitted. If set to `obsolete` or `deprecated`, Reqstool will issue a warning during parsing when referenced in code or by other requirements, SVCs, or MVRs.
+* `lifecycle` -- Provides four options: `draft`, `effective`, `obsolete`, `deprecated`. Defaults to `effective` if omitted. If set to `obsolete` or `deprecated`, reqstool will issue a warning during parsing when referenced in code or by other requirements, SVCs, or MVRs.
 
 == file: software_verification_cases.yml
 

@@ -1,4 +1,4 @@
-= Reqstool Client
+= reqstool Client
 
 The reqstool command line client is the core tool for managing requirements traceability. It reads requirements, annotations, and test results to generate reports and status checks.
 
