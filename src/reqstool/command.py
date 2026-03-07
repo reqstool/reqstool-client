@@ -220,7 +220,7 @@ class Command:
         )
 
         generate_parser.add_argument(
-            "--no-filter",
+            "--no-filters",
             action="store_true",
             help="Do not filter data",
             default=False,
@@ -238,7 +238,7 @@ class Command:
         )
 
         generate_json_parser.add_argument(
-            "--no-filter",
+            "--no-filters",
             action="store_true",
             help="Do not filter data",
             default=False,
@@ -314,7 +314,7 @@ class Command:
     def command_generate(self, generate_args: argparse.Namespace):
         initial_source = self._get_initial_source(generate_args)
 
-        filter_data = not generate_args.no_filter
+        filter_data = not generate_args.no_filters
         req_ids = getattr(generate_args, "req_ids", None)
         svc_ids = getattr(generate_args, "svc_ids", None)
 
@@ -327,7 +327,7 @@ class Command:
     def command_generate_json(self, generate_json_args: argparse.Namespace):
         initial_source = self._get_initial_source(generate_json_args)
 
-        filter_data = not generate_json_args.no_filter
+        filter_data = not generate_json_args.no_filters
 
         result = GenerateJsonCommand(location=initial_source, filter_data=filter_data)
 
