@@ -1,46 +1,14 @@
-=== What is it?
+= How it Works
 
-Reqstool generates reports and updates on progression of requirement implementations and testing by reading data specified in several *.yml files. 
+This page covers the internal architecture of the reqstool client. For general concepts like annotations, parsing, and validation, see xref:reqstool::concepts.adoc[Concepts].
 
-In order to use the reqstool, you will need to create a requirements.yml file along with a software_verification_cases.yml and/or a manual_verification_results.yml. 
+== Template generation
 
-* Examples: https://github.com/reqstool/reqstool-client/tree/main/docs/modules/examples/partials/requirements
-* Demo: https://github.com/reqstool/reqstool-demo
+The CombinedIndexedDatasetGenerator prepares the data provided from the CombinedRawDatasetsGenerator for rendering with the Jinja2 templates and is used by the ReportCommand and the StatusCommand components.
 
-=== How it works
+== Overview of central components
 
-All of the commands available for the user requires an argument specifying a path to where Reqstool should start to look for the required files. When a valid path is provided, the CombinedRawDatasetsGenerator component parses all yaml files in the specified path and validates the generated content with the SemanticValidator component. The -h command of the application can assist you regarding what argument you'll need to provide for each command.
-
-What each command actually does is described under xref:usage.adoc[usage]
-
-==== Resolve custom paths
-
-If you are providing a path to a git repository or a Maven artifact, you can override the xref:file_and_directory_set.adoc#reqstool_config[reqstool_config.yml] of the yaml files by providing a requirements_config.yml file in the same folder as your requirements.yml. In the requirements_config.yml, you are able to describe the structure of your repository/artifact and specify where the required yaml files are located. If the CombinedRawDatasetsGenerator detects such a file, it will try to locate the required files from the path described in the requirements_config.yml instead of the default path using the ReqstoolConfig component. 
-
-
-==== What is validated?
-
-The SemanticValidator makes sure that the data within the yaml files is as correct as possible. If any errors are found, it prints a summary of them to stdout. 
-This is a convenience for the user so that they can detect errors in their yaml files and correct them quickly.
-
-The main things that are validated is:
-
- * No duplicate Requirement/SVC/MVR id's.
- * SVC's refers to Requirements that actually exists
- * Annotation implementations refers to existing Requirements
- * Annotation tests refers to existing SVC's
- * MVR's refers to existing SVC's
- * SVC's and Requirements has only one of the import/exclude filters set per file
- 
-
-==== Template generation
-
-The CombinedIndexedDatasetGenerator prepares the data provided from the CombinedRawDatasetsGenerator for rendering with the Jinja2 templates and is used of the ReportCommand and the StatusCommand components.
-
-
-==== Overview of central components
-
-Below is an breakdown of the cental components of Reqstool
+Below is a breakdown of the central components of reqstool:
 
 [plantuml,format=svg]
 ....
@@ -51,81 +19,30 @@ Component(StatusCommand, "StatusCommand", "Processes status command")
 Component(GenerateJsonCommand, "GenerateJsonCommand", "Generates JSON from imported Models")
 Component(ReportCommand, "ReportCommand", "Generates reports")
 Component(SemanticValidator, "SemanticValidator", "Validates data read from source")
-Component(CombinedRawDatasetsGenerator, "CombinedRawDatasetsGenerator", "Generates imported models") 
-Component(ReqstoolConfig, "ReqstoolConfig", "Resolves paths to yaml files")
+Component(CombinedRawDatasetsGenerator, "CombinedRawDatasetsGenerator", "Generates imported models")
+Component(reqstoolConfig, "reqstoolConfig", "Resolves paths to yaml files")
 Component(CombinedIndexedDatasetGenerator, "CombinedIndexedDatasetGenerator", "Prepares data for rendering of Jinja2 templates")
 Component(Command, "Command", "Handles user commands")
 
-Rel(Command, StatusCommand, "Uses") 
-Rel(Command, GenerateJsonCommand, "Uses") 
-Rel(Command, ReportCommand, "Uses") 
-Rel(CombinedRawDatasetsGenerator, SemanticValidator, "Depends on") 
-Rel_Right(CombinedRawDatasetsGenerator, ReqstoolConfig, "Uses") 
-Rel(StatusCommand, CombinedRawDatasetsGenerator, "Uses") 
-Rel(GenerateJsonCommand, CombinedRawDatasetsGenerator, "Uses") 
-Rel(ReportCommand, CombinedRawDatasetsGenerator, "Uses") 
-Rel(ReportCommand, CombinedIndexedDatasetGenerator, "Uses") 
-Rel(StatusCommand, CombinedIndexedDatasetGenerator, "Uses") 
+Rel(Command, StatusCommand, "Uses")
+Rel(Command, GenerateJsonCommand, "Uses")
+Rel(Command, ReportCommand, "Uses")
+Rel(CombinedRawDatasetsGenerator, SemanticValidator, "Depends on")
+Rel_Right(CombinedRawDatasetsGenerator, reqstoolConfig, "Uses")
+Rel(StatusCommand, CombinedRawDatasetsGenerator, "Uses")
+Rel(GenerateJsonCommand, CombinedRawDatasetsGenerator, "Uses")
+Rel(ReportCommand, CombinedRawDatasetsGenerator, "Uses")
+Rel(ReportCommand, CombinedIndexedDatasetGenerator, "Uses")
+Rel(StatusCommand, CombinedIndexedDatasetGenerator, "Uses")
 
 Rel_Down(CombinedRawDatasetsGenerator, CombinedIndexedDatasetGenerator, "Provides data to")
 
 @enduml
 ....
 
-==== How parsing is done
+== Sequence diagram of the program execution
 
-If data is retrieved from multiple sources, the parsing begins sequentially from the URI the user provides, and this becomes the initial source of the Reqstool report. 
-So, if you have a micro service (let's call i ms-001) that will also inherit requirements from another source (ext-001), you want to start the parsing in the docs/requirements path of ms-001
-
-When the initial source's requirement file are processed, Reqstool will then continue to parse the other sources that are specified within the import parameter of the initial source's requirement file. If filters is applied in the initial source, the data in the following sources will adhere to these settings.
-
-For example, if you want to exclude one requirement from ext-001, then you specify it like this in the requirements.yml file in ms-001 project:
-
-```yaml
-imports:
-  local:
-    - path: ./ext-001
-      
-filters:
-  ext-001:
-    requirement_ids:
-      excludes:
-        - REQ_101
-
-```
-
-When Requirement Tool is reading the data from ext-001, then REQ_101 will not be imported in the returning data, but all other requirements specified in ext-001's requirements.yml file will.  
-
-Filters can currently be applied to requirements.yml and software_verification_cases.yml.
-
-
-==== How to use annotations
-
-Reqstool relies on it's annotation framework in order to couple Requirements and Software Verification Cases with code implementation and test results. Reqstool needs the user to manually couple a specific requirement/svc with a function or class using annotations. 
-
-In order to couple Requirements and Software Verification Cases you will need to install and import a Reqstool annotation framework for your specific project. 
-
-Currently https://github.com/reqstool/reqstool-java-annotations[Java] and https://github.com/reqstool/reqstool-python-decorators[Python] is supported. Please read through those projects installation instructions in order to use them properly.  
-
-Whit the correct annotation framework installed, you'll use the `@Requirements` annotation to couple a specific requirement to a piece of code. 
-In this example, the requirement with id `REQ_111` is coupled with the function somefunction(). This is also possible to do on a class level if that's desired. 
-
-```
-@Requirements("REQ_111")
-def somefunction():
-```
-
-Similarly, you will use the `@SVCs` annotation to couple an SVC id to a test method or test class:
-
-```
-@SVCs("SVC_111")
-def test_somefunction():
-```
-
-
-==== Sequence diagram of the program execution
-
-Below is an example to illustrate how Reqstool parses data from the initial source. 
+Below is an example to illustrate how reqstool parses data from the initial source.
 
 [plantuml,format=svg]
 ....
@@ -134,7 +51,7 @@ Below is an example to illustrate how Reqstool parses data from the initial sour
 
 Person(user, "User", "", "")
 
-Container(reqsTool, "Reqstool")
+Container(reqsTool, "reqstool")
 
 Container_Boundary(b, "Requirement files")
   Container_Boundary(b1, "MS-001")

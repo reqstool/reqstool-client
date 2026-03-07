@@ -1,6 +1,19 @@
-= Reqstool Client
+= reqstool Client
 
-A CLI tool for managing software requirements, linking them to implementation annotations, software verification cases (SVCs), manual verification results (MVRs), and automated test results. It generates AsciiDoc reports, JSON exports, and requirement status checks for use in CI/CD pipelines.
+The reqstool command line client is the core tool for managing requirements traceability. It reads requirements, annotations, and test results to generate reports and status checks.
+
+== Features
+
+* **Status checks** -- verify that all requirements are implemented and tested, with an exit code for CI/CD gates
+* **AsciiDoc reports** -- generate detailed reports for auditors and stakeholders
+* **JSON export** -- raw data export for custom tooling
+
+== Quick links
+
+* xref:installation.adoc[Installation]
+* xref:usage.adoc[Usage reference]
+* xref:reqstool::data.adoc[Data formats and sources]
+* xref:reqstool::concepts.adoc[Concepts]
 
 == License
 
