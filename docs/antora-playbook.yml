@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/asciidoctor/asciidoctor-intellij-plugin/main/src/main/resources/jsonSchemas/antoraPlaybookSchema.json
+# For local development only. Published site: https://reqstool.github.io
 
 site:
   title: Reqstool Documentation

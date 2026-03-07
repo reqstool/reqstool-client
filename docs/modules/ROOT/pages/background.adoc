@@ -1,7 +1,0 @@
-== Background
-
-The idea behind Reqstool was conceived by Jimisola Laursen (@jimisola/@lfvjimisola) when working for LFV (Sweden's leading Air Navigation Provider). The aviation industry has strong regulations in all aspects including software with a lot of requirements.
-
-The idea is to have defined requirements (own or external) and be able to specify _where a requirement is implemented_ and whether _tests for the requirement have passed or failed_.
-
-Some would argue that in an ideal world, each line of code would be directly related to a requirement...

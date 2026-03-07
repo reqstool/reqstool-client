@@ -1,13 +1,25 @@
-== Installation
+= Installation
 
-You need to have following installed in order to use the tool:
+== Prerequisites
 
-* Python, 3.10 or later
-* pip
+* Python 3.10 or later
 
-To use the tool, you need to install the pypi package _reqstool_.
+== Install with pipx (recommended)
 
-```bash
-$ pip install -U reqstool
-$ reqstool -h # to confirm installation
-```
+https://pipx.pypa.io/[pipx] installs reqstool in an isolated environment and makes it available globally:
+
+[source,bash]
+----
+pipx install reqstool
+reqstool -h  # confirm installation
+----
+
+== Install with pip
+
+Alternatively, install with pip:
+
+[source,bash]
+----
+pip install -U reqstool
+reqstool -h  # confirm installation
+----

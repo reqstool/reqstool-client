@@ -1,27 +1,16 @@
 = Reqstool Client
 
-:keywords: Docs as Code, DocOps, content management system, docs writers, publish software documentation, CI and docs, CD and docs
+The reqstool command line client is the core tool for managing requirements traceability. It reads requirements, annotations, and test results to generate reports and status checks.
 
-== Known bugs and issues
+== Features
 
-* None (fingers-crossed) 
+* **Status checks** -- verify that all requirements are implemented and tested, with an exit code for CI/CD gates
+* **AsciiDoc reports** -- generate detailed reports for auditors and stakeholders
+* **JSON export** -- raw data export for custom tooling
 
-== Limitations
+== Quick links
 
-TBA
-
-== Contributing
-
- * We adhere to the latest version of https://www.contributor-covenant.org/[Contributor Covenant]
- * Fork repo
- * Before submitting a PR
-   * Perform formatting (black):  `hatch run lint:black src tests`
-   * Run linter (flake8): `hatch run lint:flake8`
-   * Run tests:
-     * all: `hatch run test:pytest --cov=reqstool`
-     * unit only: `hatch run test:pytest --cov=reqstool  tests/unit`
-     * integration only: `hatch run test:pytest --cov=reqstool  tests/integration` 
-
-== License
-
-Licensed under [MIT](LICENSE)
+* xref:installation.adoc[Installation]
+* xref:quickstart.adoc[Quickstart]
+* xref:usage.adoc[Usage reference]
+* xref:data.adoc[Data formats and sources]
