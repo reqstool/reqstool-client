@@ -1,0 +1,15 @@
+name: Renovate auto-approve
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+
+permissions:
+  pull-requests: write
+
+jobs:
+  approve:
+    if: github.event.pull_request.user.login == 'renovate[bot]'
+    uses: reqstool/.github/.github/workflows/renovate-approve.yml@main
