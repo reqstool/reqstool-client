@@ -82,10 +82,10 @@ requirements/
   reqstool_config.yml              <.>
   software_verification_cases.yml  <.>
 ----
-<.> See xref:yml/manual_verification_results.adoc[manual_verification_results.yml example]
-<.> See xref:yml/requirements.adoc[requirements.yml example]
-<.> See xref:yml/reqstool_config.adoc[reqstool_config.yml example]
-<.> See xref:yml/software_verification_cases.adoc[software_verification_cases.yml example]
+<.> See https://github.com/reqstool/reqstool-demo/blob/main/docs/reqstool/manual_verification_results.yml[manual_verification_results.yml example] | https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/manual_verification_results.schema.json[JSON Schema]
+<.> See https://github.com/reqstool/reqstool-demo/blob/main/docs/reqstool/requirements.yml[requirements.yml example] | https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/requirements.schema.json[JSON Schema]
+<.> See https://github.com/reqstool/reqstool-demo/blob/main/docs/reqstool/reqstool_config.yml[reqstool_config.yml example] | https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/reqstool_config.schema.json[JSON Schema]
+<.> See https://github.com/reqstool/reqstool-demo/blob/main/docs/reqstool/software_verification_cases.yml[software_verification_cases.yml example] | https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/software_verification_cases.schema.json[JSON Schema]
 
 For example:
 
@@ -128,8 +128,8 @@ target/
 ----
 <.> Integration test reports (Failsafe)
 <.> Unit test reports (Surefire)
-<.> See xref:yml/requirements_annotations.adoc[requirements_annotations.yml example]
-<.> See xref:yml/svcs_annotations.adoc[svcs_annotations.yml example]
+<.> Requirements annotations -- see https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/annotations.schema.json[JSON Schema]
+<.> SVCs annotations -- see https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/annotations.schema.json[JSON Schema]
 
 ==== Maven Artifact (ZIP)
 
@@ -149,11 +149,11 @@ requirements/
     failsafe/                      <.>
     surefire/                      <.>
 ----
-<.> See xref:yml/manual_verification_results.adoc[manual_verification_results.yml example]
-<.> See xref:yml/requirements.adoc[requirements.yml example]
-<.> See xref:yml/annotations.adoc[annotations.yml example]
-<.> See xref:yml/reqstool_config.adoc[reqstool_config.yml example]
-<.> See xref:yml/software_verification_cases.adoc[software_verification_cases.yml example]
+<.> See https://github.com/reqstool/reqstool-demo/blob/main/docs/reqstool/manual_verification_results.yml[example]
+<.> See https://github.com/reqstool/reqstool-demo/blob/main/docs/reqstool/requirements.yml[example]
+<.> Combined annotations -- see https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/annotations.schema.json[JSON Schema]
+<.> See https://github.com/reqstool/reqstool-demo/blob/main/docs/reqstool/reqstool_config.yml[example]
+<.> See https://github.com/reqstool/reqstool-demo/blob/main/docs/reqstool/software_verification_cases.yml[example]
 <.> Integration test reports (Failsafe)
 <.> Unit test reports (Surefire)
 
@@ -172,7 +172,7 @@ build/
   reqstool/
     annotations.yml  <.>
 ----
-<.> See xref:yml/requirements_annotations.adoc[requirements_annotations.yml example]
+<.> Generated annotations -- see https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/annotations.schema.json[JSON Schema]
 
 ==== PyPI Package (tar.gz)
 
@@ -196,7 +196,7 @@ The published package has this structure:
   tests/
   reqstool_config.yml  <.>
 ----
-<.> Generated custom reqstool_config.yml -- See xref:yml/reqstool_config.adoc[reqstool_config.yml example]
+<.> Generated custom reqstool_config.yml -- see https://github.com/reqstool/reqstool-client/blob/main/src/reqstool/resources/schemas/v1/reqstool_config.schema.json[JSON Schema]
 
 [[typescript-artifact-structure]]
 === TypeScript

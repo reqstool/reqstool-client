@@ -4,7 +4,7 @@ All files have a JSON Schema: https://github.com/reqstool/reqstool-client/tree/m
 
 For examples see:
 
-* docs/examples https://github.com/reqstool/reqstool-client/tree/main/docs/examples/requirements[examples]
+* https://github.com/reqstool/reqstool-demo/tree/main/docs/reqstool[reqstool-demo project]
 * unit tests: https://github.com/reqstool/reqstool-client/tree/main/tests/resources/test_data/data/local[test data]
 
 [[reqstool_config]]
