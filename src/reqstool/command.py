@@ -5,7 +5,7 @@ import argparse
 import logging
 import os
 import sys
-from typing import TextIO, Union
+from typing import Optional, TextIO, Union
 
 if __package__ is None or len(__package__) == 0:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -274,7 +274,7 @@ class Command:
         return args
 
     def _get_initial_source(self, args_source: argparse.Namespace) -> LocationInterface:
-        location: LocationInterface = None
+        location: Optional[LocationInterface] = None
 
         if "maven" in args_source.source:
             location = MavenLocation(

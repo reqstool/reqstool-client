@@ -3,7 +3,7 @@
 import re
 import sys
 from enum import Enum, unique
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 from ruamel.yaml import YAML
@@ -31,7 +31,7 @@ from reqstool.models.imports import GitImportData, ImportDataInterface, LocalImp
 from reqstool.models.requirements import (
     CATEGORIES,
     IMPLEMENTATION,
-    SIGNIFANCETYPES,
+    SIGNIFICANCETYPES,
     VARIANTS,
     MetaData,
     ReferenceData,
@@ -273,8 +273,8 @@ class RequirementsModelGenerator:
             for urn in data["filters"].keys():
                 urn_filter = data["filters"][urn]
 
-                req_urn_ids_imports: Set[str] = None  # NOSONAR
-                req_urn_ids_excludes: Set[str] = None  # NOSONAR
+                req_urn_ids_imports: Optional[Set[UrnId]] = None
+                req_urn_ids_excludes: Optional[Set[UrnId]] = None
                 custom_includes = None
                 custom_exclude = None
 
@@ -337,15 +337,13 @@ class RequirementsModelGenerator:
                         ]
                     )
 
-                # Check if rationale is defined, or set it to None
-                rationale = req["rationale"] if "rationale" in req else None
-                # Check if implementation is defined, or set it to True
-                implementation = req["implementation"] if "implementation" in req else IMPLEMENTATION.IN_CODE.value
+                rationale = req.get("rationale")
+                implementation = req.get("implementation", IMPLEMENTATION.IN_CODE.value)
                 urn_id = UrnId(urn=urn, id=req["id"])
                 req_data = RequirementData(
                     id=urn_id,
                     title=req["title"],
-                    significance=SIGNIFANCETYPES(req["significance"]),
+                    significance=SIGNIFICANCETYPES(req["significance"]),
                     description=req["description"],
                     rationale=rationale,
                     implementation=IMPLEMENTATION(implementation),

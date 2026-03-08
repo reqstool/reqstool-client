@@ -1,7 +1,7 @@
 # Copyright © LFV
 
 import sys
-from typing import Dict, Set
+from typing import Dict, Optional, Set
 
 from ruamel.yaml import YAML
 
@@ -55,9 +55,9 @@ class SVCsModelGenerator:
                 id=urn_id,
                 requirement_ids=Utils.convert_ids_to_urn_id(ids=case["requirement_ids"], urn=self.urn),
                 title=case["title"],
-                description=case["description"] if "description" in case else None,
+                description=case.get("description"),
                 verification=VERIFICATIONTYPES(case["verification"]),
-                instructions=case["instructions"] if "instructions" in case else None,
+                instructions=case.get("instructions"),
                 revision=Utils.parse_version(version_str=case["revision"], urn_id=urn_id),
                 lifecycle=LifecycleData.from_dict(case.get("lifecycle")),
             )
@@ -76,8 +76,8 @@ class SVCsModelGenerator:
             for urn in data["filters"].keys():
                 urn_filter = data["filters"][urn]
 
-                svc_urn_ids_includes: Set[UrnId] = None  # NOSONAR
-                svc_urn_ids_excludes: Set[UrnId] = None  # NOSONAR
+                svc_urn_ids_includes: Optional[Set[UrnId]] = None
+                svc_urn_ids_excludes: Optional[Set[UrnId]] = None
                 custom_includes = None
                 custom_exclude = None
 

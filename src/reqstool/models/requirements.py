@@ -28,7 +28,7 @@ class TYPES(Enum):
 
 
 @unique
-class SIGNIFANCETYPES(Enum):
+class SIGNIFICANCETYPES(Enum):
     SHALL = "shall"
     SHOULD = "should"
     MAY = "may"
@@ -67,7 +67,7 @@ class ReferenceData:
 class RequirementData:
     id: UrnId
     title: str
-    significance: SIGNIFANCETYPES
+    significance: SIGNIFICANCETYPES
     description: str
     rationale: str
     revision: Version
