@@ -1,5 +1,3 @@
-# Copyright © LFV
-
 from unittest.mock import MagicMock
 
 from reqstool.commands.status.statistics_generator import StatisticsGenerator
