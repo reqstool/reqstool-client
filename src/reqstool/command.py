@@ -59,8 +59,7 @@ class Command:
 
         directory = os.path.dirname(os.path.abspath(file_path))
 
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        os.makedirs(directory, exist_ok=True)
 
         return open(file_path, "w")
 

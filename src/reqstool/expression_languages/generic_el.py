@@ -16,6 +16,7 @@ class GenericELTransformer(
 ):
     _data: T
     _urn: str
+    _parser: Lark = None
 
     _GRAMMAR = """
     start: expr
@@ -99,8 +100,7 @@ class GenericELTransformer(
 
     @staticmethod
     def parse_el(expression_language: str) -> ParseTree:
-        parser = Lark(GenericELTransformer._GRAMMAR, parser="lalr")
+        if GenericELTransformer._parser is None:
+            GenericELTransformer._parser = Lark(GenericELTransformer._GRAMMAR, parser="lalr")
 
-        tree = parser.parse(expression_language)
-
-        return tree
+        return GenericELTransformer._parser.parse(expression_language)
