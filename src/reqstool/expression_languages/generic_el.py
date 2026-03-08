@@ -97,10 +97,11 @@ class GenericELTransformer(
     def STRING(self, token) -> str:
         return token[1:-1].replace('\\"', '"').replace("\\'", "'")
 
+    _parser: Lark = None
+
     @staticmethod
     def parse_el(expression_language: str) -> ParseTree:
-        parser = Lark(GenericELTransformer._GRAMMAR, parser="lalr")
+        if GenericELTransformer._parser is None:
+            GenericELTransformer._parser = Lark(GenericELTransformer._GRAMMAR, parser="lalr")
 
-        tree = parser.parse(expression_language)
-
-        return tree
+        return GenericELTransformer._parser.parse(expression_language)

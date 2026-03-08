@@ -60,9 +60,7 @@ class StatisticsGenerator:
     def _calculate(self, cid: CombinedIndexedDataset) -> StatisticsContainer:
         for urn_id in cid.requirements.keys():
             # Get all svc UrnIds related to current requirement
-            svcs_urn_ids: List[UrnId] = self._get_urn_ids_for_svcs(
-                urn_id=urn_id, svcs_from_req=cid.svcs_from_req.items()
-            )
+            svcs_urn_ids: List[UrnId] = self._get_urn_ids_for_svcs(urn_id=urn_id, svcs_from_req=cid.svcs_from_req)
 
             # Get svcs for current requirement
             svcs: List[SVCData] = [cid.svcs[urn_id] for urn_id in svcs_urn_ids]
@@ -116,12 +114,7 @@ class StatisticsGenerator:
         return self.stats_container
 
     def _get_urn_ids_for_svcs(self, urn_id: UrnId, svcs_from_req: Dict[UrnId, List[UrnId]]) -> List[UrnId]:
-        svcs_urn_ids: List[UrnId] = []
-        for req_urn_id, svc_list in svcs_from_req:
-            if urn_id == req_urn_id:
-                for svc in svc_list:
-                    svcs_urn_ids.append(svc)
-        return svcs_urn_ids
+        return list(svcs_from_req.get(urn_id, []))
 
     def _check_implementation(self, urn_id: UrnId, nr_of_implementations: int) -> bool:
         implementation = self.cid.requirements[urn_id].implementation
@@ -192,13 +185,8 @@ class StatisticsGenerator:
                 return True
         return False
 
-    # Get the nr of impls for current requirement
     def _get_nr_of_impls_for_req(self, urn_id: UrnId) -> int:
-        nr_of_implementations = 0
-        for annotation_id in self.cid.annotations_impls.keys():
-            if annotation_id == urn_id:
-                nr_of_implementations += 1
-        return nr_of_implementations
+        return len(self.cid.annotations_impls.get(urn_id, []))
 
     def _get_annotated_automated_test_results_for_req(
         self,
@@ -231,13 +219,7 @@ class StatisticsGenerator:
         return test_results
 
     def _get_mvr_ids_for_req(self, svcs_urn_ids: List[UrnId]) -> List[UrnId]:
-        mvr_ids: List[UrnId] = []
-        for svc_urn_id in svcs_urn_ids:
-            for id, value in self.cid.mvrs_from_svc.items():
-                if id == svc_urn_id:
-                    for urn in value:
-                        mvr_ids.append(urn)
-        return mvr_ids
+        return [urn for svc_urn_id in svcs_urn_ids for urn in self.cid.mvrs_from_svc.get(svc_urn_id, [])]
 
     def _get_mvrs_for_req(self, mvrs: Dict[UrnId, MVRData], mvr_ids: List[UrnId]) -> List[MVRData] | None:
         return [mvrs[mvr_id] for mvr_id in mvr_ids] if mvr_ids else None
