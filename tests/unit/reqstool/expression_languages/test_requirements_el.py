@@ -5,7 +5,7 @@ from reqstool_python_decorators.decorators.decorators import SVCs
 
 from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.expression_languages.requirements_el import RequirementsELTransformer
-from reqstool.models.requirements import SIGNIFANCETYPES, RequirementData
+from reqstool.models.requirements import SIGNIFICANCETYPES, RequirementData
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def requirement_data():
         return RequirementData(
             id=UrnId.instance(req_id),
             title="some title",
-            significance=SIGNIFANCETYPES("shall"),
+            significance=SIGNIFICANCETYPES("shall"),
             description="some description",
             rationale="some rationale",
             categories=["maintainability", "functional-suitability"],

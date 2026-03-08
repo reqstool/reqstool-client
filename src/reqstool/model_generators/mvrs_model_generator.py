@@ -42,7 +42,7 @@ class MVRsModelGenerator:
             mvr = MVRData(
                 id=urn_id,
                 svc_ids=Utils.convert_ids_to_urn_id(ids=result["svc_ids"], urn=self.urn),
-                comment=result["comment"] if "comment" in result else None,
+                comment=result.get("comment"),
                 passed=result["pass"],
             )
 

@@ -18,7 +18,7 @@ from reqstool.model_generators.combined_indexed_dataset_generator import Combine
 from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
 from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.raw_datasets import CombinedRawDataset
-from reqstool.models.requirements import CATEGORIES, SIGNIFANCETYPES, TYPES, VARIANTS
+from reqstool.models.requirements import CATEGORIES, SIGNIFICANCETYPES, TYPES, VARIANTS
 from reqstool.models.svcs import VERIFICATIONTYPES
 from reqstool.models.test_data import TEST_RUN_STATUS
 
@@ -156,7 +156,7 @@ class GenerateJsonCommand:
         jsonpickle.handlers.registry.register(Version, RevisionHandler)
         jsonpickle.handlers.registry.register(CATEGORIES, JsonEnumHandler)
         jsonpickle.handlers.registry.register(LOCATIONTYPES, JsonEnumHandler)
-        jsonpickle.handlers.registry.register(SIGNIFANCETYPES, JsonEnumHandler)
+        jsonpickle.handlers.registry.register(SIGNIFICANCETYPES, JsonEnumHandler)
         jsonpickle.handlers.registry.register(TYPES, JsonEnumHandler)
         jsonpickle.handlers.registry.register(VARIANTS, JsonEnumHandler)
         jsonpickle.handlers.registry.register(VERIFICATIONTYPES, JsonEnumHandler)
