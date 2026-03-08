@@ -5,12 +5,11 @@ import sys
 from enum import Enum, unique
 from typing import Dict, List, Set
 
-from packaging.version import InvalidVersion, Version
 from reqstool_python_decorators.decorators.decorators import Requirements
 from ruamel.yaml import YAML
 
 from reqstool.commands.exit_codes import EXIT_CODE_SYNTAX_VALIDATION_ERROR
-from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, LifecycleData
+from reqstool.common.dataclasses.lifecycle import LifecycleData
 from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
@@ -342,14 +341,6 @@ class RequirementsModelGenerator:
                 rationale = req["rationale"] if "rationale" in req else None
                 # Check if implementation is defined, or set it to True
                 implementation = req["implementation"] if "implementation" in req else IMPLEMENTATION.IN_CODE.value
-                # Get lifecycle variables or use defaults
-                if "lifecycle" in req:
-                    lifecycle_state = LIFECYCLESTATE(req["lifecycle"]["state"])
-                    lifecycle_reason = req["lifecycle"]["reason"] if "reason" in req["lifecycle"] else None
-                else:
-                    lifecycle_state = LIFECYCLESTATE.EFFECTIVE
-                    lifecycle_reason = None
-
                 urn_id = UrnId(urn=urn, id=req["id"])
                 req_data = RequirementData(
                     id=urn_id,
@@ -360,17 +351,11 @@ class RequirementsModelGenerator:
                     implementation=IMPLEMENTATION(implementation),
                     categories=[CATEGORIES(c) for c in req["categories"]],
                     references=refs_data,
-                    revision=self.__parse_req_version(version=req["revision"], urn_id=urn_id),
-                    lifecycle=LifecycleData(state=lifecycle_state, reason=lifecycle_reason),
+                    revision=Utils.parse_version(version_str=req["revision"], urn_id=urn_id),
+                    lifecycle=LifecycleData.from_dict(req.get("lifecycle")),
                 )
 
                 if req_data.id not in r_reqs:
                     r_reqs[req_data.id] = req_data
 
         return r_reqs
-
-    def __parse_req_version(self, version: str, urn_id: UrnId) -> Version:
-        try:
-            return Version(version)
-        except InvalidVersion as e:
-            raise TypeError(f"Invalid version: {e} for: {urn_id}")

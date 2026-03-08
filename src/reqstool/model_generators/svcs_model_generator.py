@@ -3,11 +3,10 @@
 import sys
 from typing import Dict, Set
 
-from packaging.version import InvalidVersion, Version
 from ruamel.yaml import YAML
 
 from reqstool.commands.exit_codes import EXIT_CODE_SYNTAX_VALIDATION_ERROR
-from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, LifecycleData
+from reqstool.common.dataclasses.lifecycle import LifecycleData
 from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
@@ -52,14 +51,6 @@ class SVCsModelGenerator:
         for case in data["cases"]:
             urn_id = UrnId(urn=self.urn, id=case["id"])
 
-            # Get lifecycle variables or use defaults
-            if "lifecycle" in case:
-                lifecycle_state = LIFECYCLESTATE(case["lifecycle"]["state"])
-                lifecycle_reason = case["lifecycle"]["reason"] if "reason" in case["lifecycle"] else None
-            else:
-                lifecycle_state = LIFECYCLESTATE.EFFECTIVE
-                lifecycle_reason = None
-
             svc = SVCData(
                 id=urn_id,
                 requirement_ids=Utils.convert_ids_to_urn_id(ids=case["requirement_ids"], urn=self.urn),
@@ -67,8 +58,8 @@ class SVCsModelGenerator:
                 description=case["description"] if "description" in case else None,
                 verification=VERIFICATIONTYPES(case["verification"]),
                 instructions=case["instructions"] if "instructions" in case else None,
-                revision=self.__parse_svc_version(version=case["revision"], urn_id=urn_id),
-                lifecycle=LifecycleData(state=lifecycle_state, reason=lifecycle_reason),
+                revision=Utils.parse_version(version_str=case["revision"], urn_id=urn_id),
+                lifecycle=LifecycleData.from_dict(case.get("lifecycle")),
             )
 
             if svc.id not in r_result:
@@ -120,9 +111,3 @@ class SVCsModelGenerator:
                 r_filters[urn] = svc_filter
 
         return r_filters
-
-    def __parse_svc_version(self, version: str, urn_id: UrnId) -> Version:
-        try:
-            return Version(version)
-        except InvalidVersion as e:
-            raise TypeError(f"Invalid version: {e} for: {urn_id}")

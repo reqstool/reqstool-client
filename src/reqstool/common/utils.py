@@ -11,6 +11,7 @@ from typing import Dict, Iterable, List, Sequence
 from zipfile import ZipFile
 
 import requests
+from packaging.version import InvalidVersion, Version as PkgVersion
 from requests_file import FileAdapter
 
 from reqstool.common.dataclasses.urn_id import UrnId
@@ -333,6 +334,13 @@ class Utils:
             accessible_nodes_dict[node] = accessible_nodes
 
         return accessible_nodes_dict
+
+    @staticmethod
+    def parse_version(version_str: str, urn_id: UrnId) -> PkgVersion:
+        try:
+            return PkgVersion(version_str)
+        except InvalidVersion as e:
+            raise TypeError(f"Invalid version: {e} for: {urn_id}")
 
 
 class TempDirectoryUtil:
