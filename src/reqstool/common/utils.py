@@ -8,6 +8,8 @@ from importlib.metadata import version
 from itertools import chain
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
+
+from packaging.version import InvalidVersion, Version as PkgVersion
 from zipfile import ZipFile
 
 import requests
@@ -333,6 +335,13 @@ class Utils:
             accessible_nodes_dict[node] = accessible_nodes
 
         return accessible_nodes_dict
+
+    @staticmethod
+    def parse_version(version_str: str, urn_id: UrnId) -> PkgVersion:
+        try:
+            return PkgVersion(version_str)
+        except InvalidVersion as e:
+            raise TypeError(f"Invalid version: {e} for: {urn_id}")
 
 
 class TempDirectoryUtil:
