@@ -102,6 +102,37 @@ hatch run python src/reqstool/command.py export local -p ../reqstool-demo/docs/r
 hatch run python src/reqstool/command.py report --format markdown local -p ../reqstool-demo/docs/reqstool -o /tmp/report.md
 ```
 
+## Regression Smoke Testing
+
+**Before creating a PR**, capture CLI output from `main` (or the parent branch) and compare it against the feature branch to verify no unintended changes. Strip ANSI codes so diffs are clean.
+
+Run against **both** the in-repo test fixtures and `reqstool-demo`:
+
+```bash
+# Capture baseline output on main/parent branch
+git checkout main
+hatch run python src/reqstool/command.py status local -p tests/resources/test_data/data/local/test_standard/baseline/ms-001 2>&1 | sed 's/\x1b\[[0-9;]*m//g' > /tmp/baseline-status-std.txt
+hatch run python src/reqstool/command.py report --format asciidoc local -p tests/resources/test_data/data/local/test_standard/baseline/ms-001 > /tmp/baseline-report-std.txt 2>&1
+hatch run python src/reqstool/command.py status local -p tests/resources/test_data/data/local/test_basic/baseline/ms-101 2>&1 | sed 's/\x1b\[[0-9;]*m//g' > /tmp/baseline-status-basic.txt
+hatch run python src/reqstool/command.py report --format asciidoc local -p tests/resources/test_data/data/local/test_basic/baseline/ms-101 > /tmp/baseline-report-basic.txt 2>&1
+hatch run python src/reqstool/command.py status local -p ../reqstool-demo/docs/reqstool 2>&1 | sed 's/\x1b\[[0-9;]*m//g' > /tmp/baseline-status-demo.txt
+hatch run python src/reqstool/command.py report --format asciidoc local -p ../reqstool-demo/docs/reqstool > /tmp/baseline-report-demo.txt 2>&1
+
+# Switch to feature branch and capture output
+git checkout <feature-branch>
+# (same commands, writing to /tmp/feature-*.txt)
+
+# Diff — must be identical unless the change intentionally alters output
+diff /tmp/baseline-status-std.txt /tmp/feature-status-std.txt
+diff /tmp/baseline-report-std.txt /tmp/feature-report-std.txt
+diff /tmp/baseline-status-basic.txt /tmp/feature-status-basic.txt
+diff /tmp/baseline-report-basic.txt /tmp/feature-report-basic.txt
+diff /tmp/baseline-status-demo.txt /tmp/feature-status-demo.txt
+diff /tmp/baseline-report-demo.txt /tmp/feature-report-demo.txt
+```
+
+If a diff is expected (e.g. the PR intentionally changes output), note it in the PR description.
+
 ## Key Conventions
 
 - **URN format**: `some:urn:string` — the separator is `:`. `UrnId` is the canonical composite key used throughout indexes.
