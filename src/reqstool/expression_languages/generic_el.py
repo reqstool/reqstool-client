@@ -16,6 +16,7 @@ class GenericELTransformer(
 ):
     _data: T
     _urn: str
+    _parser: Lark = None
 
     _GRAMMAR = """
     start: expr
@@ -96,8 +97,6 @@ class GenericELTransformer(
 
     def STRING(self, token) -> str:
         return token[1:-1].replace('\\"', '"').replace("\\'", "'")
-
-    _parser: Lark = None
 
     @staticmethod
     def parse_el(expression_language: str) -> ParseTree:
