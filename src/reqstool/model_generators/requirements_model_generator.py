@@ -88,7 +88,7 @@ class RequirementsModelGenerator:
         urn = self.get_urn_if_available(response.text)
 
         if not SyntaxValidator.is_valid_data(json_schema_type=JsonSchemaTypes.REQUIREMENTS, data=data, urn=urn):
-            sys.data = data, exit(EXIT_CODE_SYNTAX_VALIDATION_ERROR)
+            sys.exit(EXIT_CODE_SYNTAX_VALIDATION_ERROR)
 
         r_metadata: MetaData = self.__parse_metadata(data["metadata"])
 
