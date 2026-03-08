@@ -8,11 +8,10 @@ from importlib.metadata import version
 from itertools import chain
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
-
-from packaging.version import InvalidVersion, Version as PkgVersion
 from zipfile import ZipFile
 
 import requests
+from packaging.version import InvalidVersion, Version as PkgVersion
 from requests_file import FileAdapter
 
 from reqstool.common.dataclasses.urn_id import UrnId
