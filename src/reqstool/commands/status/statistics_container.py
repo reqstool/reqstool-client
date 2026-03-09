@@ -1,6 +1,6 @@
 # Copyright © LFV
 
-from dataclasses import dataclass, field
+from pydantic import BaseModel, ConfigDict, Field
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
@@ -9,8 +9,7 @@ from reqstool.models.requirements import IMPLEMENTATION
 
 
 @Requirements("REQ_028")
-@dataclass(kw_only=True)
-class TestStatisticsItem:
+class TestStatisticsItem(BaseModel):
     nr_of_failed_tests: int = 0
     nr_of_missing_automated_tests: int = 0
     nr_of_missing_manual_tests: int = 0
@@ -26,18 +25,18 @@ class TestStatisticsItem:
 
 
 @Requirements("REQ_028")
-@dataclass(kw_only=True, frozen=True)
-class CombinedRequirementTestItem:
-    completed: bool = field(default=bool)
-    nr_of_implementations: int = field(default=int)
-    automated_tests_stats: TestStatisticsItem = field(default_factory=TestStatisticsItem)
-    mvrs_stats: TestStatisticsItem = field(default_factory=TestStatisticsItem)
-    implementation: IMPLEMENTATION = field(default=IMPLEMENTATION.IN_CODE)
+class CombinedRequirementTestItem(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    completed: bool = False
+    nr_of_implementations: int = 0
+    automated_tests_stats: TestStatisticsItem = Field(default_factory=TestStatisticsItem)
+    mvrs_stats: TestStatisticsItem = Field(default_factory=TestStatisticsItem)
+    implementation: IMPLEMENTATION = IMPLEMENTATION.IN_CODE
 
 
 @Requirements("REQ_028")
-@dataclass(kw_only=True)
-class TotalStatisticsItem:
+class TotalStatisticsItem(BaseModel):
     nr_of_failed_tests: int = 0
     nr_of_missing_automated_tests: int = 0
     nr_of_missing_manual_tests: int = 0
@@ -75,11 +74,12 @@ class TotalStatisticsItem:
 
 
 @Requirements("REQ_028")
-@dataclass(kw_only=True, frozen=True)
-class StatisticsContainer:
-    _requirement_statistics: dict[str, CombinedRequirementTestItem] = field(default_factory=lambda: {})
+class StatisticsContainer(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    _total_statistics: TotalStatisticsItem = field(default_factory=TotalStatisticsItem)
+    requirement_statistics: dict[UrnId, CombinedRequirementTestItem] = Field(default_factory=dict)
+
+    total_statistics: TotalStatisticsItem = Field(default_factory=TotalStatisticsItem)
 
     def add_stats_for_requirement(
         self,
@@ -90,7 +90,7 @@ class StatisticsContainer:
         automated_tests_stats: TestStatisticsItem,
         mvrs_stats: TestStatisticsItem,
     ) -> None:
-        assert id not in self._requirement_statistics
+        assert id not in self.requirement_statistics
 
         combined_requirement_test_item = CombinedRequirementTestItem(
             completed=completed,
@@ -100,6 +100,6 @@ class StatisticsContainer:
             implementation=implementation,
         )
 
-        self._requirement_statistics[req_urn_id] = combined_requirement_test_item
+        self.requirement_statistics[req_urn_id] = combined_requirement_test_item
 
-        self._total_statistics.update(completed=completed, combined_req_test_item=combined_requirement_test_item)
+        self.total_statistics.update(completed=completed, combined_req_test_item=combined_requirement_test_item)

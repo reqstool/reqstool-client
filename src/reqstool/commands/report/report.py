@@ -94,7 +94,7 @@ class ReportCommand:
         statistics: StatisticsContainer,
     ):
         statistics_table = Jinja2Utils.render(
-            data=statistics._total_statistics, template=self.jinja2_templates[Jinja2Templates.TOTAL_STATISTICS]
+            data=statistics.total_statistics, template=self.jinja2_templates[Jinja2Templates.TOTAL_STATISTICS]
         )
 
         grouped_requirements: Dict[str, List[UrnId]] = GroupByOrganizor(
@@ -214,18 +214,17 @@ class ReportCommand:
         for urn_id in svcs_urn_ids:
             if urn_id in cid.annotations_tests:
                 annotations = cid.annotations_tests[urn_id]
-                for tests in annotations:
-                    for test in tests:
-                        test_urn_id = UrnId(urn=urn_id.urn, id=test.fully_qualified_name)
-                        results = self.__get_annotated_test_results(cid=cid, urn_id=test_urn_id)
-                        results_as_string = ", ".join(str(result.status.value) for result in results)
-                        annot_test = {
-                            "svc_id": urn_id.id,
-                            "element_kind": test.element_kind,
-                            "fqn": test.fully_qualified_name,
-                            "test_result": results_as_string,
-                        }
-                        automated_test_results.append(annot_test)
+                for test in annotations:
+                    test_urn_id = UrnId(urn=urn_id.urn, id=test.fully_qualified_name)
+                    results = self.__get_annotated_test_results(cid=cid, urn_id=test_urn_id)
+                    results_as_string = ", ".join(str(result.status.value) for result in results)
+                    annot_test = {
+                        "svc_id": urn_id.id,
+                        "element_kind": test.element_kind,
+                        "fqn": test.fully_qualified_name,
+                        "test_result": results_as_string,
+                    }
+                    automated_test_results.append(annot_test)
 
         return automated_test_results
 
@@ -245,9 +244,8 @@ class ReportCommand:
         impls_list = []
         impls_for_urn: List[AnnotationData] = cid.annotations_impls[urn_id] if urn_id in cid.annotations_impls else []
         if impls_for_urn:
-            for impls in impls_for_urn:
-                for impl in impls:
-                    impl_template = {"element_kind": impl.element_kind, "fqn": impl.fully_qualified_name}
-                    impls_list.append(impl_template)
+            for impl in impls_for_urn:
+                impl_template = {"element_kind": impl.element_kind, "fqn": impl.fully_qualified_name}
+                impls_list.append(impl_template)
 
         return impls_list

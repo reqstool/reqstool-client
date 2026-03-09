@@ -1,7 +1,8 @@
 # Copyright © LFV
 
-from dataclasses import dataclass
 from typing import Dict, List, Set
+
+from pydantic import BaseModel, ConfigDict
 
 from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.models.annotations import AnnotationData
@@ -11,8 +12,9 @@ from reqstool.models.svcs import SVCData
 from reqstool.models.test_data import TestData
 
 
-@dataclass
-class CombinedIndexedDataset:
+class CombinedIndexedDataset(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     initial_model_urn: str
 
     urn_parsing_order: List[str]

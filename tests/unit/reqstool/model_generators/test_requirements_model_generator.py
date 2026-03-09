@@ -111,9 +111,9 @@ def test_system_requirements_model_generator(resource_funcname_rootdir_w_path):
         CATEGORIES.FUNCTIONAL_SUITABILITY,
     ]
 
-    assert model.requirements[UrnId(urn="sys-001", id="REQ_001")].references[0].requirement_ids == [
+    assert model.requirements[UrnId(urn="sys-001", id="REQ_001")].references[0].requirement_ids == {
         UrnId(urn="sys-001", id="REQ_200")
-    ]
+    }
     assert model.requirements[UrnId(urn="sys-001", id="REQ_001")].revision.base_version == "0.0.1"
 
 
@@ -197,9 +197,9 @@ def test_external_requirements_model_generator(resource_funcname_rootdir_w_path)
         CATEGORIES.FUNCTIONAL_SUITABILITY,
     ]
 
-    assert model.requirements[UrnId(urn="ext-001", id="REQ_001")].references[0].requirement_ids == [
+    assert model.requirements[UrnId(urn="ext-001", id="REQ_001")].references[0].requirement_ids == {
         UrnId(urn="ext-001", id="REQ_200")
-    ]
+    }
     assert model.requirements[UrnId(urn="ext-001", id="REQ_001")].revision.base_version == "0.0.1"
 
 
@@ -233,9 +233,9 @@ def test_rational_optional_model_generator(resource_funcname_rootdir_w_path):
         CATEGORIES.FUNCTIONAL_SUITABILITY,
     ]
 
-    assert model.requirements[UrnId(urn="ext-001", id="REQ_001")].references[0].requirement_ids == [
+    assert model.requirements[UrnId(urn="ext-001", id="REQ_001")].references[0].requirement_ids == {
         UrnId(urn="ext-001", id="REQ_200")
-    ]
+    }
     assert model.requirements[UrnId(urn="ext-001", id="REQ_001")].revision.base_version == "0.0.1"
 
 

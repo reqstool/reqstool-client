@@ -1,9 +1,9 @@
 from typing import List
-from dataclasses import dataclass
+
+from pydantic import BaseModel
 
 
-@dataclass
-class ValidationError:
+class ValidationError(BaseModel):
     msg: str
 
 

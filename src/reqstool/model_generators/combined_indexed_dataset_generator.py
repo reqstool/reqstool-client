@@ -1,6 +1,6 @@
 # Copyright © LFV
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import Dict, List, Set
 
 from reqstool.common.dataclasses.urn_id import UrnId
@@ -176,7 +176,7 @@ class CombinedIndexedDatasetGenerator:
                             if len(kept_requirement_ids) == 0:
                                 continue
 
-                            svcdata = replace(svcdata, requirement_ids=kept_requirement_ids)
+                            svcdata = svcdata.model_copy(update={"requirement_ids": kept_requirement_ids})
 
                     self._svcs[svcdata.id] = svcdata
 
@@ -211,7 +211,7 @@ class CombinedIndexedDatasetGenerator:
                             if len(kept_svc_ids) == 0:
                                 continue
 
-                            mvrdata = replace(mvrdata, svc_ids=kept_svc_ids)
+                            mvrdata = mvrdata.model_copy(update={"svc_ids": kept_svc_ids})
 
                     self._mvrs[mvrdata.id] = mvrdata
 
@@ -228,7 +228,7 @@ class CombinedIndexedDatasetGenerator:
         for urn, rds in self._crd.raw_datasets.items():
             if rds.annotations_data and rds.annotations_data.implementations:
                 for req_id, req_anno_data in rds.annotations_data.implementations.items():
-                    Utils.append_data_item_to_dict_list_entry(
+                    Utils.extend_data_sequence_to_dict_list_entry(
                         dictionary=self._annotations_impls, key=req_id, data=req_anno_data
                     )
 
@@ -236,7 +236,7 @@ class CombinedIndexedDatasetGenerator:
         for urn, rds in self._crd.raw_datasets.items():
             if rds.annotations_data and rds.annotations_data.tests:
                 for req_id, req_anno_data in rds.annotations_data.tests.items():
-                    Utils.append_data_item_to_dict_list_entry(
+                    Utils.extend_data_sequence_to_dict_list_entry(
                         dictionary=self._annotations_tests, key=req_id, data=req_anno_data
                     )
 

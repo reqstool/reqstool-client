@@ -1,16 +1,25 @@
 # Copyright © LFV
 
-from dataclasses import dataclass, field
 from enum import Enum, unique
-from typing import Dict, List, Set
+from typing import Annotated, Dict, List, Optional, Set
 
 from packaging.version import Version
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, LifecycleData
 from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.filters.requirements_filters import RequirementFilter
 from reqstool.models.implementations import ImplementationDataInterface
 from reqstool.models.imports import ImportDataInterface
+
+
+def _coerce_version(v):
+    if isinstance(v, str):
+        return Version(v)
+    return v
+
+
+VersionField = Annotated[Version, BeforeValidator(_coerce_version)]
 
 
 @unique
@@ -58,38 +67,42 @@ class IMPLEMENTATION(Enum):
     NOT_APPLICABLE = "N/A"
 
 
-@dataclass
-class ReferenceData:
-    requirement_ids: Set[UrnId] = field(default_factory=set)
+class ReferenceData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    requirement_ids: Set[UrnId] = Field(default_factory=set)
 
 
-@dataclass
-class RequirementData:
+class RequirementData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     id: UrnId
     title: str
     significance: SIGNIFICANCETYPES
     description: str
-    rationale: str
-    revision: Version
-    lifecycle: LifecycleData = field(default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None))
-    implementation: IMPLEMENTATION = field(default=IMPLEMENTATION.IN_CODE)
-    categories: List[CATEGORIES] = field(default_factory=list)
-    references: List[ReferenceData] = field(default_factory=list)
+    rationale: Optional[str] = None
+    revision: VersionField
+    lifecycle: LifecycleData = Field(
+        default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None)
+    )
+    implementation: IMPLEMENTATION = IMPLEMENTATION.IN_CODE
+    categories: List[CATEGORIES] = Field(default_factory=list)
+    references: Optional[List[ReferenceData]] = Field(default_factory=list)
 
 
-@dataclass
-class MetaData:
+class MetaData(BaseModel):
     urn: str
     variant: VARIANTS
     title: str
-    url: str
+    url: Optional[str] = None
 
 
-@dataclass
-class RequirementsData:
+class RequirementsData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     metadata: MetaData
-    implementations: List[ImplementationDataInterface] = field(default_factory=list)
-    imports: List[ImportDataInterface] = field(default_factory=list)
+    implementations: List[ImplementationDataInterface] = Field(default_factory=list)
+    imports: List[ImportDataInterface] = Field(default_factory=list)
     # key: urn
-    filters: Dict[str, RequirementFilter] = field(default_factory=dict)
-    requirements: Dict[str, RequirementData] = field(default_factory=dict)
+    filters: Dict[str, RequirementFilter] = Field(default_factory=dict)
+    requirements: Dict[UrnId, RequirementData] = Field(default_factory=dict)

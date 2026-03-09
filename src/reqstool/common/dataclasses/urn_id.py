@@ -1,12 +1,13 @@
 # Copyright © LFV
 
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 URN_ID_SEPARATOR: str = ":"
 
 
-@dataclass(kw_only=True, frozen=True)
-class UrnId:
+class UrnId(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     urn: str
     id: str
 

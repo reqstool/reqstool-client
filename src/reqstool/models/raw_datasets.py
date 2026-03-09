@@ -1,7 +1,8 @@
 # Copyright © LFV
 
-from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from reqstool.models.annotations import AnnotationsData
 from reqstool.models.mvrs import MVRsData
@@ -10,22 +11,24 @@ from reqstool.models.svcs import SVCsData
 from reqstool.models.test_data import TestsData
 
 
-@dataclass
-class RawDataset:
-    requirements_data: RequirementsData = None
+class RawDataset(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    svcs_data: SVCsData = None
+    requirements_data: Optional[RequirementsData] = None
 
-    annotations_data: AnnotationsData = None
+    svcs_data: Optional[SVCsData] = None
 
-    automated_tests: TestsData = None
+    annotations_data: Optional[AnnotationsData] = None
 
-    mvrs_data: MVRsData = None
+    automated_tests: Optional[TestsData] = None
+
+    mvrs_data: Optional[MVRsData] = None
 
 
-@dataclass
-class CombinedRawDataset:
+class CombinedRawDataset(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     initial_model_urn: str
-    urn_parsing_order: List[str] = field(default_factory=list)
-    parsing_graph: Dict[str, List[str]] = field(default_factory=dict)
-    raw_datasets: Dict[str, RawDataset] = field(default_factory=dict)
+    urn_parsing_order: List[str] = Field(default_factory=list)
+    parsing_graph: Dict[str, List[str]] = Field(default_factory=dict)
+    raw_datasets: Dict[str, RawDataset] = Field(default_factory=dict)

@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any, List, Optional
 
 from packaging.version import Version
+from pydantic import BaseModel
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.dataclasses.urn_id import UrnId
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def _serialize(obj: Any) -> Any:
-    """Recursively serialize dataclasses, enums, UrnId, Version, sets, and dicts with non-string keys."""
+    """Recursively serialize Pydantic models, dataclasses, enums, UrnId, Version, sets, and dicts with non-string keys."""
     if isinstance(obj, UrnId):
         return str(obj)
     if isinstance(obj, Version):
@@ -36,6 +37,8 @@ def _serialize(obj: Any) -> Any:
         return [_serialize(v) for v in obj]
     if isinstance(obj, dict):
         return {_serialize(k): _serialize(v) for k, v in obj.items()}
+    if isinstance(obj, BaseModel):
+        return {name: _serialize(getattr(obj, name)) for name in type(obj).model_fields}
     if is_dataclass(obj) and not isinstance(obj, type):
         return {f.name: _serialize(getattr(obj, f.name)) for f in fields(obj)}
     return obj

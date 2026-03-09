@@ -11,7 +11,7 @@ from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.models.requirements import IMPLEMENTATION
 
 
-def test_total_statistics_item_update():
+def testtotal_statistics_item_update():
     stats_container = StatisticsContainer()
     stats_container.add_stats_for_requirement(
         req_urn_id=UrnId(urn="ms-101", id="REQ_101"),
@@ -37,11 +37,11 @@ def test_total_statistics_item_update():
             not_applicable=True,
         ),
     )
-    stats_container._total_statistics.nr_of_total_tests = 1
-    stats_container._total_statistics.nr_of_passed_tests = 1
+    stats_container.total_statistics.nr_of_total_tests = 1
+    stats_container.total_statistics.nr_of_passed_tests = 1
 
     expected = StatisticsContainer(
-        _requirement_statistics={
+        requirement_statistics={
             UrnId(urn="ms-101", id="REQ_101"): CombinedRequirementTestItem(
                 completed=True,
                 implementation=IMPLEMENTATION.IN_CODE,
@@ -66,7 +66,7 @@ def test_total_statistics_item_update():
                 ),
             )
         },
-        _total_statistics=TotalStatisticsItem(
+        total_statistics=TotalStatisticsItem(
             nr_of_failed_tests=0,
             nr_of_missing_automated_tests=0,
             nr_of_missing_manual_tests=0,

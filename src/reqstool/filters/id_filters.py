@@ -1,13 +1,15 @@
 # Copyright © LFV
 
-from dataclasses import dataclass
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
 
 from reqstool.common.dataclasses.urn_id import UrnId
 
 
-@dataclass
-class IDFilters:
+class IDFilters(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     urn_ids_imports: Optional[set[UrnId]] = None
     urn_ids_excludes: Optional[set[UrnId]] = None
     custom_imports: Optional[str] = None

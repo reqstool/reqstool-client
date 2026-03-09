@@ -22,7 +22,7 @@ def svc_data():
     def closure(svc_id: str):
         return SVCData(
             id=UrnId.instance(svc_id),
-            requirement_ids=["SVC_001", "SVC_002"],
+            requirement_ids=[UrnId.instance("urn:SVC_001"), UrnId.instance("urn:SVC_002")],
             title="some title",
             description="some description",
             verification=VERIFICATIONTYPES("automated-test"),

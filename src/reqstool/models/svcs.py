@@ -1,13 +1,23 @@
 # Copyright © LFV
 
-from dataclasses import dataclass, field
 from enum import Enum, unique
-from typing import Dict, List
+from typing import Annotated, Dict, List, Optional
+
 from packaging.version import Version
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, LifecycleData
 from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.filters.svcs_filters import SVCFilter
+
+
+def _coerce_version(v):
+    if isinstance(v, str):
+        return Version(v)
+    return v
+
+
+VersionField = Annotated[Version, BeforeValidator(_coerce_version)]
 
 
 @unique
@@ -19,21 +29,25 @@ class VERIFICATIONTYPES(Enum):
     OTHER = "other"
 
 
-@dataclass(kw_only=True, frozen=True)
-class SVCData:
+class SVCData(BaseModel):
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
     id: UrnId
     title: str
-    description: str
+    description: Optional[str] = None
     verification: VERIFICATIONTYPES
-    instructions: str
-    revision: Version
-    lifecycle: LifecycleData = field(default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None))
-    requirement_ids: List[UrnId] = field(default_factory=list)
+    instructions: Optional[str] = None
+    revision: VersionField
+    lifecycle: LifecycleData = Field(
+        default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None)
+    )
+    requirement_ids: List[UrnId] = Field(default_factory=list)
 
 
-@dataclass
-class SVCsData:
+class SVCsData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     # key: svc_id
-    cases: Dict[str, SVCData] = field(default_factory=dict)
+    cases: Dict[UrnId, SVCData] = Field(default_factory=dict)
     # key: urn
-    filters: Dict[str, SVCFilter] = field(default_factory=dict)
+    filters: Dict[str, SVCFilter] = Field(default_factory=dict)

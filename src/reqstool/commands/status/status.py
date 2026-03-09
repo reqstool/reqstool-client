@@ -29,8 +29,8 @@ class StatusCommand:
 
         return (
             status,
-            statistics._total_statistics.nr_of_total_requirements
-            - statistics._total_statistics.nr_of_completed_requirements,
+            statistics.total_statistics.nr_of_total_requirements
+            - statistics.total_statistics.nr_of_completed_requirements,
         )
 
 
@@ -55,7 +55,7 @@ def _build_table(
 
 
 def _get_row_with_totals(stats_container: StatisticsContainer) -> List[str]:
-    ts = stats_container._total_statistics
+    ts = stats_container.total_statistics
     total_automatic = ts.nr_of_passed_automatic_tests + ts.nr_of_failed_automatic_tests
     total_manual = ts.nr_of_passed_manual_tests + ts.nr_of_failed_manual_tests
     return [
@@ -176,7 +176,7 @@ def _status_table(stats_container: StatisticsContainer) -> str:
     table_data = []
     headers = ["URN", "ID", "Implementation", "T", "P", "F", "S", "M", "T", "P", "F", "S", "M"]
 
-    for req, stats in stats_container._requirement_statistics.items():
+    for req, stats in stats_container.requirement_statistics.items():
         table_data.append(
             _build_table(
                 req_id=req.id,
@@ -204,8 +204,8 @@ def _status_table(stats_container: StatisticsContainer) -> str:
             break
 
     header_req_data = (
-        "\b" * len(str(stats_container._total_statistics.nr_of_total_requirements))
-    ) + f"REQUIREMENTS: {str(stats_container._total_statistics.nr_of_total_requirements)}"
+        "\b" * len(str(stats_container.total_statistics.nr_of_total_requirements))
+    ) + f"REQUIREMENTS: {str(stats_container.total_statistics.nr_of_total_requirements)}"
     inner_width = visible_table_width - 2  # subtract ╒ and ╕
     title = (
         "╒" + "═" * inner_width + "╕" + f"\n│{header_req_data.center(inner_width)}│" + "\n╘" + "═" * inner_width + "╛"
@@ -216,24 +216,24 @@ def _status_table(stats_container: StatisticsContainer) -> str:
     legend_line = "T = Total, P = Passed, F = Failed, S = Skipped, M = Missing"
 
     statistics = _summarize_statistics(
-        nr_of_total_reqs=stats_container._total_statistics.nr_of_total_requirements,
-        nr_of_completed_reqs=stats_container._total_statistics.nr_of_completed_requirements,
-        implemented=stats_container._total_statistics.nr_of_reqs_with_implementation,
-        left_to_implement=stats_container._total_statistics.nr_of_total_requirements
+        nr_of_total_reqs=stats_container.total_statistics.nr_of_total_requirements,
+        nr_of_completed_reqs=stats_container.total_statistics.nr_of_completed_requirements,
+        implemented=stats_container.total_statistics.nr_of_reqs_with_implementation,
+        left_to_implement=stats_container.total_statistics.nr_of_total_requirements
         - (
-            stats_container._total_statistics.nr_of_reqs_with_implementation
-            + stats_container._total_statistics.nr_of_total_reqs_no_implementation
+            stats_container.total_statistics.nr_of_reqs_with_implementation
+            + stats_container.total_statistics.nr_of_total_reqs_no_implementation
         ),
-        total_tests=stats_container._total_statistics.nr_of_total_tests,
-        passed_tests=stats_container._total_statistics.nr_of_passed_tests,
-        failed_tests=stats_container._total_statistics.nr_of_failed_tests,
-        skipped_tests=stats_container._total_statistics.nr_of_skipped_tests,
-        missing_automated_tests=stats_container._total_statistics.nr_of_missing_automated_tests,
-        missing_manual_tests=stats_container._total_statistics.nr_of_missing_manual_tests,
-        nr_of_total_svcs=stats_container._total_statistics.nr_of_total_svcs,
-        nr_of_reqs_without_implementation=(stats_container._total_statistics.nr_of_total_reqs_no_implementation),
+        total_tests=stats_container.total_statistics.nr_of_total_tests,
+        passed_tests=stats_container.total_statistics.nr_of_passed_tests,
+        failed_tests=stats_container.total_statistics.nr_of_failed_tests,
+        skipped_tests=stats_container.total_statistics.nr_of_skipped_tests,
+        missing_automated_tests=stats_container.total_statistics.nr_of_missing_automated_tests,
+        missing_manual_tests=stats_container.total_statistics.nr_of_missing_manual_tests,
+        nr_of_total_svcs=stats_container.total_statistics.nr_of_total_svcs,
+        nr_of_reqs_without_implementation=(stats_container.total_statistics.nr_of_total_reqs_no_implementation),
         nr_of_completed_reqs_without_implementation=(
-            stats_container._total_statistics.nr_of_completed_reqs_no_implementation
+            stats_container.total_statistics.nr_of_completed_reqs_no_implementation
         ),
     )
 

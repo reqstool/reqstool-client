@@ -30,8 +30,8 @@ def svc_filters() -> Dict[str, SVCFilter]:
 @pytest.fixture
 def svc_data_1() -> svcs.SVCData:
     return svcs.SVCData(
-        id="SVC_001",
-        requirement_ids=["REQ_001", "REQ_002"],
+        id=UrnId(urn="sys-A", id="SVC_001"),
+        requirement_ids=[UrnId(urn="sys-A", id="REQ_001"), UrnId(urn="sys-A", id="REQ_002")],
         title="Title SVC_001",
         description="Description SVC_001",
         verification=svcs.VERIFICATIONTYPES.AUTOMATED_TEST,
@@ -43,8 +43,8 @@ def svc_data_1() -> svcs.SVCData:
 @pytest.fixture
 def svc_data_2() -> svcs.SVCData:
     return svcs.SVCData(
-        id="SVC_002",
-        requirement_ids=["REQ_201", "REQ_202"],
+        id=UrnId(urn="sys-A", id="SVC_002"),
+        requirement_ids=[UrnId(urn="sys-A", id="REQ_201"), UrnId(urn="sys-A", id="REQ_202")],
         title="Title SVC_002",
         description="Description SVC_002",
         verification=svcs.VERIFICATIONTYPES.AUTOMATED_TEST,
@@ -76,18 +76,18 @@ def test_svcs_data(svcs_data: svcs.SVCsData):
 
 
 def test_svc_data(svc_data_1: svcs.SVCData, svc_data_2: svcs.SVCData):
-    assert svc_data_1.id == "SVC_001"
-    assert svc_data_1.requirement_ids == ["REQ_001", "REQ_002"]
+    assert svc_data_1.id == UrnId(urn="sys-A", id="SVC_001")
+    assert svc_data_1.requirement_ids == [UrnId(urn="sys-A", id="REQ_001"), UrnId(urn="sys-A", id="REQ_002")]
     assert svc_data_1.title == "Title SVC_001"
     assert svc_data_1.description == "Description SVC_001"
     assert svc_data_1.verification == svcs.VERIFICATIONTYPES.AUTOMATED_TEST
     assert svc_data_1.instructions == "Some instructions SVC_001"
-    assert svc_data_1.revision == "0.0.1"
+    assert str(svc_data_1.revision) == "0.0.1"
 
-    assert svc_data_2.id == "SVC_002"
-    assert svc_data_2.requirement_ids == ["REQ_201", "REQ_202"]
+    assert svc_data_2.id == UrnId(urn="sys-A", id="SVC_002")
+    assert svc_data_2.requirement_ids == [UrnId(urn="sys-A", id="REQ_201"), UrnId(urn="sys-A", id="REQ_202")]
     assert svc_data_2.title == "Title SVC_002"
     assert svc_data_2.description == "Description SVC_002"
     assert svc_data_2.verification == svcs.VERIFICATIONTYPES.AUTOMATED_TEST
     assert svc_data_2.instructions == "Some instructions SVC_002"
-    assert svc_data_2.revision == "0.0.1"
+    assert str(svc_data_2.revision) == "0.0.1"

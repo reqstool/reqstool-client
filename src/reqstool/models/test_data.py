@@ -1,8 +1,9 @@
 # Copyright © LFV
 
-from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from reqstool.common.dataclasses.urn_id import UrnId
 
@@ -14,13 +15,13 @@ class TEST_RUN_STATUS(Enum):
     MISSING = "missing"
 
 
-@dataclass
-class TestData:
+class TestData(BaseModel):
     fully_qualified_name: str
     status: TEST_RUN_STATUS
 
 
-@dataclass
-class TestsData:
+class TestsData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     # key: urn + fqn
-    tests: Dict[UrnId, TestData] = field(default_factory=dict)
+    tests: Dict[UrnId, TestData] = Field(default_factory=dict)
