@@ -1,0 +1,29 @@
+Traceback (most recent call last):
+  File "/home/jimisola/cloud/dev/clones/github/reqstool/reqstool-client/src/reqstool/command.py", line 408, in <module>
+    main()
+    ~~~~^^
+  File "/home/jimisola/cloud/dev/clones/github/reqstool/reqstool-client/src/reqstool/command.py", line 397, in main
+    exit_code = command.command_status(status_args=args)
+  File "/home/jimisola/cloud/dev/clones/github/reqstool/reqstool-client/src/reqstool/command.py", line 355, in command_status
+    result = StatusCommand(location=initial_source)
+  File "/home/jimisola/cloud/dev/clones/github/reqstool/reqstool-client/src/reqstool/commands/status/status.py", line 21, in __init__
+    self.result = self.__status_result()
+                  ~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/jimisola/cloud/dev/clones/github/reqstool/reqstool-client/src/reqstool/commands/status/status.py", line 24, in __status_result
+    statistics: StatisticsContainer = StatisticsGenerator(
+                                      ~~~~~~~~~~~~~~~~~~~^
+        initial_location=self.__initial_location,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ).result
+    ^
+  File "/home/jimisola/cloud/dev/clones/github/reqstool/reqstool-client/src/reqstool/commands/status/statistics_generator.py", line 46, in __init__
+    self.result: StatisticsContainer = self._calculate(self.cid)
+                                       ~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/jimisola/cloud/dev/clones/github/reqstool/reqstool-client/src/reqstool/commands/status/statistics_generator.py", line 99, in _calculate
+    self._check_implementation(urn_id=urn_id, nr_of_implementations=nr_of_implementations)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jimisola/cloud/dev/clones/github/reqstool/reqstool-client/src/reqstool/commands/status/statistics_generator.py", line 131, in _check_implementation
+    raise TypeError(f"Requirement {urn_id} should not have an implementation")
+TypeError: Requirement ms-101:REQ_1339 should not have an implementation
