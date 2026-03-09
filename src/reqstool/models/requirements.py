@@ -4,7 +4,7 @@ from enum import Enum, unique
 from typing import Annotated, Dict, List, Optional, Set
 
 from packaging.version import Version
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PlainSerializer, field_serializer
 
 from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, LifecycleData
 from reqstool.common.dataclasses.urn_id import UrnId
@@ -19,7 +19,11 @@ def _coerce_version(v):
     return v
 
 
-VersionField = Annotated[Version, BeforeValidator(_coerce_version)]
+def _serialize_version(v):
+    return {"major": v.major, "minor": v.minor, "patch": v.micro}
+
+
+VersionField = Annotated[Version, BeforeValidator(_coerce_version), PlainSerializer(_serialize_version)]
 
 
 @unique
@@ -68,13 +72,18 @@ class IMPLEMENTATION(Enum):
 
 
 class ReferenceData(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     requirement_ids: Set[UrnId] = Field(default_factory=set)
 
+    @field_serializer("requirement_ids")
+    @classmethod
+    def sorted_requirement_ids(cls, v):
+        return sorted(v)
+
 
 class RequirementData(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     id: UrnId
     title: str
@@ -91,6 +100,8 @@ class RequirementData(BaseModel):
 
 
 class MetaData(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     urn: str
     variant: VARIANTS
     title: str

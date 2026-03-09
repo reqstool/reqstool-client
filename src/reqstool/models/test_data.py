@@ -16,6 +16,8 @@ class TEST_RUN_STATUS(Enum):
 
 
 class TestData(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     fully_qualified_name: str
     status: TEST_RUN_STATUS
 

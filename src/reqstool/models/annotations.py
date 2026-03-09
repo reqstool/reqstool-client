@@ -8,6 +8,8 @@ from reqstool.common.dataclasses.urn_id import UrnId
 
 
 class AnnotationData(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     element_kind: str  # FIELD, METHOD, CLASS, ENUM, INTERFACE, RECORD
     fully_qualified_name: str
 

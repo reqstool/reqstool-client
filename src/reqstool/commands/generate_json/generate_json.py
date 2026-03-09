@@ -3,11 +3,8 @@
 
 import json
 import logging
-from enum import Enum
-from typing import Any, List, Optional
+from typing import List, Optional
 
-from packaging.version import Version
-from pydantic import BaseModel
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.dataclasses.urn_id import UrnId
@@ -20,25 +17,6 @@ from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.raw_datasets import CombinedRawDataset
 
 logger = logging.getLogger(__name__)
-
-
-def _serialize(obj: Any) -> Any:
-    """Recursively serialize Pydantic models, dataclasses, enums, UrnId, Version, sets, and dicts with non-string keys."""
-    if isinstance(obj, UrnId):
-        return str(obj)
-    if isinstance(obj, Version):
-        return {"major": obj.major, "minor": obj.minor, "patch": obj.micro}
-    if isinstance(obj, Enum):
-        return obj.value
-    if isinstance(obj, set):
-        return sorted(_serialize(v) for v in obj)
-    if isinstance(obj, (list, tuple)):
-        return [_serialize(v) for v in obj]
-    if isinstance(obj, dict):
-        return {_serialize(k): _serialize(v) for k, v in obj.items()}
-    if isinstance(obj, BaseModel):
-        return {name: _serialize(getattr(obj, name)) for name in type(obj).model_fields}
-    return obj
 
 
 @Requirements("REQ_030")
@@ -150,4 +128,4 @@ class GenerateJsonCommand:
         if self.__req_ids or self.__svc_ids:
             cids = self._filter_by_ids(cids)
 
-        return json.dumps(_serialize(cids), separators=(", ", ": "))
+        return json.dumps(cids.model_dump(mode="json"), separators=(", ", ": "))

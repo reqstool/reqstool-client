@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Set
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.models.annotations import AnnotationData
@@ -53,3 +53,8 @@ class CombinedIndexedDataset(BaseModel):
     # mvr indexes
     mvrs_from_urn: Dict[str, List[UrnId]]
     mvrs_from_svc: Dict[UrnId, List[UrnId]]
+
+    @field_serializer("visited_imports_during_filtering")
+    @classmethod
+    def sorted_visited_imports(cls, v):
+        return sorted(v)

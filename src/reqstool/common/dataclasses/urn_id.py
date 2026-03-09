@@ -1,6 +1,6 @@
 # Copyright © LFV
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_serializer
 
 URN_ID_SEPARATOR: str = ":"
 
@@ -10,6 +10,10 @@ class UrnId(BaseModel):
 
     urn: str
     id: str
+
+    @model_serializer
+    def ser_model(self):
+        return str(self)
 
     @staticmethod
     def instance(urn_id_str: str) -> "UrnId":

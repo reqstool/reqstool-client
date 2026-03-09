@@ -8,7 +8,7 @@ from reqstool.common.dataclasses.urn_id import UrnId
 
 
 class MVRData(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     id: UrnId
     comment: Optional[str] = None

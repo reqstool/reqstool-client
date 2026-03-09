@@ -1,23 +1,14 @@
 # Copyright © LFV
 
 from enum import Enum, unique
-from typing import Annotated, Dict, List, Optional
+from typing import Dict, List, Optional
 
-from packaging.version import Version
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, LifecycleData
 from reqstool.common.dataclasses.urn_id import UrnId
 from reqstool.filters.svcs_filters import SVCFilter
-
-
-def _coerce_version(v):
-    if isinstance(v, str):
-        return Version(v)
-    return v
-
-
-VersionField = Annotated[Version, BeforeValidator(_coerce_version)]
+from reqstool.models.requirements import VersionField
 
 
 @unique

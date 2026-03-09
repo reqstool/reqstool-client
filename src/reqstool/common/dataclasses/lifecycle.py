@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum, unique
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 @unique
@@ -25,6 +25,8 @@ lifecycle_state_sort_order = {
 
 
 class LifecycleData(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     reason: Optional[str] = None
     state: LIFECYCLESTATE = LIFECYCLESTATE.EFFECTIVE
 
