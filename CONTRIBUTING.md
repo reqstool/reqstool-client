@@ -39,3 +39,18 @@ hatch run dev:black src tests
 # Lint with flake8
 hatch run dev:flake8
 ```
+
+## Model Generation
+
+Pydantic data models in `src/reqstool/models/generated/` are auto-generated from the JSON Schemas
+in `src/reqstool/resources/schemas/v1/`. **JSON Schema is the source of truth** — never edit the
+generated files directly.
+
+To regenerate after modifying a schema:
+
+```bash
+hatch run dev:codegen
+```
+
+This runs `datamodel-codegen` to produce Pydantic v2 `BaseModel` classes from all schema files.
+The generated files should be committed alongside the schema changes.
