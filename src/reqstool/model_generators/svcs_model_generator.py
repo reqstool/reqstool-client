@@ -12,6 +12,7 @@ from reqstool.common.utils import Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxValidator
 from reqstool.filters.svcs_filters import SVCFilter
+from reqstool.models.generated.software_verification_cases_schema import Model as SVCsPydanticModel
 from reqstool.models.svcs import VERIFICATIONTYPES, SVCData, SVCsData
 
 
@@ -34,32 +35,33 @@ class SVCsModelGenerator:
         ):
             sys.exit(EXIT_CODE_SYNTAX_VALIDATION_ERROR)
 
-        cases = self.__parse_svcs(data)
+        # Semantic validation still operates on raw dict
+        self.semantic_validator._validate_no_duplicate_svc_ids(data=data)
 
+        validated = SVCsPydanticModel.model_validate(data)
+
+        cases = self.__parse_svcs(validated)
         filters = self.__parse_svc_filters(data)
 
         return SVCsData(cases=cases, filters=filters)
 
-    def __parse_svcs(self, data) -> dict[UrnId, SVCData]:
+    def __parse_svcs(self, validated: SVCsPydanticModel) -> dict[UrnId, SVCData]:
         r_result = {}
 
-        self.semantic_validator._validate_no_duplicate_svc_ids(data=data)
-
-        if "cases" not in data:
-            return r_result
-
-        for case in data["cases"]:
-            urn_id = UrnId(urn=self.urn, id=case["id"])
+        for case in validated.cases:
+            urn_id = UrnId(urn=self.urn, id=case.id)
 
             svc = SVCData(
                 id=urn_id,
-                requirement_ids=Utils.convert_ids_to_urn_id(ids=case["requirement_ids"], urn=self.urn),
-                title=case["title"],
-                description=case.get("description"),
-                verification=VERIFICATIONTYPES(case["verification"]),
-                instructions=case.get("instructions"),
-                revision=Utils.parse_version(version_str=case["revision"], urn_id=urn_id),
-                lifecycle=LifecycleData.from_dict(case.get("lifecycle")),
+                requirement_ids=Utils.convert_ids_to_urn_id(ids=[uid.root for uid in case.requirement_ids], urn=self.urn),
+                title=case.title,
+                description=case.description,
+                verification=VERIFICATIONTYPES(case.verification.value),
+                instructions=case.instructions,
+                revision=Utils.parse_version(version_str=case.revision, urn_id=urn_id),
+                lifecycle=LifecycleData.from_dict(
+                    {"state": case.lifecycle.state.value, "reason": case.lifecycle.reason} if case.lifecycle else None
+                ),
             )
 
             if svc.id not in r_result:

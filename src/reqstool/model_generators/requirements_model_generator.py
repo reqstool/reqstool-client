@@ -20,6 +20,7 @@ from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.location import LOCATIONTYPES, LocationInterface
 from reqstool.locations.maven_location import MavenLocation
 from reqstool.locations.pypi_location import PypiLocation
+from reqstool.models.generated.requirements_schema import Model as RequirementsPydanticModel
 from reqstool.models.implementations import (
     GitImplData,
     ImplementationDataInterface,
@@ -89,7 +90,9 @@ class RequirementsModelGenerator:
         if not SyntaxValidator.is_valid_data(json_schema_type=JsonSchemaTypes.REQUIREMENTS, data=data, urn=urn):
             sys.exit(EXIT_CODE_SYNTAX_VALIDATION_ERROR)
 
-        r_metadata: MetaData = self.__parse_metadata(data["metadata"])
+        validated = RequirementsPydanticModel.model_validate(data)
+
+        r_metadata: MetaData = self.__parse_metadata(validated.root)
 
         r_implementations: List[ImplementationDataInterface] = []
         r_imports: List[ImportDataInterface] = []
@@ -99,18 +102,18 @@ class RequirementsModelGenerator:
         match r_metadata.variant:
             case VARIANTS.SYSTEM:
                 self.prefix_with_urn = False
-                r_imports = self.__parse_imports(data=data)
+                r_imports = self.__parse_imports(validated.root)
                 r_filters = self.__parse_requirement_filters(data=data)
-                r_implementations = self.__parse_implementations(data=data)
-                r_requirements = self.__parse_requirements(data=data)
+                r_implementations = self.__parse_implementations(validated.root)
+                r_requirements = self.__parse_requirements(validated.root, data=data)
             case VARIANTS.MICROSERVICE:
                 self.prefix_with_urn = False
-                r_imports = self.__parse_imports(data=data)
+                r_imports = self.__parse_imports(validated.root)
                 r_filters = self.__parse_requirement_filters(data=data)
-                r_requirements = self.__parse_requirements(data=data)
+                r_requirements = self.__parse_requirements(validated.root, data=data)
             case VARIANTS.EXTERNAL:
                 self.prefix_with_urn = False
-                r_requirements = self.__parse_requirements(data=data)
+                r_requirements = self.__parse_requirements(validated.root, data=data)
             case _:
                 raise RuntimeError("Unsupported system type")
 
@@ -122,143 +125,123 @@ class RequirementsModelGenerator:
             filters=r_filters,
         )
 
-    def __parse_metadata(self, data):
-        r_urn: str = data["urn"]
-        r_variant: VARIANTS = VARIANTS(data["variant"])
-        r_title: str = data["title"]
-        r_url: str = None if "url" not in data else data["url"]
+    def __parse_metadata(self, model):
+        r_urn: str = model.metadata.urn
+        r_variant: VARIANTS = VARIANTS(model.metadata.variant.value)
+        r_title: str = model.metadata.title
+        r_url: str = model.metadata.url
 
         return MetaData(urn=r_urn, variant=r_variant, title=r_title, url=r_url)
 
-    def __parse_implementations(self, data):
+    def __parse_implementations(self, model):
         locations = []
 
-        if LOCATION_SOURCE_TYPES.implementations.value in data:
-            # local
+        if model.implementations is not None:
             self.__parse_location_local(
-                location_source_types=LOCATION_SOURCE_TYPES.implementations,
-                data=data,
+                locations_obj=model.implementations,
                 instance_type=LocalImplData,
                 locations=locations,
             )
-
-            # git
             self.__parse_location_git(
-                location_source_types=LOCATION_SOURCE_TYPES.implementations,
-                data=data,
+                locations_obj=model.implementations,
                 instance_type=GitImplData,
                 locations=locations,
             )
-
-            # maven
             self.__parse_location_maven(
-                location_source_types=LOCATION_SOURCE_TYPES.implementations,
-                data=data,
+                locations_obj=model.implementations,
                 instance_type=MavenImplData,
                 locations=locations,
             )
-            # pypi
             self.__parse_location_pypi(
-                location_source_types=LOCATION_SOURCE_TYPES.implementations,
-                data=data,
+                locations_obj=model.implementations,
                 instance_type=PypiImplData,
                 locations=locations,
             )
 
         return locations
 
-    def __parse_imports(self, data):
+    def __parse_imports(self, model):
         locations = []
 
-        if LOCATION_SOURCE_TYPES.imports.value in data:
-            # local
+        if model.imports is not None:
             self.__parse_location_local(
-                location_source_types=LOCATION_SOURCE_TYPES.imports,
-                data=data,
+                locations_obj=model.imports,
                 instance_type=LocalImportData,
                 locations=locations,
             )
-
-            # git
             self.__parse_location_git(
-                location_source_types=LOCATION_SOURCE_TYPES.imports,
-                data=data,
+                locations_obj=model.imports,
                 instance_type=GitImportData,
                 locations=locations,
             )
-
-            # maven
             self.__parse_location_maven(
-                location_source_types=LOCATION_SOURCE_TYPES.imports,
-                data=data,
+                locations_obj=model.imports,
                 instance_type=MavenImportData,
                 locations=locations,
             )
-            # pypi
             self.__parse_location_pypi(
-                location_source_types=LOCATION_SOURCE_TYPES.imports,
-                data=data,
+                locations_obj=model.imports,
                 instance_type=PypiImportData,
                 locations=locations,
             )
 
         return locations
 
-    def __parse_location_maven(self, location_source_types: LOCATION_SOURCE_TYPES, data, instance_type, locations):
-        if LOCATIONTYPES.MAVEN.value in data[location_source_types.value]:
-            for maven in data[location_source_types.value][LOCATIONTYPES.MAVEN.value]:
+    def __parse_location_maven(self, locations_obj, instance_type, locations):
+        if locations_obj.maven is not None:
+            for maven in locations_obj.maven:
                 MAVEN_CENTRAL_REPO_URL: str = "https://repo.maven.apache.org/maven2/"
 
                 maven_location = instance_type(
                     parent=self.parent,
                     _current_unresolved=MavenLocation(
-                        env_token=maven["env_token"] if "env_token" in maven else None,
-                        url=maven["url"] if "url" in maven else MAVEN_CENTRAL_REPO_URL,
-                        group_id=maven["group_id"],
-                        artifact_id=maven["artifact_id"],
-                        version=maven["version"],
-                        classifier=maven["classifier"] if "classifier" in maven else "reqstool",
+                        env_token=maven.env_token,
+                        url=maven.url.root if maven.url else MAVEN_CENTRAL_REPO_URL,
+                        group_id=maven.group_id,
+                        artifact_id=maven.artifact_id,
+                        version=maven.version,
+                        classifier=maven.classifier if maven.classifier else "reqstool",
                     ),
                 )
 
                 locations.append(maven_location)
 
-    def __parse_location_pypi(self, location_source_types: LOCATION_SOURCE_TYPES, data, instance_type, locations):
-        if LOCATIONTYPES.PYPI.value in data[location_source_types.value]:
-            for pypi in data[location_source_types.value][LOCATIONTYPES.PYPI.value]:
+    def __parse_location_pypi(self, locations_obj, instance_type, locations):
+        if locations_obj.pypi is not None:
+            for pypi in locations_obj.pypi:
                 PYPI_ORG_SIMPLE_API_URL: str = "https://pypi.org/simple/"
 
                 pypi_location = instance_type(
                     parent=self.parent,
                     _current_unresolved=PypiLocation(
-                        env_token=pypi["env_token"] if "env_token" in pypi else None,
-                        url=pypi["url"] if "url" in pypi else PYPI_ORG_SIMPLE_API_URL,
-                        package=pypi["package"],
-                        version=pypi["version"],
+                        env_token=pypi.env_token,
+                        url=pypi.url.root if pypi.url else PYPI_ORG_SIMPLE_API_URL,
+                        package=pypi.package,
+                        version=pypi.version,
                     ),
                 )
 
                 locations.append(pypi_location)
 
-    def __parse_location_local(self, location_source_types: LOCATION_SOURCE_TYPES, data, instance_type, locations):
-        if LOCATIONTYPES.LOCAL.value in data[location_source_types.value]:
-            for local in data[location_source_types.value][LOCATIONTYPES.LOCAL.value]:
+    def __parse_location_local(self, locations_obj, instance_type, locations):
+        if locations_obj.local is not None:
+            for local in locations_obj.local:
                 local_location = instance_type(
-                    parent=self.parent, _current_unresolved=LocalLocation(path=local["path"])
+                    parent=self.parent, _current_unresolved=LocalLocation(path=local.path)
                 )
 
                 locations.append(local_location)
 
-    def __parse_location_git(self, location_source_types: LOCATION_SOURCE_TYPES, data, instance_type, locations):
-        if LOCATIONTYPES.GIT.value in data[location_source_types.value]:
-            for git in data[location_source_types.value][LOCATIONTYPES.GIT.value]:
+    def __parse_location_git(self, locations_obj, instance_type, locations):
+        if locations_obj.git is not None:
+            for git in locations_obj.git:
                 git_location = instance_type(
                     parent=self.parent,
                     _current_unresolved=GitLocation(
-                        env_token=git["env_token"] if "env_token" in git else None,
-                        url=git["url"],
-                        branch=git["branch"],
-                        path=git["path"],
+                        env_token=git.env_token,
+                        url=git.url,
+                        branch=git.branch,
+                        path=git.path,
                     ),
                 )
 
@@ -316,41 +299,44 @@ class RequirementsModelGenerator:
         return r_filters
 
     @Requirements("REQ_004", "REQ_036")
-    def __parse_requirements(self, data):  # NOSONAR
+    def __parse_requirements(self, model, data):  # NOSONAR
         r_reqs = {}
 
         self.semantic_validator._validate_no_duplicate_requirement_ids(data=data)
 
-        if "requirements" in data:
-            for req in data["requirements"]:
-                refs_data = []
-                urn = data["metadata"]["urn"]
+        if model.requirements is not None:
+            urn = model.metadata.urn
 
-                if "references" in req:
+            for req in model.requirements:
+                refs_data = []
+
+                if req.references is not None:
                     refs_data.extend(
                         [
                             ReferenceData(
                                 requirement_ids=Utils.convert_ids_to_urn_id(
-                                    ids=req["references"]["requirement_ids"], urn=urn
+                                    ids=[uid.root for uid in req.references.requirement_ids], urn=urn
                                 )
                             )
                         ]
                     )
 
-                rationale = req.get("rationale")
-                implementation = req.get("implementation", IMPLEMENTATION.IN_CODE.value)
-                urn_id = UrnId(urn=urn, id=req["id"])
+                rationale = req.rationale
+                implementation = req.implementation.value if req.implementation else IMPLEMENTATION.IN_CODE.value
+                urn_id = UrnId(urn=urn, id=req.id)
                 req_data = RequirementData(
                     id=urn_id,
-                    title=req["title"],
-                    significance=SIGNIFICANCETYPES(req["significance"]),
-                    description=req["description"],
+                    title=req.title,
+                    significance=SIGNIFICANCETYPES(req.significance.value),
+                    description=req.description,
                     rationale=rationale,
                     implementation=IMPLEMENTATION(implementation),
-                    categories=[CATEGORIES(c) for c in req["categories"]],
+                    categories=[CATEGORIES(c.value) for c in req.categories],
                     references=refs_data,
-                    revision=Utils.parse_version(version_str=req["revision"], urn_id=urn_id),
-                    lifecycle=LifecycleData.from_dict(req.get("lifecycle")),
+                    revision=Utils.parse_version(version_str=req.revision, urn_id=urn_id),
+                    lifecycle=LifecycleData.from_dict(
+                        {"state": req.lifecycle.state.value, "reason": req.lifecycle.reason} if req.lifecycle else None
+                    ),
                 )
 
                 if req_data.id not in r_reqs:
