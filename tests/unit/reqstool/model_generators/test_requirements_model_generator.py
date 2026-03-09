@@ -1,8 +1,8 @@
 # Copyright © LFV
 
 
-from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.lifecycle import LIFECYCLESTATE
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.model_generators.requirements_model_generator import RequirementsModelGenerator

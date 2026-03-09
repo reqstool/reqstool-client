@@ -2,7 +2,7 @@
 
 import pytest
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.model_generators.mvrs_model_generator import MVRsModelGenerator
 
 MVRS_YML_FILE = "manual_verification_results.yml"

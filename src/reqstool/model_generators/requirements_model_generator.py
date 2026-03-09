@@ -9,8 +9,8 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 from ruamel.yaml import YAML
 
 from reqstool.commands.exit_codes import EXIT_CODE_SYNTAX_VALIDATION_ERROR
-from reqstool.common.dataclasses.lifecycle import LifecycleData
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.lifecycle import LifecycleData
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxValidator

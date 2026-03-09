@@ -4,7 +4,7 @@ from typing import Dict
 
 import pytest
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.filters.svcs_filters import SVCFilter
 from reqstool.models import svcs
 

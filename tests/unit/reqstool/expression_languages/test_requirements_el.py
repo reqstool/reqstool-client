@@ -3,7 +3,7 @@
 import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.expression_languages.requirements_el import RequirementsELTransformer
 from reqstool.models.requirements import SIGNIFICANCETYPES, RequirementData
 

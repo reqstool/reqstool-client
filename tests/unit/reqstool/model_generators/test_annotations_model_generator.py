@@ -2,7 +2,7 @@
 
 import pytest
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.model_generators.annotations_model_generator import AnnotationsModelGenerator
 from reqstool.models.annotations import AnnotationsData
 

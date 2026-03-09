@@ -6,8 +6,8 @@ from typing import Annotated, Dict, List, Optional, Set
 from packaging.version import Version
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PlainSerializer, field_serializer
 
-from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, LifecycleData
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.lifecycle import LIFECYCLESTATE, LifecycleData
+from reqstool.common.models.urn_id import UrnId
 from reqstool.filters.requirements_filters import RequirementFilter
 from reqstool.models.implementations import ImplementationDataInterface
 from reqstool.models.imports import ImportDataInterface

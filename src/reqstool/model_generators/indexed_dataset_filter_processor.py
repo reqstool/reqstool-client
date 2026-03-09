@@ -6,7 +6,7 @@ from typing import Dict, List, Set, Tuple
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.expression_languages.requirements_el import RequirementsELTransformer
 from reqstool.expression_languages.svcs_el import SVCsELTransformer
 from reqstool.filters.id_filters import IDFilters

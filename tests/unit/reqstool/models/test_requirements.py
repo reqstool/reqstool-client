@@ -2,7 +2,7 @@
 
 import pytest
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models.requirements import (
     CATEGORIES,
     SIGNIFICANCETYPES,

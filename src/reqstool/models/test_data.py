@@ -5,7 +5,7 @@ from typing import Dict
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 
 
 class TEST_RUN_STATUS(Enum):

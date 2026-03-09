@@ -10,7 +10,7 @@ from reqstool.commands.report.criterias.group_by import GroupbyOptions, GroupByO
 from reqstool.commands.report.criterias.sort_by import SortByOptions
 from reqstool.commands.status.statistics_container import StatisticsContainer
 from reqstool.commands.status.statistics_generator import StatisticsGenerator
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.jinja2 import Jinja2Utils
 from reqstool.common.utils import Utils
 from reqstool.common.validator_error_holder import ValidationErrorHolder

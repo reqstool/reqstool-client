@@ -9,7 +9,7 @@ from typing import Dict, List
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models.test_data import TEST_RUN_STATUS, TestData, TestsData
 
 

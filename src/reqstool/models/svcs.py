@@ -5,8 +5,8 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, LifecycleData
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.lifecycle import LIFECYCLESTATE, LifecycleData
+from reqstool.common.models.urn_id import UrnId
 from reqstool.filters.svcs_filters import SVCFilter
 from reqstool.models.requirements import VersionField
 

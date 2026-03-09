@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models.requirements import IMPLEMENTATION
 
 

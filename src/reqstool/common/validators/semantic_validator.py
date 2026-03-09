@@ -8,7 +8,7 @@ from colorama import Fore, Style
 from reqstool_python_decorators.decorators.decorators import Requirements
 from tabulate import tabulate
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validator_error_holder import ValidationError, ValidationErrorHolder
 from reqstool.models.imports import ImportDataInterface

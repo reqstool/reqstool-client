@@ -6,7 +6,7 @@ from typing import Dict, List, Sequence
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.commands.status.statistics_container import StatisticsContainer, TestStatisticsItem
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
 from reqstool.model_generators.combined_indexed_dataset_generator import CombinedIndexedDatasetGenerator

@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.commands.report.criterias.sort_by import SortByOptions
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.requirements import RequirementData
 

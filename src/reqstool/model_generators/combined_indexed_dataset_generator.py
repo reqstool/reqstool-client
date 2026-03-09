@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Set
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validators.lifecycle_validator import LifecycleValidator
 from reqstool.model_generators.indexed_dataset_filter_processor import _IndexedDatasetFilterProcessor

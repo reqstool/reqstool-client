@@ -2,7 +2,7 @@
 
 import pytest
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 
 
 def test_assure_urn_id_bare_id_returns_urn_id():

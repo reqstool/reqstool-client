@@ -4,7 +4,7 @@ from typing import Dict, List, Set
 
 from pydantic import BaseModel, ConfigDict, field_serializer
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models.annotations import AnnotationData
 from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import RequirementData
