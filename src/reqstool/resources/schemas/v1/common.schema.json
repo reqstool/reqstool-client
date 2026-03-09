@@ -11,12 +11,16 @@
                     "type": "object",
                     "description": "An URI to the parent systems or external systems to receive requirements or SVCs",
                     "additionalProperties": false,
-                    "patternProperties": {
-                        "^requirement_ids|svc_ids|mvr_ids$": {
-                            "$ref": "#/$defs/filterids"
-                        }
-                    },
                     "properties": {
+                        "requirement_ids": {
+                            "$ref": "#/$defs/filterids"
+                        },
+                        "svc_ids": {
+                            "$ref": "#/$defs/filterids"
+                        },
+                        "mvr_ids": {
+                            "$ref": "#/$defs/filterids"
+                        },
                         "custom": {
                             "type": "object",
                             "additionalProperties": false,
