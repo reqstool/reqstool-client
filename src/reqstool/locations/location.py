@@ -1,8 +1,9 @@
 # Copyright © LFV
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from enum import Enum, unique
+
+from pydantic import BaseModel, ConfigDict
 
 
 @unique
@@ -13,8 +14,9 @@ class LOCATIONTYPES(Enum):
     PYPI = "pypi"
 
 
-@dataclass(kw_only=True)
-class LocationInterface(ABC):
+class LocationInterface(BaseModel, ABC):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     @abstractmethod
     def _make_available_on_localdisk(self, dst_path: str) -> str:
         pass

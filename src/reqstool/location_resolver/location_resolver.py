@@ -1,34 +1,36 @@
 # Copyright © LFV
 
-import dataclasses
-from dataclasses import dataclass, field
 from pathlib import PurePath
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
 
 from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.location import LocationInterface
 
 
-@dataclass(kw_only=True)
-class LocationResolver:
-    parent: LocationInterface
-    current: LocationInterface = field(init=False)
-    _current_unresolved: LocationInterface
+class LocationResolver(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def __post_init__(self):
-        self.current = self._LocationResolver__resolve_resolved()
+    current_unresolved: LocationInterface
+    parent: Optional[LocationInterface] = None
+    current: Optional[LocationInterface] = None
+
+    def model_post_init(self, __context):
+        object.__setattr__(self, "current", self.__resolve_resolved())
 
     def __resolve_resolved(self) -> LocationInterface:
         # Parent: None   Current: X     -> Resolved: X
         if self.parent is None:
-            resolved = self._current_unresolved
-        elif isinstance(self._current_unresolved, LocalLocation):
+            resolved = self.current_unresolved
+        elif isinstance(self.current_unresolved, LocalLocation):
             # Parent: X  Current: Local -> Resolved: X (resolve path)
-            if PurePath(self._current_unresolved.path).is_absolute():
-                new_path = self._current_unresolved.path
+            if PurePath(self.current_unresolved.path).is_absolute():
+                new_path = self.current_unresolved.path
             else:
-                new_path = PurePath(self.parent.path, self._current_unresolved.path)
+                new_path = PurePath(self.parent.path, self.current_unresolved.path)
 
-            resolved = dataclasses.replace(self.parent, path=new_path)
+            resolved = self.parent.model_copy(update={"path": new_path})
 
         # Parent: Local  Current: Git   -> Resolved: Git
         # Parent: Local  Current: Maven -> Resolved: Maven
@@ -39,7 +41,7 @@ class LocationResolver:
         # Parent: Maven  Current: Maven -> Resolved: Maven
         # etc
         else:
-            resolved = self._current_unresolved
+            resolved = self.current_unresolved
 
         return resolved
 

@@ -3,7 +3,6 @@
 import logging
 import os
 import sys
-from dataclasses import dataclass, field
 from typing import Optional
 
 from maven_artifact import Artifact, Downloader, RequestException
@@ -14,14 +13,13 @@ from reqstool.locations.location import LocationInterface
 
 
 @Requirements("REQ_003", "REQ_017")
-@dataclass(kw_only=True)
 class MavenLocation(LocationInterface):
     url: Optional[str] = "https://repo.maven.apache.org/maven2"
     group_id: str
     artifact_id: str
     version: str
-    classifier: str = field(default="reqstool")
-    env_token: str
+    classifier: str = "reqstool"
+    env_token: Optional[str] = None
 
     def _make_available_on_localdisk(self, dst_path: str):
         token = os.getenv(self.env_token)

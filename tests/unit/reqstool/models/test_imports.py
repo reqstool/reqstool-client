@@ -12,7 +12,7 @@ from reqstool.models import imports
 def git_import_data():
     return imports.GitImportData(
         parent=None,
-        _current_unresolved=GitLocation(
+        current_unresolved=GitLocation(
             env_token="GITLAB_TOKEN",
             branch="main",
             url="https://gitlab.example.com",
@@ -23,14 +23,14 @@ def git_import_data():
 
 @pytest.fixture
 def local_import_data():
-    return imports.LocalImportData(parent=None, _current_unresolved=LocalLocation(path="local/some/path"))
+    return imports.LocalImportData(parent=None, current_unresolved=LocalLocation(path="local/some/path"))
 
 
 @pytest.fixture
 def maven_import_data():
     return imports.MavenImportData(
         parent=None,
-        _current_unresolved=MavenLocation(
+        current_unresolved=MavenLocation(
             env_token="MAVEN_TOKEN",
             url="https://repo1.maven.org/maven2",
             group_id="com.example",

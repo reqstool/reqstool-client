@@ -194,7 +194,7 @@ class RequirementsModelGenerator:
 
                 maven_location = instance_type(
                     parent=self.parent,
-                    _current_unresolved=MavenLocation(
+                    current_unresolved=MavenLocation(
                         env_token=maven.env_token,
                         url=maven.url.root if maven.url else MAVEN_CENTRAL_REPO_URL,
                         group_id=maven.group_id,
@@ -213,7 +213,7 @@ class RequirementsModelGenerator:
 
                 pypi_location = instance_type(
                     parent=self.parent,
-                    _current_unresolved=PypiLocation(
+                    current_unresolved=PypiLocation(
                         env_token=pypi.env_token,
                         url=pypi.url.root if pypi.url else PYPI_ORG_SIMPLE_API_URL,
                         package=pypi.package,
@@ -227,7 +227,7 @@ class RequirementsModelGenerator:
         if locations_obj.local is not None:
             for local in locations_obj.local:
                 local_location = instance_type(
-                    parent=self.parent, _current_unresolved=LocalLocation(path=local.path)
+                    parent=self.parent, current_unresolved=LocalLocation(path=local.path)
                 )
 
                 locations.append(local_location)
@@ -237,7 +237,7 @@ class RequirementsModelGenerator:
             for git in locations_obj.git:
                 git_location = instance_type(
                     parent=self.parent,
-                    _current_unresolved=GitLocation(
+                    current_unresolved=GitLocation(
                         env_token=git.env_token,
                         url=git.url,
                         branch=git.branch,

@@ -1,12 +1,9 @@
 # Copyright © LFV
 
-from dataclasses import dataclass
-
 from reqstool.common.utils import Utils
 from reqstool.locations.location import LocationInterface
 
 
-@dataclass
 class LocalPypiLocation(LocationInterface):
     path: str  # path to a local PyPI sdist tarball (.tar.gz)
 
