@@ -86,11 +86,15 @@ dependencies = [
 ]
 
 [tool.hatch.envs.dev.scripts]
-codegen = "datamodel-codegen --input src/reqstool/resources/schemas/v1/ --input-file-type jsonschema --output src/reqstool/models/generated/ --output-model-type pydantic_v2.BaseModel --use-schema-description --use-field-description --use-annotated --field-constraints --target-python-version 3.13"
+codegen = "datamodel-codegen --disable-timestamp --input src/reqstool/resources/schemas/v1/ --input-file-type jsonschema --output src/reqstool/models/generated/ --output-model-type pydantic_v2.BaseModel --use-schema-description --use-field-description --use-annotated --field-constraints --target-python-version 3.13"
+codegen-check = "datamodel-codegen --check --disable-timestamp --input src/reqstool/resources/schemas/v1/ --input-file-type jsonschema --output src/reqstool/models/generated/ --output-model-type pydantic_v2.BaseModel --use-schema-description --use-field-description --use-annotated --field-constraints --target-python-version 3.13"
 
 [tool.black]
 line-length = 120
 target-version = ['py313']
+extend-exclude = '''
+src/reqstool/models/generated
+'''
 
 [tool.flake8]
 ignore = ["W503"]
