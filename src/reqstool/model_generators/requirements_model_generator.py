@@ -17,7 +17,7 @@ from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxV
 from reqstool.filters.requirements_filters import RequirementFilter
 from reqstool.locations.git_location import GitLocation
 from reqstool.locations.local_location import LocalLocation
-from reqstool.locations.location import LOCATIONTYPES, LocationInterface
+from reqstool.locations.location import LocationInterface
 from reqstool.locations.maven_location import MavenLocation
 from reqstool.locations.pypi_location import PypiLocation
 from reqstool.models.generated.requirements_schema import Model as RequirementsPydanticModel
@@ -226,9 +226,7 @@ class RequirementsModelGenerator:
     def __parse_location_local(self, locations_obj, instance_type, locations):
         if locations_obj.local is not None:
             for local in locations_obj.local:
-                local_location = instance_type(
-                    parent=self.parent, current_unresolved=LocalLocation(path=local.path)
-                )
+                local_location = instance_type(parent=self.parent, current_unresolved=LocalLocation(path=local.path))
 
                 locations.append(local_location)
 

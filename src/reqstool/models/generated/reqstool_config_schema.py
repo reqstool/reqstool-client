@@ -14,10 +14,10 @@ class Language(StrEnum):
     The programming language used in the project.
     """
 
-    java = 'java'
-    python = 'python'
-    javascript = 'javascript'
-    typescript = 'typescript'
+    java = "java"
+    python = "python"
+    javascript = "javascript"
+    typescript = "typescript"
 
 
 class Build(StrEnum):
@@ -25,12 +25,12 @@ class Build(StrEnum):
     The build tool used for the project.
     """
 
-    gradle = 'gradle'
-    hatch = 'hatch'
-    maven = 'maven'
-    npm = 'npm'
-    poetry = 'poetry'
-    yarn = 'yarn'
+    gradle = "gradle"
+    hatch = "hatch"
+    maven = "maven"
+    npm = "npm"
+    poetry = "poetry"
+    yarn = "yarn"
 
 
 class Resources(BaseModel):
@@ -39,7 +39,7 @@ class Resources(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     requirements: str | None = None
     """
@@ -69,7 +69,7 @@ class ReqstoolConfiguration(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     language: Language | None = None
     """

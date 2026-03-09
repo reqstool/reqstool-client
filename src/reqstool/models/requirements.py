@@ -91,9 +91,7 @@ class RequirementData(BaseModel):
     description: str
     rationale: Optional[str] = None
     revision: VersionField
-    lifecycle: LifecycleData = Field(
-        default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None)
-    )
+    lifecycle: LifecycleData = Field(default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None))
     implementation: IMPLEMENTATION = IMPLEMENTATION.IN_CODE
     categories: List[CATEGORIES] = Field(default_factory=list)
     references: Optional[List[ReferenceData]] = Field(default_factory=list)

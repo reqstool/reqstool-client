@@ -29,9 +29,7 @@ class SVCData(BaseModel):
     verification: VERIFICATIONTYPES
     instructions: Optional[str] = None
     revision: VersionField
-    lifecycle: LifecycleData = Field(
-        default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None)
-    )
+    lifecycle: LifecycleData = Field(default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None))
     requirement_ids: List[UrnId] = Field(default_factory=list)
 
 

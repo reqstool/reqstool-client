@@ -1,7 +1,7 @@
 # Copyright © LFV
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
 
 from reqstool_python_decorators.decorators.decorators import Requirements

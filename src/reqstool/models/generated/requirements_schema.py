@@ -17,9 +17,9 @@ class Variant(StrEnum):
     Enum of system, microservice, or external
     """
 
-    microservice = 'microservice'
-    system = 'system'
-    external = 'external'
+    microservice = "microservice"
+    system = "system"
+    external = "external"
 
 
 class Metadata(BaseModel):
@@ -28,7 +28,7 @@ class Metadata(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     urn: str
     """
@@ -50,7 +50,7 @@ class Metadata(BaseModel):
 
 class Git(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     env_token: str | None = None
     """
@@ -72,7 +72,7 @@ class Git(BaseModel):
 
 class Local(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     path: str
     """
@@ -85,9 +85,9 @@ class Significance(Enum):
     Enum with level of significance. E.g. shall, should, may (https://www.rfc-editor.org/rfc/rfc2119)
     """
 
-    shall = 'shall'
-    should = 'should'
-    may = 'may'
+    shall = "shall"
+    should = "should"
+    may = "may"
 
 
 class Category(StrEnum):
@@ -95,15 +95,15 @@ class Category(StrEnum):
     Enum for requirement categories. E.g. functional-suitability, performance-efficiency, security, reliability, maintainability
     """
 
-    functional_suitability = 'functional-suitability'
-    performance_efficiency = 'performance-efficiency'
-    compatibility = 'compatibility'
-    interaction_capability = 'interaction-capability'
-    reliability = 'reliability'
-    security = 'security'
-    maintainability = 'maintainability'
-    flexibility = 'flexibility'
-    safety = 'safety'
+    functional_suitability = "functional-suitability"
+    performance_efficiency = "performance-efficiency"
+    compatibility = "compatibility"
+    interaction_capability = "interaction-capability"
+    reliability = "reliability"
+    security = "security"
+    maintainability = "maintainability"
+    flexibility = "flexibility"
+    safety = "safety"
 
 
 class References(BaseModel):
@@ -112,7 +112,7 @@ class References(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     requirement_ids: list[common_schema.Urnid]
     """
@@ -125,8 +125,8 @@ class Implementation(StrEnum):
     Enum value to describe how the requirement is implemented. Defaults to 'in-code' if omitted
     """
 
-    in_code = 'in-code'
-    N_A = 'N/A'
+    in_code = "in-code"
+    N_A = "N/A"
 
 
 class State(StrEnum):
@@ -134,10 +134,10 @@ class State(StrEnum):
     The state of the requirement.
     """
 
-    draft = 'draft'
-    effective = 'effective'
-    deprecated = 'deprecated'
-    obsolete = 'obsolete'
+    draft = "draft"
+    effective = "effective"
+    deprecated = "deprecated"
+    obsolete = "obsolete"
 
 
 class Lifecycle(BaseModel):
@@ -157,7 +157,7 @@ class Lifecycle(BaseModel):
 
 class Requirements(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     id: str
     """
@@ -187,7 +187,7 @@ class Requirements(BaseModel):
     """
     References to related requirements
     """
-    revision: Annotated[str, Field(pattern='^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$')]
+    revision: Annotated[str, Field(pattern="^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$")]
     """
     Revision that the requirement was added
     """
@@ -207,7 +207,7 @@ class Url(RootModel[str]):
 
 class Maven(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     env_token: str | None = None
     """
@@ -229,7 +229,7 @@ class Maven(BaseModel):
     """
     Maven classifier (default: reqstool)
     """
-    version: Annotated[str, Field(pattern='^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+).*$')]
+    version: Annotated[str, Field(pattern="^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+).*$")]
     """
     Version for the Maven implementation
     """
@@ -237,7 +237,7 @@ class Maven(BaseModel):
 
 class Pypi(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     env_token: str | None = None
     """
@@ -251,7 +251,7 @@ class Pypi(BaseModel):
     """
     PyPI package name
     """
-    version: Annotated[str, Field(pattern='^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+).*$')]
+    version: Annotated[str, Field(pattern="^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+).*$")]
     """
     Version for the Maven implementation
     """
@@ -259,7 +259,7 @@ class Pypi(BaseModel):
 
 class Locations(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     git: list[Git] | None = None
     """
@@ -281,7 +281,7 @@ class Locations(BaseModel):
 
 class Model1(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     metadata: Metadata
     imports: Locations | None = None

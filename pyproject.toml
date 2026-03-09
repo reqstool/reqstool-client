@@ -102,5 +102,6 @@ addopts = [
 ]
 pythonpath = [".", "src", "tests"]
 max-line-length = 125
+per-file-ignores = ["src/reqstool/models/generated/*:E501,F722,W291"]
 # exclude = tests/*
 max-complexity = 10

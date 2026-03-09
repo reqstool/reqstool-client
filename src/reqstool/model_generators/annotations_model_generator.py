@@ -10,7 +10,7 @@ from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxValidator
 from reqstool.models.annotations import AnnotationData, AnnotationsData
-from reqstool.models.generated.annotations_schema import Model as AnnotationsPydanticModel, Requirement
+from reqstool.models.generated.annotations_schema import Model as AnnotationsPydanticModel
 
 
 class AnnotationsModelGenerator:
@@ -31,8 +31,14 @@ class AnnotationsModelGenerator:
 
         validated = AnnotationsPydanticModel.model_validate(data)
 
-        tests = self.__parse_annotations(validated.requirement_annotations.tests if validated.requirement_annotations.tests else {})
-        implementations = self.__parse_annotations(validated.requirement_annotations.implementations if validated.requirement_annotations.implementations else {})
+        tests = self.__parse_annotations(
+            validated.requirement_annotations.tests if validated.requirement_annotations.tests else {}
+        )
+        implementations = self.__parse_annotations(
+            validated.requirement_annotations.implementations
+            if validated.requirement_annotations.implementations
+            else {}
+        )
 
         return AnnotationsData(tests=tests, implementations=implementations)
 

@@ -14,12 +14,12 @@ class ElementKind(Enum):
     Enum for all valid elementKinds. E.g. CLASS, ENUM, INTERFACE, RECORD, METHOD, FIELD
     """
 
-    CLASS = 'CLASS'
-    ENUM = 'ENUM'
-    INTERFACE = 'INTERFACE'
-    RECORD = 'RECORD'
-    METHOD = 'METHOD'
-    FIELD = 'FIELD'
+    CLASS = "CLASS"
+    ENUM = "ENUM"
+    INTERFACE = "INTERFACE"
+    RECORD = "RECORD"
+    METHOD = "METHOD"
+    FIELD = "FIELD"
 
 
 class Requirement(BaseModel):
@@ -39,13 +39,13 @@ class RequirementAnnotations(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
-    implementations: dict[constr(pattern=r'^.*$'), list[Requirement]] | None = None
+    implementations: dict[constr(pattern=r"^.*$"), list[Requirement]] | None = None
     """
     requirement annotation used in implementation
     """
-    tests: dict[constr(pattern=r'^.*$'), list[Requirement]] | None = None
+    tests: dict[constr(pattern=r"^.*$"), list[Requirement]] | None = None
     """
     requirement annotation used in test
     """
@@ -53,7 +53,7 @@ class RequirementAnnotations(BaseModel):
 
 class Model(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     requirement_annotations: RequirementAnnotations
     """
@@ -63,17 +63,17 @@ class Model(BaseModel):
 
 class RequirementAnnotationsModel(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
-    implementations: dict[constr(pattern=r'^.*$'), list[Requirement]] | None = None
+    implementations: dict[constr(pattern=r"^.*$"), list[Requirement]] | None = None
     """
     requirement annotation used in implementation
     """
-    tests: dict[constr(pattern=r'^.*$'), list[Requirement]] | None = None
+    tests: dict[constr(pattern=r"^.*$"), list[Requirement]] | None = None
     """
     requirement annotation used in test
     """
 
 
-class Annotation(RootModel[dict[constr(pattern=r'^.*$'), list[Requirement]]]):
-    root: dict[constr(pattern=r'^.*$'), list[Requirement]]
+class Annotation(RootModel[dict[constr(pattern=r"^.*$"), list[Requirement]]]):
+    root: dict[constr(pattern=r"^.*$"), list[Requirement]]

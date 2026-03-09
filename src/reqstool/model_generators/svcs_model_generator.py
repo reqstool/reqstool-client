@@ -53,7 +53,9 @@ class SVCsModelGenerator:
 
             svc = SVCData(
                 id=urn_id,
-                requirement_ids=Utils.convert_ids_to_urn_id(ids=[uid.root for uid in case.requirement_ids], urn=self.urn),
+                requirement_ids=Utils.convert_ids_to_urn_id(
+                    ids=[uid.root for uid in case.requirement_ids], urn=self.urn
+                ),
                 title=case.title,
                 description=case.description,
                 verification=VERIFICATIONTYPES(case.verification.value),

@@ -62,9 +62,7 @@ def test_reference_data_instances_do_not_share_default():
 
 
 def test_reference_data(reference_data):
-    assert reference_data.requirement_ids.issubset(
-        {UrnId(urn="test", id="REQ_001"), UrnId(urn="test", id="REQ_002")}
-    )
+    assert reference_data.requirement_ids.issubset({UrnId(urn="test", id="REQ_001"), UrnId(urn="test", id="REQ_002")})
 
 
 def test_requirement_data(requirement_data, reference_data):

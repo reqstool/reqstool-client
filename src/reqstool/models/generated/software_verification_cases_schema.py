@@ -17,11 +17,11 @@ class Verification(StrEnum):
     Verification method. E.g. automated-test, manual-test, review, platform or other
     """
 
-    automated_test = 'automated-test'
-    manual_test = 'manual-test'
-    review = 'review'
-    platform = 'platform'
-    other = 'other'
+    automated_test = "automated-test"
+    manual_test = "manual-test"
+    review = "review"
+    platform = "platform"
+    other = "other"
 
 
 class State(StrEnum):
@@ -29,10 +29,10 @@ class State(StrEnum):
     The state of the requirement.
     """
 
-    draft = 'draft'
-    effective = 'effective'
-    deprecated = 'deprecated'
-    obsolete = 'obsolete'
+    draft = "draft"
+    effective = "effective"
+    deprecated = "deprecated"
+    obsolete = "obsolete"
 
 
 class Lifecycle(BaseModel):
@@ -52,7 +52,7 @@ class Lifecycle(BaseModel):
 
 class Cases(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     id: str
     """
@@ -78,7 +78,7 @@ class Cases(BaseModel):
     """
     Instructional steps for how to verify, if it is manual
     """
-    revision: Annotated[str, Field(pattern='^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$')]
+    revision: Annotated[str, Field(pattern="^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$")]
     """
     Version the Software Verification Case was revised
     """
@@ -90,7 +90,7 @@ class Cases(BaseModel):
 
 class Model(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
     )
     filters: common_schema.Filters1 | None = None
     cases: list[Cases]

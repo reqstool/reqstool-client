@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from typing import List, Union
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from pydantic import BaseModel, ConfigDict, Field
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 from ruamel.yaml import YAML
