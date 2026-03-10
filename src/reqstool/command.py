@@ -262,6 +262,12 @@ class Command:
         # command: status
         status_parser = subparsers.add_parser("status", help="Status on implementations and tests of requirements")
         status_parser.add_argument(
+            "--format",
+            choices=["console", "json"],
+            default="console",
+            help="Output format (default: %(default)s)",
+        )
+        status_parser.add_argument(
             "--check-all-reqs-met",
             action="store_true",
             help="Fail unless all requirements are implemented",
@@ -352,7 +358,8 @@ class Command:
         initial_source = self._get_initial_source(status_args)
         output = status_args.output  # where to put the generated report
 
-        result = StatusCommand(location=initial_source)
+        format = getattr(status_args, "format", "console")
+        result = StatusCommand(location=initial_source, format=format)
         status, nr_of_incomplete_requirements = result.result
 
         output.write(str(status))

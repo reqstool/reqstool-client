@@ -16,8 +16,9 @@ from reqstool.models.requirements import IMPLEMENTATION
 
 @Requirements("REQ_027")
 class StatusCommand:
-    def __init__(self, location: LocationInterface):
+    def __init__(self, location: LocationInterface, format: str = "console"):
         self.__initial_location: LocationInterface = location
+        self.__format: str = format
         self.result = self.__status_result()
 
     def __status_result(self) -> Tuple[str, int]:
@@ -25,7 +26,11 @@ class StatusCommand:
             initial_location=self.__initial_location,
             semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
         ).result
-        status = _status_table(stats_container=statistics)
+
+        if self.__format == "json":
+            status = statistics.model_dump_json(indent=2)
+        else:
+            status = _status_table(stats_container=statistics)
 
         return (
             status,
