@@ -51,9 +51,8 @@ def _build_table(
     if implementation == IMPLEMENTATION.NOT_APPLICABLE:
         row.extend(["N/A"])
     else:
-        row.extend(
-            [Fore.GREEN + "Implemented" + Style.RESET_ALL if impls > 0 else Fore.RED + "Missing" + Style.RESET_ALL]
-        )
+        color = Fore.GREEN if impls > 0 else Fore.RED
+        row.extend([f"{color}{impls}{Style.RESET_ALL}"])
     _extend_row(tests, row, kind="automated")
     _extend_row(mvrs, row, kind="manual")
     return row
@@ -63,10 +62,15 @@ def _get_row_with_totals(stats_container: StatisticsContainer) -> List[str]:
     ts = stats_container.total_statistics
     total_automatic = ts.nr_of_passed_automatic_tests + ts.nr_of_failed_automatic_tests
     total_manual = ts.nr_of_passed_manual_tests + ts.nr_of_failed_manual_tests
+    total_implementations = sum(
+        stats.nr_of_implementations
+        for stats in stats_container.requirement_statistics.values()
+        if stats.implementation != IMPLEMENTATION.NOT_APPLICABLE
+    )
     return [
         "Total",
         "",
-        "",
+        str(total_implementations),
         _format_cell(total_automatic),
         _format_cell(ts.nr_of_passed_automatic_tests, Fore.GREEN),
         _format_cell(ts.nr_of_failed_automatic_tests, Fore.RED),
