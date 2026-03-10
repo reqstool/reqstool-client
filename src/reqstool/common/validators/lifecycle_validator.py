@@ -3,8 +3,8 @@
 from collections import namedtuple
 import logging
 from typing import Union
-from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, lifecycle_state_sort_order
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.lifecycle import LIFECYCLESTATE, lifecycle_state_sort_order
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models.annotations import AnnotationData
 from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.requirements import RequirementData

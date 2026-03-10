@@ -2,18 +2,27 @@
 
 import pytest
 
-from reqstool.models.requirements import VARIANTS, MetaData, ReferenceData, RequirementData, RequirementsData
+from reqstool.common.models.urn_id import UrnId
+from reqstool.models.requirements import (
+    CATEGORIES,
+    SIGNIFICANCETYPES,
+    VARIANTS,
+    MetaData,
+    ReferenceData,
+    RequirementData,
+    RequirementsData,
+)
 
 
 @pytest.fixture
 def reference_data():
-    return ReferenceData(requirement_ids={"REQ_001", "REQ_002"})
+    return ReferenceData(requirement_ids={UrnId(urn="test", id="REQ_001"), UrnId(urn="test", id="REQ_002")})
 
 
 @pytest.fixture
 def requirement_data(reference_data):
     return RequirementData(
-        id="REQ_001",
+        id=UrnId(urn="test", id="REQ_001"),
         title="some title",
         significance="shall",
         description="some description",
@@ -33,9 +42,9 @@ def requirements_data(requirement_data, implementations_data, maven_import_data)
             title="Some document title",
             url="https://url.example.com",
         ),
-        implementations=[implementations_data],
-        imports={"system_urn": maven_import_data},
-        requirements={"REQ_001": requirement_data},
+        implementations=implementations_data,
+        imports=[maven_import_data],
+        requirements={UrnId(urn="test", id="REQ_001"): requirement_data},
     )
 
 
@@ -48,23 +57,23 @@ def test_reference_data_default_is_empty_set():
 def test_reference_data_instances_do_not_share_default():
     ref1 = ReferenceData()
     ref2 = ReferenceData()
-    ref1.requirement_ids.add("REQ_001")
-    assert "REQ_001" not in ref2.requirement_ids
+    ref1.requirement_ids.add(UrnId(urn="test", id="REQ_001"))
+    assert UrnId(urn="test", id="REQ_001") not in ref2.requirement_ids
 
 
 def test_reference_data(reference_data):
-    assert reference_data.requirement_ids.issubset({"REQ_001", "REQ_002"})
+    assert reference_data.requirement_ids.issubset({UrnId(urn="test", id="REQ_001"), UrnId(urn="test", id="REQ_002")})
 
 
 def test_requirement_data(requirement_data, reference_data):
-    assert requirement_data.id == "REQ_001"
+    assert requirement_data.id == UrnId(urn="test", id="REQ_001")
     assert requirement_data.title == "some title"
-    assert requirement_data.significance == "shall"
+    assert requirement_data.significance == SIGNIFICANCETYPES.SHALL
     assert requirement_data.description == "some description"
     assert requirement_data.rationale == "some rationale"
-    assert requirement_data.categories == ["maintainability", "functional-suitability"]
+    assert requirement_data.categories == [CATEGORIES.MAINTAINABILITY, CATEGORIES.FUNCTIONAL_SUITABILITY]
     assert requirement_data.references == [reference_data]
-    assert requirement_data.revision == "0.0.1"
+    assert str(requirement_data.revision) == "0.0.1"
 
 
 def test_requirements_data_filters_default_is_empty_dict():
@@ -81,6 +90,6 @@ def test_requirements_data(
     assert requirements_data.metadata.variant == VARIANTS("microservice")
     assert requirements_data.metadata.title == "Some document title"
     assert requirements_data.metadata.url == "https://url.example.com"
-    assert requirements_data.implementations == [implementations_data]
-    assert requirements_data.imports == {"system_urn": maven_import_data}
-    assert requirements_data.requirements == {"REQ_001": requirement_data}
+    assert requirements_data.implementations == implementations_data
+    assert requirements_data.imports == [maven_import_data]
+    assert requirements_data.requirements == {UrnId(urn="test", id="REQ_001"): requirement_data}

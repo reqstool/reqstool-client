@@ -31,7 +31,7 @@ class CombinedRawDatasetsGenerator:
         self.__level: int = 0
         self.__initial_source_type: VARIANTS = None
         self.__initial_location_handler: LocationResolver = LocationResolver(
-            parent=None, _current_unresolved=initial_location
+            parent=None, current_unresolved=initial_location
         )
         self.semantic_validator = semantic_validator
         self._parsing_order: List[str] = []

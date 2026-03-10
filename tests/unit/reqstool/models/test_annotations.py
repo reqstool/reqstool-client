@@ -2,6 +2,7 @@
 
 import pytest
 
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models import annotations as ra
 
 
@@ -12,8 +13,11 @@ def requirement_annotation_data():
 
 @pytest.fixture
 def requirements_annotations_data(requirement_annotation_data):
-    implementations = {"REQ_001": [requirement_annotation_data], "REQ_002": [requirement_annotation_data]}
-    tests = {"REQ_001": [requirement_annotation_data]}
+    implementations = {
+        UrnId(urn="test", id="REQ_001"): [requirement_annotation_data],
+        UrnId(urn="test", id="REQ_002"): [requirement_annotation_data],
+    }
+    tests = {UrnId(urn="test", id="REQ_001"): [requirement_annotation_data]}
 
     return ra.AnnotationsData(implementations=implementations, tests=tests)
 

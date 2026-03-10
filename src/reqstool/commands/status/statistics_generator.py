@@ -6,7 +6,7 @@ from typing import Dict, List, Sequence
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.commands.status.statistics_container import StatisticsContainer, TestStatisticsItem
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
 from reqstool.model_generators.combined_indexed_dataset_generator import CombinedIndexedDatasetGenerator
@@ -196,11 +196,10 @@ class StatisticsGenerator:
         for urn_id in svcs_urn_ids:
             if urn_id in self.cid.annotations_tests:
                 annotations = self.cid.annotations_tests[urn_id]
-                for tests in annotations:
-                    for test in tests:
-                        test_urn_id = UrnId(urn=urn_id.urn, id=test.fully_qualified_name)
-                        results = self.__get_annotated_test_results(urn_id=test_urn_id)
-                        automated_test_results.extend(results)
+                for test in annotations:
+                    test_urn_id = UrnId(urn=urn_id.urn, id=test.fully_qualified_name)
+                    results = self.__get_annotated_test_results(urn_id=test_urn_id)
+                    automated_test_results.extend(results)
             elif urn_id in self.cid.svcs and self.cid.svcs[urn_id].verification in EXPECTS_AUTOMATED_TESTS:
                 # Only count as missing if this SVC expects automated tests
                 automated_test_results.append(TestData(fully_qualified_name="", status=TEST_RUN_STATUS.MISSING))
@@ -233,16 +232,16 @@ class StatisticsGenerator:
         total_no_of_mvrs = len(self.cid.mvrs)
 
         # Total SVCs
-        stats_container._total_statistics.nr_of_total_svcs = len(self.cid.svcs)
+        stats_container.total_statistics.nr_of_total_svcs = len(self.cid.svcs)
 
         # Total manual tests
-        stats_container._total_statistics.nr_of_total_manual_tests = total_no_of_mvrs
+        stats_container.total_statistics.nr_of_total_manual_tests = total_no_of_mvrs
 
         # Total annotated tests
-        stats_container._total_statistics.nr_of_total_annotated_tests = total_no_of_annotated_tests
+        stats_container.total_statistics.nr_of_total_annotated_tests = total_no_of_annotated_tests
 
         # Combined
-        stats_container._total_statistics.nr_of_total_tests = total_no_of_annotated_tests + total_no_of_mvrs
+        stats_container.total_statistics.nr_of_total_tests = total_no_of_annotated_tests + total_no_of_mvrs
 
         # count status of each test
         # start with mvrs
@@ -260,27 +259,26 @@ class StatisticsGenerator:
     def __count_mvr_status(self, mvrs: List[MVRData], stats_container: StatisticsContainer) -> None:
         for mvr in mvrs:
             if mvr.passed:
-                stats_container._total_statistics.nr_of_passed_tests += 1
-                stats_container._total_statistics.nr_of_passed_manual_tests += 1
+                stats_container.total_statistics.nr_of_passed_tests += 1
+                stats_container.total_statistics.nr_of_passed_manual_tests += 1
 
             else:
-                stats_container._total_statistics.nr_of_failed_tests += 1
-                stats_container._total_statistics.nr_of_failed_manual_tests += 1
+                stats_container.total_statistics.nr_of_failed_tests += 1
+                stats_container.total_statistics.nr_of_failed_manual_tests += 1
 
     def __get_results_from_annotated_tests(self) -> List[TEST_RUN_STATUS]:
         test_results: List[TEST_RUN_STATUS] = []
         parsed_test_annotation_urns: List[UrnId] = []
         for urn_id, annotation_data in self.cid.annotations_tests.items():
-            for annotation_test in annotation_data:
-                for test in annotation_test:
-                    urn_id = UrnId(urn=urn_id.urn, id=test.fully_qualified_name)
-                    # we should save this urn_id in a list, and only do the result lookup
-                    # below if the urn_id is not in list.
-                    # This is to avoid duplicate counting of the total test results
-                    if urn_id not in parsed_test_annotation_urns:
-                        parsed_test_annotation_urns.append(urn_id)
-                        results = self.__get_annotated_test_results(urn_id=urn_id)
-                        test_results.extend(results)
+            for test in annotation_data:
+                urn_id = UrnId(urn=urn_id.urn, id=test.fully_qualified_name)
+                # we should save this urn_id in a list, and only do the result lookup
+                # below if the urn_id is not in list.
+                # This is to avoid duplicate counting of the total test results
+                if urn_id not in parsed_test_annotation_urns:
+                    parsed_test_annotation_urns.append(urn_id)
+                    results = self.__get_annotated_test_results(urn_id=urn_id)
+                    test_results.extend(results)
         return test_results
 
     def __get_annotated_test_results(self, urn_id: UrnId) -> List[TEST_RUN_STATUS]:
@@ -301,13 +299,13 @@ class StatisticsGenerator:
         for test in test_results:
             match test.status:
                 case TEST_RUN_STATUS.PASSED:
-                    stats_container._total_statistics.nr_of_passed_tests += 1
-                    stats_container._total_statistics.nr_of_passed_automatic_tests += 1
+                    stats_container.total_statistics.nr_of_passed_tests += 1
+                    stats_container.total_statistics.nr_of_passed_automatic_tests += 1
                 case TEST_RUN_STATUS.FAILED:
-                    stats_container._total_statistics.nr_of_failed_tests += 1
-                    stats_container._total_statistics.nr_of_failed_automatic_tests += 1
+                    stats_container.total_statistics.nr_of_failed_tests += 1
+                    stats_container.total_statistics.nr_of_failed_automatic_tests += 1
                 case TEST_RUN_STATUS.SKIPPED:
-                    stats_container._total_statistics.nr_of_skipped_tests += 1
+                    stats_container.total_statistics.nr_of_skipped_tests += 1
                 case TEST_RUN_STATUS.MISSING:
-                    stats_container._total_statistics.nr_of_missing_automated_tests += 1
-                    stats_container._total_statistics.nr_of_total_tests -= 1
+                    stats_container.total_statistics.nr_of_missing_automated_tests += 1
+                    stats_container.total_statistics.nr_of_total_tests -= 1

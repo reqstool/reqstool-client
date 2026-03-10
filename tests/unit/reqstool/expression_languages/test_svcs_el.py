@@ -3,7 +3,7 @@
 import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.expression_languages.svcs_el import SVCsELTransformer
 from reqstool.models.svcs import VERIFICATIONTYPES, SVCData
 
@@ -22,7 +22,7 @@ def svc_data():
     def closure(svc_id: str):
         return SVCData(
             id=UrnId.instance(svc_id),
-            requirement_ids=["SVC_001", "SVC_002"],
+            requirement_ids=[UrnId.instance("urn:SVC_001"), UrnId.instance("urn:SVC_002")],
             title="some title",
             description="some description",
             verification=VERIFICATIONTYPES("automated-test"),

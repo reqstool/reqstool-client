@@ -14,7 +14,7 @@ import requests
 from packaging.version import InvalidVersion, Version as PkgVersion
 from requests_file import FileAdapter
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.raw_datasets import RawDataset
 from reqstool.models.requirements import VARIANTS, RequirementData

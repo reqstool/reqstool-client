@@ -1,0 +1,76 @@
+= REQUIREMENTS DOCUMENTATION
+
+
+== TOTAL STATISTICS
+
+[cols="0.5,1a"]
+|===
+| Total Requirements: 1|
+!===
+!Implemented and Verified ! Implemented ! Not Implemented 
+!0
+!0
+!1
+!===
+| Total Tests / SVCs: ( 0 / 2 )|
+!===
+!Passed tests !Failed tests !Skipped tests !SVC's missing tests !SVCs missing MVRs  
+!0
+!0
+!0
+!0
+!2
+!===
+|===
+== Initial URN (sys-001)
+=== Requirement REQ_sys001_001
+[cols="1a,1"]
+|===
+|*Identifier* |*Name*
+|REQ_sys001_001 |System Requirement 001
+|*Significance* |*Verification*
+|shall |manual-test, manual-test
+2+|*Description* 
+2+|Description
+2+|*Rationale*
+2+|Rationale
+2+|*References*
+2+| 
+| *Revision*| 0.0.1
+|===
+==== SVCS
+[cols="1a,1"]
+|===
+|*Identifier*|*Title*
+|sys-001:SVC_sys001_A |SVC A - included by ms-001 SVC filter
+2+|*Description*
+2+|None
+2+|*Instructions*
+2+|None
+|*Requirements*|*Verification*
+|
+[frame = "none", grid="none"] 
+!===
+!sys-001:REQ_sys001_001
+!===
+|manual-test
+2+| *Revision* 0.0.1
+|===
+[cols="1a,1"]
+|===
+|*Identifier*|*Title*
+|sys-001:SVC_sys001_B |SVC B - excluded by ms-001 SVC filter
+2+|*Description*
+2+|None
+2+|*Instructions*
+2+|None
+|*Requirements*|*Verification*
+|
+[frame = "none", grid="none"] 
+!===
+!sys-001:REQ_sys001_001
+!===
+|manual-test
+2+| *Revision* 0.0.1
+|===
+

@@ -1,7 +1,6 @@
 # Copyright © LFV
 
 import os
-from dataclasses import dataclass
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
@@ -9,7 +8,6 @@ from reqstool.locations.location import LocationInterface
 
 
 @Requirements("REQ_001")
-@dataclass
 class LocalLocation(LocationInterface):
     path: str
 

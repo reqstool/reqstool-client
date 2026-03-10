@@ -1,19 +1,22 @@
 # Copyright © LFV
 
-from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from pydantic import BaseModel, ConfigDict, Field
+
+from reqstool.common.models.urn_id import UrnId
 
 
-@dataclass
-class MVRData:
+class MVRData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
+
     id: UrnId
-    comment: str
+    comment: Optional[str] = None
     passed: bool
-    svc_ids: List[UrnId] = field(default_factory=list)
+    svc_ids: List[UrnId] = Field(default_factory=list)
 
 
-@dataclass
-class MVRsData:
-    results: Dict[UrnId, MVRData] = field(default_factory=dict)
+class MVRsData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    results: Dict[UrnId, MVRData] = Field(default_factory=dict)

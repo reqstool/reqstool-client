@@ -38,10 +38,10 @@ requires-python = ">=3.13"
 dependencies = [
     "colorama==0.4.6",
     "Jinja2==3.1.6",
-    "jsonpickle==4.1.1",
     "jsonschema[format-nongpl]==4.26.0",
     "lark==1.3.1",
     "maven-artifact==0.3.5",
+    "pydantic==2.12.5",
     "pygit2==1.19.1",
     "referencing==0.37.0",
     "requests-file==3.0.1",
@@ -82,11 +82,19 @@ dependencies = [
     "black==25.1.0",
     "flake8==7.2.0",
     "flake8-pyproject==1.2.3",
+    "datamodel-code-generator==0.54.1",
 ]
+
+[tool.hatch.envs.dev.scripts]
+codegen = "datamodel-codegen --disable-timestamp --input src/reqstool/resources/schemas/v1/ --input-file-type jsonschema --output src/reqstool/models/generated/ --output-model-type pydantic_v2.BaseModel --use-schema-description --use-field-description --use-annotated --field-constraints --target-python-version 3.13"
+codegen-check = "datamodel-codegen --check --disable-timestamp --input src/reqstool/resources/schemas/v1/ --input-file-type jsonschema --output src/reqstool/models/generated/ --output-model-type pydantic_v2.BaseModel --use-schema-description --use-field-description --use-annotated --field-constraints --target-python-version 3.13"
 
 [tool.black]
 line-length = 120
 target-version = ['py313']
+extend-exclude = '''
+src/reqstool/models/generated
+'''
 
 [tool.flake8]
 ignore = ["W503"]
@@ -98,5 +106,6 @@ addopts = [
 ]
 pythonpath = [".", "src", "tests"]
 max-line-length = 125
+per-file-ignores = ["src/reqstool/models/generated/*:E501,F722,W291"]
 # exclude = tests/*
 max-complexity = 10

@@ -17,13 +17,13 @@
         "requirement_annotations": {
             "type": "object",
             "additionalProperties": false,
-            "patternProperties": {
-                "^implementations": {
+            "properties": {
+                "implementations": {
                     "type": "object",
                     "$ref": "#/$defs/annotation",
                     "description": "requirement annotation used in implementation"
                 },
-                "^tests": {
+                "tests": {
                     "type": "object",
                     "$ref": "#/$defs/annotation",
                     "description": "requirement annotation used in test"

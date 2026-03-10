@@ -2,16 +2,17 @@
 
 from abc import ABC
 from collections import defaultdict
-from dataclasses import dataclass, field
 from enum import Enum
 from operator import attrgetter
 from types import MappingProxyType
 from typing import Callable, Dict, Iterator, List, Tuple
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.commands.report.criterias.sort_by import SortByOptions
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.requirements import RequirementData
 
@@ -22,15 +23,16 @@ class GroupbyOptions(Enum):
 
 
 @Requirements("REQ_033")
-@dataclass(kw_only=True)
-class GroupByOrganizor(ABC):
+class GroupByOrganizor(BaseModel, ABC):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     cid: CombinedIndexedDataset
     group_by: GroupbyOptions
     sort_by: List[SortByOptions]
 
-    grouped_requirements: Dict[str, List[UrnId]] = field(init=False, default_factory=lambda: defaultdict(list))
+    grouped_requirements: Dict[str, List[UrnId]] = Field(init=False, default_factory=lambda: defaultdict(list))
 
-    def __post_init__(self):
+    def model_post_init(self, __context):
         self._group()
         # make immutable
         self.grouped_requirements = MappingProxyType(dict(self.grouped_requirements))

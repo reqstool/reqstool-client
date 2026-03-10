@@ -2,7 +2,7 @@
 
 import logging
 import os
-from dataclasses import dataclass
+from typing import Optional
 
 from pygit2 import RemoteCallbacks, UserPass, clone_repository
 from reqstool_python_decorators.decorators.decorators import Requirements
@@ -11,11 +11,10 @@ from reqstool.locations.location import LocationInterface
 
 
 @Requirements("REQ_002")
-@dataclass(kw_only=True)
 class GitLocation(LocationInterface):
     url: str
     branch: str
-    env_token: str
+    env_token: Optional[str] = None
     path: str
 
     def _make_available_on_localdisk(self, dst_path: str) -> str:

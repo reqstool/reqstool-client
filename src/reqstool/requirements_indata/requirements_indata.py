@@ -2,8 +2,10 @@
 
 import os
 import sys
-from dataclasses import dataclass, field, fields
+from pathlib import Path
 from typing import List, Union
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 from ruamel.yaml import YAML
@@ -22,15 +24,16 @@ from reqstool.reqstool_config.reqstool_config import ReqstoolConfig
 from reqstool.requirements_indata.requirements_indata_paths import RequirementsIndataPathItem, RequirementsIndataPaths
 
 
-@dataclass(kw_only=True)
-class RequirementsIndata:
-    dst_path: str  # tmp path
-    location: LocationInterface  # current location
-    reqstool_config: ReqstoolConfig = field(init=False, default=None)
-    requirements_indata_paths: RequirementsIndataPaths = field(default_factory=RequirementsIndataPaths)
-    test_results_patterns: List[str] = field(default_factory=lambda: [])
+class RequirementsIndata(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def __post_init__(self):
+    dst_path: Union[str, Path]  # tmp path
+    location: LocationInterface  # current location
+    reqstool_config: ReqstoolConfig = Field(init=False, default=None)
+    requirements_indata_paths: RequirementsIndataPaths = Field(default_factory=RequirementsIndataPaths)
+    test_results_patterns: List[str] = Field(default_factory=list)
+
+    def model_post_init(self, __context):
         self._handle_requirements_config()
         self._ensure_absolute_paths_and_check_existance()
 
@@ -56,8 +59,7 @@ class RequirementsIndata:
     def _ensure_absolute_paths_and_check_existance(self):
         # iterate over all fields and ensure absolute paths
 
-        for f in fields(self.requirements_indata_paths):
-            field_name = f.name
+        for field_name in RequirementsIndataPaths.model_fields:
             original: Union[RequirementsIndataPathItem, List[RequirementsIndataPathItem]] = getattr(
                 self.requirements_indata_paths, field_name
             )

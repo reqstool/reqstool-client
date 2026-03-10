@@ -12,7 +12,7 @@ from reqstool.models.implementations import GitImplData, LocalImplData, MavenImp
 def git_impl_data() -> GitImplData:
     return GitImplData(
         parent=None,
-        _current_unresolved=GitLocation(
+        current_unresolved=GitLocation(
             env_token="GITLAB_TOKEN",
             branch="main",
             url="https://github.com/reqstool/reqstool-client",
@@ -23,14 +23,14 @@ def git_impl_data() -> GitImplData:
 
 @pytest.fixture
 def local_impl_data() -> LocalImplData:
-    return LocalImplData(parent=None, _current_unresolved=LocalLocation(path="some/path"))
+    return LocalImplData(parent=None, current_unresolved=LocalLocation(path="some/path"))
 
 
 @pytest.fixture
 def maven_impl_data() -> MavenImplData:
     return MavenImplData(
         parent=None,
-        _current_unresolved=MavenLocation(
+        current_unresolved=MavenLocation(
             env_token="MAVEN_TOKEN",
             url="https://repo1.maven.org/maven2",
             group_id="com.example",

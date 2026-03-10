@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
 @unique
@@ -23,10 +24,11 @@ lifecycle_state_sort_order = {
 }
 
 
-@dataclass
-class LifecycleData:
-    reason: str = field(default=str)
-    state: LIFECYCLESTATE = field(default=LIFECYCLESTATE.EFFECTIVE)
+class LifecycleData(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    reason: Optional[str] = None
+    state: LIFECYCLESTATE = LIFECYCLESTATE.EFFECTIVE
 
     @classmethod
     def from_dict(cls, data: Optional[dict]) -> LifecycleData:

@@ -1,15 +1,16 @@
 # Copyright © LFV
 
 import sys
-from typing import Dict
+from typing import Dict, List
 
 from ruamel.yaml import YAML
 
 from reqstool.commands.exit_codes import EXIT_CODE_SYNTAX_VALIDATION_ERROR
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxValidator
 from reqstool.models.annotations import AnnotationData, AnnotationsData
+from reqstool.models.generated.annotations_schema import Model as AnnotationsPydanticModel
 
 
 class AnnotationsModelGenerator:
@@ -28,25 +29,29 @@ class AnnotationsModelGenerator:
         if not SyntaxValidator.is_valid_data(json_schema_type=JsonSchemaTypes.ANNOTATIONS, data=data, urn=self.urn):
             sys.exit(EXIT_CODE_SYNTAX_VALIDATION_ERROR)
 
-        tests = self.__parse_annotations(data, "tests")
-        implementations = self.__parse_annotations(data, "implementations")
+        validated = AnnotationsPydanticModel.model_validate(data)
+
+        tests = self.__parse_annotations(
+            validated.requirement_annotations.tests if validated.requirement_annotations.tests else {}
+        )
+        implementations = self.__parse_annotations(
+            validated.requirement_annotations.implementations
+            if validated.requirement_annotations.implementations
+            else {}
+        )
 
         return AnnotationsData(tests=tests, implementations=implementations)
 
-    def __parse_annotations(self, data, dictionary_key) -> Dict[UrnId, AnnotationData]:
+    def __parse_annotations(self, section: dict) -> Dict[UrnId, List[AnnotationData]]:
         dictionary = {}
 
-        if dictionary_key not in data["requirement_annotations"]:
-            return dictionary
-
-        for requirement_id in data["requirement_annotations"][dictionary_key].keys():
+        for requirement_id, values in section.items():
             urn_id = Utils.convert_id_to_urn_id(self.urn, requirement_id)
-            if requirement_id not in dictionary:
+            if urn_id not in dictionary:
                 dictionary[urn_id] = []
 
-            for value in data["requirement_annotations"][dictionary_key][requirement_id]:
-                ad = AnnotationData(element_kind=value["elementKind"], fully_qualified_name=value["fullyQualifiedName"])
-
+            for value in values:
+                ad = AnnotationData(element_kind=value.elementKind.value, fully_qualified_name=value.fullyQualifiedName)
                 dictionary[urn_id].append(ad)
 
         return dictionary

@@ -145,8 +145,8 @@ def test_build_table_not_applicable_shows_na():
     assert row[2] == "N/A"
 
 
-def test_build_table_in_code_with_impls_shows_implemented():
-    """IN_CODE with impls > 0 shows 'Implemented' in green."""
+def test_build_table_in_code_with_impls_shows_count():
+    """IN_CODE with impls > 0 shows numeric count in green."""
     row = _build_table(
         req_id="REQ_001",
         urn="ms-001",
@@ -156,12 +156,12 @@ def test_build_table_in_code_with_impls_shows_implemented():
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
-    assert "Implemented" in row[2]
+    assert "2" in row[2]
     assert Fore.GREEN in row[2]
 
 
-def test_build_table_in_code_no_impls_shows_missing():
-    """IN_CODE with impls == 0 shows 'Missing' in red."""
+def test_build_table_in_code_no_impls_shows_zero():
+    """IN_CODE with impls == 0 shows 0 in red."""
     row = _build_table(
         req_id="REQ_001",
         urn="ms-001",
@@ -171,7 +171,7 @@ def test_build_table_in_code_no_impls_shows_missing():
         completed=False,
         implementation=IMPLEMENTATION.IN_CODE,
     )
-    assert "Missing" in row[2]
+    assert "0" in row[2]
     assert Fore.RED in row[2]
 
 

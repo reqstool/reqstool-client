@@ -29,6 +29,7 @@
     },
     "resources": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "requirements": {
           "type": "string",
@@ -55,8 +56,7 @@
         }
       },
       "description": "Resources associated with the project (all paths are relative to reqtools_config.yml). "
-    },
-    "additionalProperties": false
+    }
   },
   "additionalProperties": false
 }

@@ -1,12 +1,9 @@
 # Copyright © LFV
 
-from dataclasses import dataclass
-
 from reqstool.common.utils import Utils
 from reqstool.locations.location import LocationInterface
 
 
-@dataclass
 class LocalMavenLocation(LocationInterface):
     path: str  # path to a local Maven ZIP artifact (.zip)
 

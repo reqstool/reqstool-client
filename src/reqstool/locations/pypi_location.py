@@ -3,7 +3,6 @@ import os
 import re
 import sys
 import tarfile
-from dataclasses import dataclass, field
 from typing import Optional
 from urllib.parse import urljoin
 
@@ -13,12 +12,11 @@ from reqstool.common.utils import Utils
 from reqstool.locations.location import LocationInterface
 
 
-@dataclass(kw_only=True)
 class PypiLocation(LocationInterface):
-    url: str = field(default="https://pypi.org/simple")
+    url: str = "https://pypi.org/simple"
     package: str
     version: str
-    env_token: Optional[str] = field(default=None)
+    env_token: Optional[str] = None
 
     @staticmethod
     def normalize_pypi_package_name(package_name):

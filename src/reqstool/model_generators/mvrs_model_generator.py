@@ -6,9 +6,10 @@ from typing import Dict
 from ruamel.yaml import YAML
 
 from reqstool.commands.exit_codes import EXIT_CODE_SYNTAX_VALIDATION_ERROR
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxValidator
+from reqstool.models.generated.manual_verification_results_schema import Model as MVRsPydanticModel
 from reqstool.models.mvrs import MVRData, MVRsData
 
 
@@ -30,20 +31,21 @@ class MVRsModelGenerator:
         ):
             sys.exit(EXIT_CODE_SYNTAX_VALIDATION_ERROR)
 
-        results = self.__parse_mvrs(data)
+        validated = MVRsPydanticModel.model_validate(data)
+        results = self.__parse_mvrs(validated)
 
         return MVRsData(results=results)
 
-    def __parse_mvrs(self, data) -> Dict[UrnId, MVRData]:
+    def __parse_mvrs(self, validated: MVRsPydanticModel) -> Dict[UrnId, MVRData]:
         r_result = {}
 
-        for result in data["results"]:
-            urn_id = Utils.convert_id_to_urn_id(urn=self.urn, id=result["id"])
+        for result in validated.results:
+            urn_id = Utils.convert_id_to_urn_id(urn=self.urn, id=result.id)
             mvr = MVRData(
                 id=urn_id,
-                svc_ids=Utils.convert_ids_to_urn_id(ids=result["svc_ids"], urn=self.urn),
-                comment=result.get("comment"),
-                passed=result["pass"],
+                svc_ids=Utils.convert_ids_to_urn_id(ids=result.svc_ids, urn=self.urn),
+                comment=result.comment,
+                passed=result.pass_,
             )
 
             r_result[mvr.id] = mvr

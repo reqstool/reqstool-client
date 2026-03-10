@@ -1,4 +1,4 @@
-from reqstool.common.dataclasses.lifecycle import LIFECYCLESTATE, LifecycleData
+from reqstool.common.models.lifecycle import LIFECYCLESTATE, LifecycleData
 
 
 def test_from_dict_with_state_and_reason():

@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 from reqstool.commands.status.statistics_generator import StatisticsGenerator
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 
 
 def _make_generator():

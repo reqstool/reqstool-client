@@ -1,12 +1,12 @@
 # Copyright © LFV
 
 import logging
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.expression_languages.requirements_el import RequirementsELTransformer
 from reqstool.expression_languages.svcs_el import SVCsELTransformer
 from reqstool.filters.id_filters import IDFilters
@@ -334,7 +334,7 @@ class _IndexedDatasetFilterProcessor:
                 # remove requirement from each such svc and if last req also remove svc
                 svcdata = self._svcs[svc_urn_id]
                 updated_req_ids = [r for r in svcdata.requirement_ids if r != req_urn_id]
-                self._svcs[svc_urn_id] = replace(svcdata, requirement_ids=updated_req_ids)
+                self._svcs[svc_urn_id] = svcdata.model_copy(update={"requirement_ids": updated_req_ids})
 
                 # svc is no longer linked to any requirements
                 if len(updated_req_ids) == 0:
@@ -359,7 +359,7 @@ class _IndexedDatasetFilterProcessor:
                 # remove svc from each such mvr and if last svc also remove mvr
                 mvrdata = self._mvrs[mvr_urn_id]
                 updated_svc_ids = [s for s in mvrdata.svc_ids if s != svc_urn_id]
-                self._mvrs[mvr_urn_id] = replace(mvrdata, svc_ids=updated_svc_ids)
+                self._mvrs[mvr_urn_id] = mvrdata.model_copy(update={"svc_ids": updated_svc_ids})
 
                 # mvr is no longer linked to any svcs
                 if len(updated_svc_ids) == 0:

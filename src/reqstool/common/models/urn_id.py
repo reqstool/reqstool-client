@@ -1,14 +1,19 @@
 # Copyright © LFV
 
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict, model_serializer
 
 URN_ID_SEPARATOR: str = ":"
 
 
-@dataclass(kw_only=True, frozen=True)
-class UrnId:
+class UrnId(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     urn: str
     id: str
+
+    @model_serializer
+    def ser_model(self):
+        return str(self)
 
     @staticmethod
     def instance(urn_id_str: str) -> "UrnId":

@@ -1,23 +1,22 @@
 # Copyright © LFV
 
-from dataclasses import dataclass, field
 from typing import List, Optional
 
-
-@dataclass
-class Resources:
-    requirements: Optional[str] = field(default=None)
-    software_verification_cases: Optional[str] = field(default=None)
-    manual_verification_results: Optional[str] = field(default=None)
-    annotations: Optional[str] = field(default=None)
-    test_results: List[str] = field(default=None)
+from pydantic import BaseModel, Field
 
 
-@dataclass
-class ReqstoolConfig:
-    language: Optional[str] = field(default=None)
-    build: Optional[str] = field(default=None)
-    resources: Optional[Resources] = field(default_factory=lambda: Resources())
+class Resources(BaseModel):
+    requirements: Optional[str] = None
+    software_verification_cases: Optional[str] = None
+    manual_verification_results: Optional[str] = None
+    annotations: Optional[str] = None
+    test_results: Optional[List[str]] = None
+
+
+class ReqstoolConfig(BaseModel):
+    language: Optional[str] = None
+    build: Optional[str] = None
+    resources: Optional[Resources] = Field(default_factory=Resources)
 
     @staticmethod
     def _parse(yaml_data: dict) -> "ReqstoolConfig":

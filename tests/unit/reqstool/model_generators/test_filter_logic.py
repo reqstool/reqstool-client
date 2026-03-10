@@ -2,7 +2,7 @@
 
 from packaging.version import Version
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.filters.requirements_filters import RequirementFilter
 from reqstool.filters.svcs_filters import SVCFilter
 from reqstool.model_generators.indexed_dataset_filter_processor import _IndexedDatasetFilterProcessor

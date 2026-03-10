@@ -1,32 +1,30 @@
 # Copyright © LFV
 
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 
-@dataclass(kw_only=True)
-class RequirementsIndataPathItem:
+class RequirementsIndataPathItem(BaseModel):
     path: str
     exists: bool = False
 
 
 @Requirements("REQ_016")
-@dataclass(kw_only=True)
-class RequirementsIndataPaths:
+class RequirementsIndataPaths(BaseModel):
     # static
-    requirements_yml: RequirementsIndataPathItem = field(
+    requirements_yml: RequirementsIndataPathItem = Field(
         default_factory=lambda: RequirementsIndataPathItem(path="requirements.yml")
     )
 
-    svcs_yml: RequirementsIndataPathItem = field(
+    svcs_yml: RequirementsIndataPathItem = Field(
         default_factory=lambda: RequirementsIndataPathItem(path="software_verification_cases.yml")
     )
-    mvrs_yml: RequirementsIndataPathItem = field(
+    mvrs_yml: RequirementsIndataPathItem = Field(
         default_factory=lambda: RequirementsIndataPathItem(path="manual_verification_results.yml")
     )
 
     # generated
-    annotations_yml: RequirementsIndataPathItem = field(
+    annotations_yml: RequirementsIndataPathItem = Field(
         default_factory=lambda: RequirementsIndataPathItem(path="annotations.yml")
     )

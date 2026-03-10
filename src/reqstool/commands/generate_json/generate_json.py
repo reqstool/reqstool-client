@@ -1,44 +1,22 @@
 # Copyright © LFV
 
 
+import json
 import logging
-import re
-from enum import Enum
 from typing import List, Optional
 
-import jsonpickle
-from packaging.version import Version
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
-from reqstool.locations.location import LOCATIONTYPES, LocationInterface
+from reqstool.locations.location import LocationInterface
 from reqstool.model_generators.combined_indexed_dataset_generator import CombinedIndexedDatasetGenerator
 from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
 from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.raw_datasets import CombinedRawDataset
-from reqstool.models.requirements import CATEGORIES, SIGNIFICANCETYPES, TYPES, VARIANTS
-from reqstool.models.svcs import VERIFICATIONTYPES
-from reqstool.models.test_data import TEST_RUN_STATUS
 
 logger = logging.getLogger(__name__)
-
-
-class UrnIdHandler(jsonpickle.handlers.BaseHandler):
-    def flatten(self, obj, data) -> str:
-        return str(UrnId.assure_urn_id(obj.urn, obj.id))
-
-
-class RevisionHandler(jsonpickle.handlers.BaseHandler):
-    def flatten(self, obj, data):
-        version: Version = obj
-        return {"major": version.major, "minor": version.minor, "patch": version.micro}
-
-
-class JsonEnumHandler(jsonpickle.handlers.BaseHandler):
-    def flatten(self, obj: Enum, data):
-        return obj.value
 
 
 @Requirements("REQ_030")
@@ -150,24 +128,4 @@ class GenerateJsonCommand:
         if self.__req_ids or self.__svc_ids:
             cids = self._filter_by_ids(cids)
 
-        # Register the custom handler for enumerations
-
-        jsonpickle.handlers.registry.register(UrnId, UrnIdHandler)
-        jsonpickle.handlers.registry.register(Version, RevisionHandler)
-        jsonpickle.handlers.registry.register(CATEGORIES, JsonEnumHandler)
-        jsonpickle.handlers.registry.register(LOCATIONTYPES, JsonEnumHandler)
-        jsonpickle.handlers.registry.register(SIGNIFICANCETYPES, JsonEnumHandler)
-        jsonpickle.handlers.registry.register(TYPES, JsonEnumHandler)
-        jsonpickle.handlers.registry.register(VARIANTS, JsonEnumHandler)
-        jsonpickle.handlers.registry.register(VERIFICATIONTYPES, JsonEnumHandler)
-        jsonpickle.handlers.registry.register(TEST_RUN_STATUS, JsonEnumHandler)
-
-        json_data = jsonpickle.encode(cids, make_refs=False, keys=True, unpicklable=False)
-
-        # Regular expression pattern to match the given format
-        pattern = r'json://\\"(.*?)\\"'
-
-        # Replacement using regex
-        json_data = re.sub(pattern, r"\1", json_data)
-
-        return json_data
+        return json.dumps(cids.model_dump(mode="json"), separators=(", ", ": "))

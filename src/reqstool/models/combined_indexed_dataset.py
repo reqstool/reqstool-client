@@ -1,9 +1,10 @@
 # Copyright © LFV
 
-from dataclasses import dataclass
 from typing import Dict, List, Set
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from pydantic import BaseModel, ConfigDict, field_serializer
+
+from reqstool.common.models.urn_id import UrnId
 from reqstool.models.annotations import AnnotationData
 from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import RequirementData
@@ -11,8 +12,9 @@ from reqstool.models.svcs import SVCData
 from reqstool.models.test_data import TestData
 
 
-@dataclass
-class CombinedIndexedDataset:
+class CombinedIndexedDataset(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     initial_model_urn: str
 
     urn_parsing_order: List[str]
@@ -51,3 +53,8 @@ class CombinedIndexedDataset:
     # mvr indexes
     mvrs_from_urn: Dict[str, List[UrnId]]
     mvrs_from_svc: Dict[UrnId, List[UrnId]]
+
+    @field_serializer("visited_imports_during_filtering")
+    @classmethod
+    def sorted_visited_imports(cls, v):
+        return sorted(v)

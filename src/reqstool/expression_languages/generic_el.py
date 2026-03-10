@@ -5,7 +5,7 @@ from typing import Generic, TypeVar
 
 from lark import Lark, ParseTree, Transformer, v_args
 
-from reqstool.common.dataclasses.urn_id import UrnId
+from reqstool.common.models.urn_id import UrnId
 
 T = TypeVar("T")
 
