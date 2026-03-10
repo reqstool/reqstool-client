@@ -61,7 +61,8 @@ class TotalStatisticsItem:
         self.nr_of_total_requirements += 1
         self.nr_of_missing_automated_tests += combined_req_test_item.automated_tests_stats.nr_of_missing_automated_tests
         self.nr_of_missing_manual_tests += combined_req_test_item.mvrs_stats.nr_of_missing_manual_tests
-        self.nr_of_reqs_with_implementation += combined_req_test_item.nr_of_implementations
+        if combined_req_test_item.nr_of_implementations > 0:
+            self.nr_of_reqs_with_implementation += 1
 
         # Some requirements could be completed without any implementation
         if completed and combined_req_test_item.implementation == IMPLEMENTATION.NOT_APPLICABLE:
