@@ -306,6 +306,80 @@ def test_set_metadata_overwrites(db):
     assert db.get_metadata("filtered") == "true"
 
 
+# -- CHECK constraints --
+
+
+def test_check_constraint_rejects_invalid_significance(db):
+    with pytest.raises(Exception, match="CHECK"):
+        db.connection.execute(
+            "INSERT INTO requirements (urn, id, title, significance, lifecycle_state,"
+            " implementation, description, revision)"
+            " VALUES ('x', 'x', 'x', 'invalid', 'effective', 'in-code', 'x', '1.0.0')"
+        )
+
+
+def test_check_constraint_rejects_invalid_lifecycle_state(db):
+    with pytest.raises(Exception, match="CHECK"):
+        db.connection.execute(
+            "INSERT INTO requirements (urn, id, title, significance, lifecycle_state,"
+            " implementation, description, revision)"
+            " VALUES ('x', 'x', 'x', 'shall', 'invalid', 'in-code', 'x', '1.0.0')"
+        )
+
+
+def test_check_constraint_rejects_invalid_implementation(db):
+    with pytest.raises(Exception, match="CHECK"):
+        db.connection.execute(
+            "INSERT INTO requirements (urn, id, title, significance, lifecycle_state,"
+            " implementation, description, revision)"
+            " VALUES ('x', 'x', 'x', 'shall', 'effective', 'invalid', 'x', '1.0.0')"
+        )
+
+
+def test_check_constraint_rejects_invalid_category(db):
+    db.connection.execute(
+        "INSERT INTO requirements (urn, id, title, significance, lifecycle_state,"
+        " implementation, description, revision)"
+        " VALUES ('x', 'x', 'x', 'shall', 'effective', 'in-code', 'x', '1.0.0')"
+    )
+    with pytest.raises(Exception, match="CHECK"):
+        db.connection.execute(
+            "INSERT INTO requirement_categories (req_urn, req_id, category) VALUES ('x', 'x', 'invalid')"
+        )
+
+
+def test_check_constraint_rejects_invalid_verification_type(db):
+    with pytest.raises(Exception, match="CHECK"):
+        db.connection.execute(
+            "INSERT INTO svcs (urn, id, title, verification_type, lifecycle_state, revision)"
+            " VALUES ('x', 'x', 'x', 'invalid', 'effective', '1.0.0')"
+        )
+
+
+def test_check_constraint_rejects_invalid_test_status(db):
+    with pytest.raises(Exception, match="CHECK"):
+        db.connection.execute("INSERT INTO test_results (urn, fqn, status) VALUES ('x', 'x', 'invalid')")
+
+
+def test_check_constraint_rejects_invalid_variant(db):
+    with pytest.raises(Exception, match="CHECK"):
+        db.connection.execute(
+            "INSERT INTO urn_metadata (urn, variant, title, parse_position) VALUES ('x', 'invalid', 'x', 0)"
+        )
+
+
+def test_check_constraint_rejects_invalid_element_kind(db):
+    db.connection.execute(
+        "INSERT INTO requirements (urn, id, title, significance, lifecycle_state,"
+        " implementation, description, revision)"
+        " VALUES ('x', 'x', 'x', 'shall', 'effective', 'in-code', 'x', '1.0.0')"
+    )
+    with pytest.raises(Exception, match="CHECK"):
+        db.connection.execute(
+            "INSERT INTO annotations_impls (req_urn, req_id, element_kind, fqn) VALUES ('x', 'x', 'INVALID', 'x')"
+        )
+
+
 # -- CASCADE delete --
 
 

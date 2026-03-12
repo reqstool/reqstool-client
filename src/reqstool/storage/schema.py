@@ -7,10 +7,10 @@ CREATE TABLE IF NOT EXISTS requirements (
     urn TEXT NOT NULL,
     id TEXT NOT NULL,
     title TEXT NOT NULL,
-    significance TEXT NOT NULL,
-    lifecycle_state TEXT NOT NULL,
+    significance TEXT NOT NULL CHECK (significance IN ('shall', 'should', 'may')),
+    lifecycle_state TEXT NOT NULL CHECK (lifecycle_state IN ('draft', 'effective', 'deprecated', 'obsolete')),
     lifecycle_reason TEXT,
-    implementation TEXT NOT NULL,
+    implementation TEXT NOT NULL CHECK (implementation IN ('in-code', 'N/A')),
     description TEXT NOT NULL,
     rationale TEXT,
     revision TEXT NOT NULL,
@@ -20,7 +20,11 @@ CREATE TABLE IF NOT EXISTS requirements (
 CREATE TABLE IF NOT EXISTS requirement_categories (
     req_urn TEXT NOT NULL,
     req_id TEXT NOT NULL,
-    category TEXT NOT NULL,
+    category TEXT NOT NULL CHECK (category IN (
+        'functional-suitability', 'performance-efficiency', 'compatibility',
+        'interaction-capability', 'reliability', 'security',
+        'maintainability', 'flexibility', 'safety'
+    )),
     PRIMARY KEY (req_urn, req_id, category),
     FOREIGN KEY (req_urn, req_id) REFERENCES requirements (urn, id) ON DELETE CASCADE
 );
@@ -38,8 +42,10 @@ CREATE TABLE IF NOT EXISTS svcs (
     urn TEXT NOT NULL,
     id TEXT NOT NULL,
     title TEXT NOT NULL,
-    verification_type TEXT NOT NULL,
-    lifecycle_state TEXT NOT NULL,
+    verification_type TEXT NOT NULL CHECK (verification_type IN (
+        'automated-test', 'manual-test', 'review', 'platform', 'other'
+    )),
+    lifecycle_state TEXT NOT NULL CHECK (lifecycle_state IN ('draft', 'effective', 'deprecated', 'obsolete')),
     lifecycle_reason TEXT,
     description TEXT,
     instructions TEXT,
@@ -78,7 +84,9 @@ CREATE TABLE IF NOT EXISTS mvr_svc_links (
 CREATE TABLE IF NOT EXISTS annotations_impls (
     req_urn TEXT NOT NULL,
     req_id TEXT NOT NULL,
-    element_kind TEXT NOT NULL,
+    element_kind TEXT NOT NULL CHECK (element_kind IN (
+        'FIELD', 'METHOD', 'CLASS', 'ENUM', 'INTERFACE', 'RECORD'
+    )),
     fqn TEXT NOT NULL,
     FOREIGN KEY (req_urn, req_id) REFERENCES requirements (urn, id) ON DELETE CASCADE
 );
@@ -86,7 +94,9 @@ CREATE TABLE IF NOT EXISTS annotations_impls (
 CREATE TABLE IF NOT EXISTS annotations_tests (
     svc_urn TEXT NOT NULL,
     svc_id TEXT NOT NULL,
-    element_kind TEXT NOT NULL,
+    element_kind TEXT NOT NULL CHECK (element_kind IN (
+        'FIELD', 'METHOD', 'CLASS', 'ENUM', 'INTERFACE', 'RECORD'
+    )),
     fqn TEXT NOT NULL,
     FOREIGN KEY (svc_urn, svc_id) REFERENCES svcs (urn, id) ON DELETE CASCADE
 );
@@ -94,7 +104,7 @@ CREATE TABLE IF NOT EXISTS annotations_tests (
 CREATE TABLE IF NOT EXISTS test_results (
     urn TEXT NOT NULL,
     fqn TEXT NOT NULL,
-    status TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('passed', 'failed', 'skipped', 'missing')),
     PRIMARY KEY (urn, fqn)
 );
 
@@ -106,7 +116,7 @@ CREATE TABLE IF NOT EXISTS parsing_graph (
 
 CREATE TABLE IF NOT EXISTS urn_metadata (
     urn TEXT NOT NULL PRIMARY KEY,
-    variant TEXT NOT NULL,
+    variant TEXT NOT NULL CHECK (variant IN ('system', 'microservice', 'external')),
     title TEXT NOT NULL,
     url TEXT,
     parse_position INTEGER NOT NULL UNIQUE
