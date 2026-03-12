@@ -1,0 +1,248 @@
+{
+    "$id": "https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/status_output.schema.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Reqstool Status Output",
+    "description": "Schema for the JSON output of the reqstool status command",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["metadata", "requirements", "totals"],
+    "properties": {
+        "metadata": {
+            "$ref": "#/$defs/metadata"
+        },
+        "requirements": {
+            "type": "object",
+            "description": "Per-requirement status, keyed by urn:id",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^.+:.+$": {
+                    "$ref": "#/$defs/requirement_status"
+                }
+            }
+        },
+        "totals": {
+            "$ref": "#/$defs/totals"
+        }
+    },
+    "$defs": {
+        "metadata": {
+            "type": "object",
+            "description": "Metadata about this status output",
+            "additionalProperties": false,
+            "required": ["initial_urn", "filtered"],
+            "properties": {
+                "initial_urn": {
+                    "type": "string",
+                    "description": "The URN of the initial dataset that was processed"
+                },
+                "filtered": {
+                    "type": "boolean",
+                    "description": "Whether filters were applied during processing"
+                }
+            }
+        },
+        "requirement_status": {
+            "type": "object",
+            "description": "Status of a single requirement",
+            "additionalProperties": false,
+            "required": ["completed", "implementations", "implementation_type", "automated_tests", "manual_tests"],
+            "properties": {
+                "completed": {
+                    "type": "boolean",
+                    "description": "Whether the requirement is fully satisfied"
+                },
+                "implementations": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of implementations found for this requirement"
+                },
+                "implementation_type": {
+                    "type": "string",
+                    "enum": ["in-code", "N/A"],
+                    "description": "How the requirement is implemented"
+                },
+                "automated_tests": {
+                    "$ref": "#/$defs/test_stats"
+                },
+                "manual_tests": {
+                    "$ref": "#/$defs/test_stats"
+                }
+            }
+        },
+        "test_stats": {
+            "type": "object",
+            "description": "Test statistics for a requirement",
+            "additionalProperties": false,
+            "required": ["total", "passed", "failed", "skipped", "missing", "not_applicable"],
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total number of tests"
+                },
+                "passed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of tests that passed"
+                },
+                "failed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of tests that failed"
+                },
+                "skipped": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of tests that were skipped"
+                },
+                "missing": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of expected tests that are missing"
+                },
+                "not_applicable": {
+                    "type": "boolean",
+                    "description": "Whether this test type is not applicable for this requirement"
+                }
+            }
+        },
+        "totals": {
+            "type": "object",
+            "description": "Aggregate totals across all requirements",
+            "additionalProperties": false,
+            "required": ["requirements", "svcs", "tests", "automated_tests", "manual_tests"],
+            "properties": {
+                "requirements": {
+                    "$ref": "#/$defs/requirements_totals"
+                },
+                "svcs": {
+                    "$ref": "#/$defs/svcs_totals"
+                },
+                "tests": {
+                    "$ref": "#/$defs/tests_totals"
+                },
+                "automated_tests": {
+                    "$ref": "#/$defs/test_type_totals"
+                },
+                "manual_tests": {
+                    "$ref": "#/$defs/test_type_totals"
+                }
+            }
+        },
+        "requirements_totals": {
+            "type": "object",
+            "description": "Aggregate requirement totals",
+            "additionalProperties": false,
+            "required": ["total", "completed", "with_implementation", "without_implementation"],
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total number of requirements"
+                },
+                "completed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of completed requirements"
+                },
+                "with_implementation": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of requirements with implementation_type in-code"
+                },
+                "without_implementation": {
+                    "type": "object",
+                    "description": "Requirements without in-code implementation (N/A)",
+                    "additionalProperties": false,
+                    "required": ["total", "completed"],
+                    "properties": {
+                        "total": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Total requirements without implementation"
+                        },
+                        "completed": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Completed requirements without implementation"
+                        }
+                    }
+                }
+            }
+        },
+        "svcs_totals": {
+            "type": "object",
+            "description": "Aggregate SVC totals",
+            "additionalProperties": false,
+            "required": ["total"],
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total number of software verification cases"
+                }
+            }
+        },
+        "tests_totals": {
+            "type": "object",
+            "description": "Aggregate test totals across all test types",
+            "additionalProperties": false,
+            "required": ["total", "passed", "failed", "skipped", "missing_automated", "missing_manual"],
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total number of tests"
+                },
+                "passed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total tests passed"
+                },
+                "failed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total tests failed"
+                },
+                "skipped": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total tests skipped"
+                },
+                "missing_automated": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of missing automated tests"
+                },
+                "missing_manual": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of missing manual tests"
+                }
+            }
+        },
+        "test_type_totals": {
+            "type": "object",
+            "description": "Totals for a specific test type (automated or manual)",
+            "additionalProperties": false,
+            "required": ["total", "passed", "failed"],
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total tests of this type"
+                },
+                "passed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Tests passed"
+                },
+                "failed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Tests failed"
+                }
+            }
+        }
+    }
+}
