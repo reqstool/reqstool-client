@@ -1,7 +1,7 @@
 # Copyright © LFV
 
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
@@ -23,11 +23,18 @@ from reqstool.models.requirements import VARIANTS, RequirementsData
 from reqstool.models.svcs import SVCsData
 from reqstool.models.test_data import TestsData
 from reqstool.requirements_indata.requirements_indata import RequirementsIndata
+from reqstool.storage.database import RequirementsDatabase
+from reqstool.storage.populator import DatabasePopulator
 
 
 @Requirements("REQ_005", "REQ_006", "REQ_007")
 class CombinedRawDatasetsGenerator:
-    def __init__(self, initial_location: LocationInterface, semantic_validator: SemanticValidator):
+    def __init__(
+        self,
+        initial_location: LocationInterface,
+        semantic_validator: SemanticValidator,
+        database: Optional[RequirementsDatabase] = None,
+    ):
         self.__level: int = 0
         self.__initial_source_type: VARIANTS = None
         self.__initial_location_handler: LocationResolver = LocationResolver(
@@ -36,6 +43,7 @@ class CombinedRawDatasetsGenerator:
         self.semantic_validator = semantic_validator
         self._parsing_order: List[str] = []
         self._parsing_graph: Dict[str, List[str]] = {}
+        self._database = database
         self.combined_raw_datasets = self.__generate()
 
     def __generate(self) -> CombinedRawDataset:
@@ -63,9 +71,26 @@ class CombinedRawDatasetsGenerator:
             parsing_graph=self._parsing_graph,
         )
 
+        self._populate_database(combined_raw_datasets)
+
         self.semantic_validator.validate_post_parsing(combined_raw_dataset=combined_raw_datasets)
 
         return combined_raw_datasets
+
+    def _populate_database(self, crd: CombinedRawDataset) -> None:
+        if self._database is None:
+            return
+
+        self._database.set_metadata("initial_urn", crd.initial_model_urn)
+
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            self._database.insert_urn_metadata(rd.requirements_data.metadata)
+            DatabasePopulator.populate_from_raw_dataset(self._database, urn, rd)
+
+        for parent_urn, children in crd.parsing_graph.items():
+            for child_urn in children:
+                self._database.insert_parsing_graph_edge(parent_urn, child_urn)
 
     def __handle_initial_imports(self, raw_datasets: Dict[str, RawDataset], rd: RequirementsData):
         match self.__initial_source_type:

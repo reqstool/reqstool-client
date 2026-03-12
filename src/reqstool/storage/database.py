@@ -1,0 +1,156 @@
+# Copyright © LFV
+
+import sqlite3
+from typing import Optional
+
+from reqstool.common.models.urn_id import UrnId
+from reqstool.models.annotations import AnnotationData
+from reqstool.models.mvrs import MVRData
+from reqstool.models.requirements import MetaData, RequirementData
+from reqstool.models.svcs import SVCData
+from reqstool.models.test_data import TEST_RUN_STATUS
+from reqstool.storage.authorizer import authorizer
+from reqstool.storage.schema import SCHEMA_DDL
+
+
+class RequirementsDatabase:
+    def __init__(self):
+        self._conn = sqlite3.connect(":memory:")
+        self._conn.row_factory = sqlite3.Row
+        self._conn.executescript(SCHEMA_DDL)
+        self._conn.set_authorizer(authorizer)
+        self._next_parse_position = 0
+
+    @property
+    def connection(self) -> sqlite3.Connection:
+        return self._conn
+
+    def close(self):
+        self._conn.close()
+
+    # -- Insert API --
+
+    def insert_requirement(self, urn: str, req: RequirementData) -> None:
+        self._conn.execute(
+            "INSERT INTO requirements (urn, id, title, significance, lifecycle_state, lifecycle_reason,"
+            " implementation, description, rationale, revision)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                urn,
+                req.id.id,
+                req.title,
+                req.significance.value,
+                req.lifecycle.state.value,
+                req.lifecycle.reason,
+                req.implementation.value,
+                req.description,
+                req.rationale,
+                str(req.revision),
+            ),
+        )
+
+        for cat in req.categories:
+            self._conn.execute(
+                "INSERT INTO requirement_categories (req_urn, req_id, category) VALUES (?, ?, ?)",
+                (urn, req.id.id, cat.value),
+            )
+
+        if req.references:
+            for ref in req.references:
+                for ref_urn_id in ref.requirement_ids:
+                    self._conn.execute(
+                        "INSERT OR IGNORE INTO requirement_references"
+                        " (req_urn, req_id, ref_req_urn, ref_req_id) VALUES (?, ?, ?, ?)",
+                        (urn, req.id.id, ref_urn_id.urn, ref_urn_id.id),
+                    )
+
+        self._conn.commit()
+
+    def insert_svc(self, urn: str, svc: SVCData) -> None:
+        self._conn.execute(
+            "INSERT INTO svcs (urn, id, title, verification_type, lifecycle_state, lifecycle_reason,"
+            " description, instructions, revision)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                urn,
+                svc.id.id,
+                svc.title,
+                svc.verification.value,
+                svc.lifecycle.state.value,
+                svc.lifecycle.reason,
+                svc.description,
+                svc.instructions,
+                str(svc.revision),
+            ),
+        )
+
+        for req_urn_id in svc.requirement_ids:
+            self._conn.execute(
+                "INSERT INTO svc_requirement_links (svc_urn, svc_id, req_urn, req_id) VALUES (?, ?, ?, ?)",
+                (urn, svc.id.id, req_urn_id.urn, req_urn_id.id),
+            )
+
+        self._conn.commit()
+
+    def insert_mvr(self, urn: str, mvr: MVRData) -> None:
+        self._conn.execute(
+            "INSERT INTO mvrs (urn, id, passed, comment) VALUES (?, ?, ?, ?)",
+            (urn, mvr.id.id, int(mvr.passed), mvr.comment),
+        )
+
+        for svc_urn_id in mvr.svc_ids:
+            self._conn.execute(
+                "INSERT INTO mvr_svc_links (mvr_urn, mvr_id, svc_urn, svc_id) VALUES (?, ?, ?, ?)",
+                (urn, mvr.id.id, svc_urn_id.urn, svc_urn_id.id),
+            )
+
+        self._conn.commit()
+
+    def insert_annotation_impl(self, req_urn_id: UrnId, annotation: AnnotationData) -> None:
+        self._conn.execute(
+            "INSERT INTO annotations_impls (req_urn, req_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
+            (req_urn_id.urn, req_urn_id.id, annotation.element_kind, annotation.fully_qualified_name),
+        )
+        self._conn.commit()
+
+    def insert_annotation_test(self, svc_urn_id: UrnId, annotation: AnnotationData) -> None:
+        self._conn.execute(
+            "INSERT INTO annotations_tests (svc_urn, svc_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
+            (svc_urn_id.urn, svc_urn_id.id, annotation.element_kind, annotation.fully_qualified_name),
+        )
+        self._conn.commit()
+
+    def insert_test_result(self, urn: str, fqn: str, status: TEST_RUN_STATUS) -> None:
+        self._conn.execute(
+            "INSERT INTO test_results (urn, fqn, status) VALUES (?, ?, ?)",
+            (urn, fqn, status.value),
+        )
+        self._conn.commit()
+
+    def insert_parsing_graph_edge(self, parent_urn: str, child_urn: str) -> None:
+        self._conn.execute(
+            "INSERT OR IGNORE INTO parsing_graph (parent_urn, child_urn) VALUES (?, ?)",
+            (parent_urn, child_urn),
+        )
+        self._conn.commit()
+
+    def insert_urn_metadata(self, metadata: MetaData) -> None:
+        self._conn.execute(
+            "INSERT INTO urn_metadata (urn, variant, title, url, parse_position) VALUES (?, ?, ?, ?, ?)",
+            (metadata.urn, metadata.variant.value, metadata.title, metadata.url, self._next_parse_position),
+        )
+        self._next_parse_position += 1
+        self._conn.commit()
+
+    # -- Metadata --
+
+    def set_metadata(self, key: str, value: str) -> None:
+        self._conn.execute(
+            "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+            (key, value),
+        )
+        self._conn.commit()
+
+    def get_metadata(self, key: str) -> Optional[str]:
+        row = self._conn.execute("SELECT value FROM metadata WHERE key = ?", (key,)).fetchone()
+        return row["value"] if row is not None else None
