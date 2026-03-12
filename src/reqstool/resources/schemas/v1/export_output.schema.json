@@ -1,0 +1,364 @@
+{
+    "$id": "https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/export_output.schema.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Reqstool Export Output",
+    "description": "Schema for the JSON output of the reqstool export command",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["metadata", "requirements", "svcs", "mvrs", "annotations", "test_results"],
+    "properties": {
+        "metadata": {
+            "$ref": "#/$defs/metadata"
+        },
+        "requirements": {
+            "type": "object",
+            "description": "All requirements, keyed by urn:id",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^.+:.+$": {
+                    "$ref": "#/$defs/requirement"
+                }
+            }
+        },
+        "svcs": {
+            "type": "object",
+            "description": "All software verification cases, keyed by urn:id",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^.+:.+$": {
+                    "$ref": "#/$defs/svc"
+                }
+            }
+        },
+        "mvrs": {
+            "type": "object",
+            "description": "All manual verification results, keyed by urn:id",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^.+:.+$": {
+                    "$ref": "#/$defs/mvr"
+                }
+            }
+        },
+        "annotations": {
+            "$ref": "#/$defs/annotations"
+        },
+        "test_results": {
+            "type": "object",
+            "description": "Automated test results, keyed by urn:fully_qualified_name",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^.+:.+$": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/test_result"
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "metadata": {
+            "type": "object",
+            "description": "Metadata about this export output",
+            "additionalProperties": false,
+            "required": ["initial_urn", "urn_parsing_order", "import_graph", "filtered"],
+            "properties": {
+                "initial_urn": {
+                    "type": "string",
+                    "description": "The URN of the initial dataset that was processed"
+                },
+                "urn_parsing_order": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Order in which URNs were parsed during processing"
+                },
+                "import_graph": {
+                    "type": "object",
+                    "description": "DAG of URN import relationships (parent -> children)",
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        "^.+$": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "filtered": {
+                    "type": "boolean",
+                    "description": "Whether filters were applied during processing"
+                }
+            }
+        },
+        "lifecycle": {
+            "type": "object",
+            "description": "Lifecycle state of a requirement or SVC",
+            "additionalProperties": false,
+            "required": ["state"],
+            "properties": {
+                "state": {
+                    "type": "string",
+                    "enum": ["draft", "effective", "deprecated", "obsolete"],
+                    "description": "Current lifecycle state"
+                },
+                "reason": {
+                    "type": ["string", "null"],
+                    "description": "Reason for the current state, required if deprecated or obsolete"
+                }
+            }
+        },
+        "revision": {
+            "type": "object",
+            "description": "Semantic version of the requirement or SVC",
+            "additionalProperties": false,
+            "required": ["major", "minor", "patch"],
+            "properties": {
+                "major": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "minor": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "patch": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "requirement": {
+            "type": "object",
+            "description": "A single requirement",
+            "additionalProperties": false,
+            "required": ["urn", "id", "title", "significance", "description", "lifecycle", "implementation_type", "categories", "revision"],
+            "properties": {
+                "urn": {
+                    "type": "string",
+                    "description": "URN of the system this requirement belongs to"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "Requirement identifier (e.g. REQ_010)"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Human-readable title"
+                },
+                "significance": {
+                    "type": "string",
+                    "enum": ["shall", "should", "may"],
+                    "description": "Level of significance (RFC 2119)"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Detailed description of the requirement"
+                },
+                "rationale": {
+                    "type": ["string", "null"],
+                    "description": "Rationale for why this requirement exists"
+                },
+                "lifecycle": {
+                    "$ref": "#/$defs/lifecycle"
+                },
+                "implementation_type": {
+                    "type": "string",
+                    "enum": ["in-code", "N/A"],
+                    "description": "How the requirement is implemented"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "functional-suitability",
+                            "performance-efficiency",
+                            "compatibility",
+                            "interaction-capability",
+                            "reliability",
+                            "security",
+                            "maintainability",
+                            "flexibility",
+                            "safety"
+                        ]
+                    },
+                    "description": "Requirement categories"
+                },
+                "revision": {
+                    "$ref": "#/$defs/revision"
+                },
+                "references": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/reference"
+                    },
+                    "description": "References to related requirements"
+                }
+            }
+        },
+        "reference": {
+            "type": "object",
+            "description": "A reference to related requirements",
+            "additionalProperties": false,
+            "required": ["requirement_ids"],
+            "properties": {
+                "requirement_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "List of urn:id references to related requirements"
+                }
+            }
+        },
+        "svc": {
+            "type": "object",
+            "description": "A software verification case",
+            "additionalProperties": false,
+            "required": ["urn", "id", "title", "description", "verification", "lifecycle", "revision", "requirement_ids"],
+            "properties": {
+                "urn": {
+                    "type": "string",
+                    "description": "URN of the system this SVC belongs to"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "SVC identifier (e.g. SVC_010)"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Human-readable title"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Detailed description"
+                },
+                "verification": {
+                    "type": "string",
+                    "enum": ["automated-test", "manual-test", "review", "platform", "other"],
+                    "description": "Type of verification"
+                },
+                "instructions": {
+                    "type": ["string", "null"],
+                    "description": "Instructions for manual verification"
+                },
+                "lifecycle": {
+                    "$ref": "#/$defs/lifecycle"
+                },
+                "revision": {
+                    "$ref": "#/$defs/revision"
+                },
+                "requirement_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "List of urn:id references to requirements this SVC verifies"
+                }
+            }
+        },
+        "mvr": {
+            "type": "object",
+            "description": "A manual verification result",
+            "additionalProperties": false,
+            "required": ["urn", "id", "passed", "svc_ids"],
+            "properties": {
+                "urn": {
+                    "type": "string",
+                    "description": "URN of the system this MVR belongs to"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "MVR identifier (e.g. MVR_201)"
+                },
+                "passed": {
+                    "type": "boolean",
+                    "description": "Whether the manual verification passed"
+                },
+                "comment": {
+                    "type": ["string", "null"],
+                    "description": "Optional comment about the verification result"
+                },
+                "svc_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "List of urn:id references to SVCs this MVR verifies"
+                }
+            }
+        },
+        "annotations": {
+            "type": "object",
+            "description": "Code annotations for implementations and tests",
+            "additionalProperties": false,
+            "required": ["implementations", "tests"],
+            "properties": {
+                "implementations": {
+                    "type": "object",
+                    "description": "Implementation annotations, keyed by urn:requirement_id",
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        "^.+:.+$": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/annotation"
+                            }
+                        }
+                    }
+                },
+                "tests": {
+                    "type": "object",
+                    "description": "Test annotations, keyed by urn:svc_id",
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        "^.+:.+$": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/annotation"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "annotation": {
+            "type": "object",
+            "description": "A single code annotation",
+            "additionalProperties": false,
+            "required": ["element_kind", "fully_qualified_name"],
+            "properties": {
+                "element_kind": {
+                    "type": "string",
+                    "enum": ["FIELD", "METHOD", "CLASS", "ENUM", "INTERFACE", "RECORD"],
+                    "description": "Kind of code element annotated"
+                },
+                "fully_qualified_name": {
+                    "type": "string",
+                    "description": "Fully qualified name of the annotated element"
+                }
+            }
+        },
+        "test_result": {
+            "type": "object",
+            "description": "A single automated test result",
+            "additionalProperties": false,
+            "required": ["fully_qualified_name", "status"],
+            "properties": {
+                "fully_qualified_name": {
+                    "type": "string",
+                    "description": "Fully qualified name of the test"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["passed", "failed", "skipped", "missing"],
+                    "description": "Test execution status"
+                }
+            }
+        }
+    }
+}

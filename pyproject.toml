@@ -86,8 +86,8 @@ dependencies = [
 ]
 
 [tool.hatch.envs.dev.scripts]
-codegen = "datamodel-codegen --disable-timestamp --input src/reqstool/resources/schemas/v1/ --input-file-type jsonschema --output src/reqstool/models/generated/ --output-model-type pydantic_v2.BaseModel --use-schema-description --use-field-description --use-annotated --field-constraints --target-python-version 3.13"
-codegen-check = "datamodel-codegen --check --disable-timestamp --input src/reqstool/resources/schemas/v1/ --input-file-type jsonschema --output src/reqstool/models/generated/ --output-model-type pydantic_v2.BaseModel --use-schema-description --use-field-description --use-annotated --field-constraints --target-python-version 3.13"
+codegen = "bash -c 'base=$(mktemp -d) && tmp=$base/v1 && mkdir \"$tmp\" && cp src/reqstool/resources/schemas/v1/*.schema.json \"$tmp/\" && rm -f \"$tmp\"/*_output.schema.json && datamodel-codegen --disable-timestamp --input \"$tmp/\" --input-file-type jsonschema --output src/reqstool/models/generated/ --output-model-type pydantic_v2.BaseModel --use-schema-description --use-field-description --use-annotated --field-constraints --target-python-version 3.13 && rm -rf \"$base\"'"
+codegen-check = "bash -c 'base=$(mktemp -d) && tmp=$base/v1 && mkdir \"$tmp\" && cp src/reqstool/resources/schemas/v1/*.schema.json \"$tmp/\" && rm -f \"$tmp\"/*_output.schema.json && datamodel-codegen --check --disable-timestamp --input \"$tmp/\" --input-file-type jsonschema --output src/reqstool/models/generated/ --output-model-type pydantic_v2.BaseModel --use-schema-description --use-field-description --use-annotated --field-constraints --target-python-version 3.13 && rm -rf \"$base\"'"
 
 [tool.black]
 line-length = 120
