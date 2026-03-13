@@ -39,12 +39,19 @@ class StatusCommand:
 
             return (
                 status,
-                stats_service.total_statistics.total_requirements - stats_service.total_statistics.completed_requirements,
+                stats_service.total_statistics.total_requirements
+                - stats_service.total_statistics.completed_requirements,
             )
 
 
 def _build_table(
-    req_id: str, urn: str, impls: int, tests: TestStats, mvrs: TestStats, completed: bool, implementation: IMPLEMENTATION
+    req_id: str,
+    urn: str,
+    impls: int,
+    tests: TestStats,
+    mvrs: TestStats,
+    completed: bool,
+    implementation: IMPLEMENTATION,
 ) -> list[str]:
     row = [urn]
     # add color to requirement if it's completed or not
@@ -166,12 +173,10 @@ def _summarize_statistics(ts: TotalStats) -> str:
 
     implementation_data = [
         [
-            str(code_reqs)
-            + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
+            str(code_reqs) + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
             str(ts.with_implementation)
             + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
-            str(code_completed)
-            + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
+            str(code_completed) + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
             str(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed))
             + __numbers_as_percentage(
                 numerator=(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed)),
