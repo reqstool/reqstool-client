@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS requirement_categories (
     FOREIGN KEY (req_urn, req_id) REFERENCES requirements (urn, id) ON DELETE CASCADE
 );
 
+-- No FK on (ref_req_urn, ref_req_id) because references may point to external URNs not in the database
 CREATE TABLE IF NOT EXISTS requirement_references (
     req_urn TEXT NOT NULL,
     req_id TEXT NOT NULL,
@@ -88,6 +89,7 @@ CREATE TABLE IF NOT EXISTS annotations_impls (
         'FIELD', 'METHOD', 'CLASS', 'ENUM', 'INTERFACE', 'RECORD'
     )),
     fqn TEXT NOT NULL,
+    PRIMARY KEY (req_urn, req_id, element_kind, fqn),
     FOREIGN KEY (req_urn, req_id) REFERENCES requirements (urn, id) ON DELETE CASCADE
 );
 
@@ -98,6 +100,7 @@ CREATE TABLE IF NOT EXISTS annotations_tests (
         'FIELD', 'METHOD', 'CLASS', 'ENUM', 'INTERFACE', 'RECORD'
     )),
     fqn TEXT NOT NULL,
+    PRIMARY KEY (svc_urn, svc_id, element_kind, fqn),
     FOREIGN KEY (svc_urn, svc_id) REFERENCES svcs (urn, id) ON DELETE CASCADE
 );
 

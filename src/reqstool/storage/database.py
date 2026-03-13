@@ -1,7 +1,8 @@
 # Copyright © LFV
 
+from __future__ import annotations
+
 import sqlite3
-from typing import Optional
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.models.annotations import AnnotationData
@@ -10,6 +11,7 @@ from reqstool.models.requirements import MetaData, RequirementData
 from reqstool.models.svcs import SVCData
 from reqstool.models.test_data import TEST_RUN_STATUS
 from reqstool.storage.authorizer import authorizer
+from reqstool.storage.el_to_sql_compiler import regexp_function
 from reqstool.storage.schema import SCHEMA_DDL
 
 
@@ -19,7 +21,15 @@ class RequirementsDatabase:
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(SCHEMA_DDL)
         self._conn.set_authorizer(authorizer)
+        self._conn.create_function("regexp", 2, regexp_function)
         self._next_parse_position = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
 
     @property
     def connection(self) -> sqlite3.Connection:
@@ -27,6 +37,9 @@ class RequirementsDatabase:
 
     def close(self):
         self._conn.close()
+
+    def commit(self):
+        self._conn.commit()
 
     # -- Insert API --
 
@@ -64,8 +77,6 @@ class RequirementsDatabase:
                         (urn, req.id.id, ref_urn_id.urn, ref_urn_id.id),
                     )
 
-        self._conn.commit()
-
     def insert_svc(self, urn: str, svc: SVCData) -> None:
         self._conn.execute(
             "INSERT INTO svcs (urn, id, title, verification_type, lifecycle_state, lifecycle_reason,"
@@ -90,8 +101,6 @@ class RequirementsDatabase:
                 (urn, svc.id.id, req_urn_id.urn, req_urn_id.id),
             )
 
-        self._conn.commit()
-
     def insert_mvr(self, urn: str, mvr: MVRData) -> None:
         self._conn.execute(
             "INSERT INTO mvrs (urn, id, passed, comment) VALUES (?, ?, ?, ?)",
@@ -104,35 +113,29 @@ class RequirementsDatabase:
                 (urn, mvr.id.id, svc_urn_id.urn, svc_urn_id.id),
             )
 
-        self._conn.commit()
-
     def insert_annotation_impl(self, req_urn_id: UrnId, annotation: AnnotationData) -> None:
         self._conn.execute(
-            "INSERT INTO annotations_impls (req_urn, req_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO annotations_impls (req_urn, req_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
             (req_urn_id.urn, req_urn_id.id, annotation.element_kind, annotation.fully_qualified_name),
         )
-        self._conn.commit()
 
     def insert_annotation_test(self, svc_urn_id: UrnId, annotation: AnnotationData) -> None:
         self._conn.execute(
-            "INSERT INTO annotations_tests (svc_urn, svc_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO annotations_tests (svc_urn, svc_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
             (svc_urn_id.urn, svc_urn_id.id, annotation.element_kind, annotation.fully_qualified_name),
         )
-        self._conn.commit()
 
     def insert_test_result(self, urn: str, fqn: str, status: TEST_RUN_STATUS) -> None:
         self._conn.execute(
             "INSERT INTO test_results (urn, fqn, status) VALUES (?, ?, ?)",
             (urn, fqn, status.value),
         )
-        self._conn.commit()
 
     def insert_parsing_graph_edge(self, parent_urn: str, child_urn: str) -> None:
         self._conn.execute(
             "INSERT OR IGNORE INTO parsing_graph (parent_urn, child_urn) VALUES (?, ?)",
             (parent_urn, child_urn),
         )
-        self._conn.commit()
 
     def insert_urn_metadata(self, metadata: MetaData) -> None:
         self._conn.execute(
@@ -140,7 +143,6 @@ class RequirementsDatabase:
             (metadata.urn, metadata.variant.value, metadata.title, metadata.url, self._next_parse_position),
         )
         self._next_parse_position += 1
-        self._conn.commit()
 
     # -- Metadata --
 
@@ -149,8 +151,7 @@ class RequirementsDatabase:
             "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
             (key, value),
         )
-        self._conn.commit()
 
-    def get_metadata(self, key: str) -> Optional[str]:
+    def get_metadata(self, key: str) -> str | None:
         row = self._conn.execute("SELECT value FROM metadata WHERE key = ?", (key,)).fetchone()
         return row["value"] if row is not None else None

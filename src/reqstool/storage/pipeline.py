@@ -1,6 +1,9 @@
 # Copyright © LFV
 
-from typing import Tuple
+from __future__ import annotations
+
+from contextlib import contextmanager
+from typing import Generator
 
 from reqstool.common.validators.lifecycle_validator import LifecycleValidator
 from reqstool.common.validators.semantic_validator import SemanticValidator
@@ -8,28 +11,30 @@ from reqstool.locations.location import LocationInterface
 from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
 from reqstool.models.raw_datasets import CombinedRawDataset
 from reqstool.storage.database import RequirementsDatabase
-from reqstool.storage.filter_processor import DatabaseFilterProcessor
+from reqstool.storage.database_filter_processor import DatabaseFilterProcessor
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
+@contextmanager
 def build_database(
     location: LocationInterface,
     semantic_validator: SemanticValidator,
     filter_data: bool = True,
-) -> Tuple[RequirementsDatabase, CombinedRawDataset]:
+) -> Generator[tuple[RequirementsDatabase, CombinedRawDataset], None, None]:
     db = RequirementsDatabase()
+    try:
+        crdg = CombinedRawDatasetsGenerator(
+            initial_location=location,
+            semantic_validator=semantic_validator,
+            database=db,
+        )
+        crd = crdg.combined_raw_datasets
 
-    crdg = CombinedRawDatasetsGenerator(
-        initial_location=location,
-        semantic_validator=semantic_validator,
-        database=db,
-    )
-    crd = crdg.combined_raw_datasets
+        if filter_data:
+            DatabaseFilterProcessor(db, crd.raw_datasets).apply_filters()
 
-    if filter_data:
-        DatabaseFilterProcessor(db, crd.raw_datasets).apply_filters()
+        LifecycleValidator(RequirementsRepository(db))
 
-    repo = RequirementsRepository(db)
-    LifecycleValidator(repo)
-
-    return db, crd
+        yield db, crd
+    finally:
+        db.close()

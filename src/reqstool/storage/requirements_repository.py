@@ -1,6 +1,6 @@
 # Copyright © LFV
 
-from typing import Dict, List
+from __future__ import annotations
 
 from packaging.version import Version
 
@@ -29,12 +29,12 @@ class RequirementsRepository:
     def get_initial_urn(self) -> str:
         return self._db.get_metadata("initial_urn")
 
-    def get_urn_parsing_order(self) -> List[str]:
+    def get_urn_parsing_order(self) -> list[str]:
         rows = self._db.connection.execute("SELECT urn FROM urn_metadata ORDER BY parse_position").fetchall()
         return [row["urn"] for row in rows]
 
-    def get_import_graph(self) -> Dict[str, List[str]]:
-        graph: Dict[str, List[str]] = {}
+    def get_import_graph(self) -> dict[str, list[str]]:
+        graph: dict[str, list[str]] = {}
         all_urns = {row["urn"] for row in self._db.connection.execute("SELECT urn FROM urn_metadata").fetchall()}
         for urn in all_urns:
             graph[urn] = []
@@ -48,7 +48,7 @@ class RequirementsRepository:
 
     # -- Entity queries --
 
-    def get_all_requirements(self) -> Dict[UrnId, RequirementData]:
+    def get_all_requirements(self) -> dict[UrnId, RequirementData]:
         rows = self._db.connection.execute("SELECT * FROM requirements").fetchall()
         result = {}
         for row in rows:
@@ -56,7 +56,7 @@ class RequirementsRepository:
             result[urn_id] = self._row_to_requirement_data(row)
         return result
 
-    def get_all_svcs(self) -> Dict[UrnId, SVCData]:
+    def get_all_svcs(self) -> dict[UrnId, SVCData]:
         rows = self._db.connection.execute("SELECT * FROM svcs").fetchall()
         result = {}
         for row in rows:
@@ -64,7 +64,7 @@ class RequirementsRepository:
             result[urn_id] = self._row_to_svc_data(row)
         return result
 
-    def get_all_mvrs(self) -> Dict[UrnId, MVRData]:
+    def get_all_mvrs(self) -> dict[UrnId, MVRData]:
         rows = self._db.connection.execute("SELECT * FROM mvrs").fetchall()
         result = {}
         for row in rows:
@@ -74,46 +74,46 @@ class RequirementsRepository:
 
     # -- Index/lookup queries --
 
-    def get_svcs_for_req(self, req_urn_id: UrnId) -> List[UrnId]:
+    def get_svcs_for_req(self, req_urn_id: UrnId) -> list[UrnId]:
         rows = self._db.connection.execute(
             "SELECT svc_urn, svc_id FROM svc_requirement_links WHERE req_urn = ? AND req_id = ?",
             (req_urn_id.urn, req_urn_id.id),
         ).fetchall()
         return [UrnId(urn=row["svc_urn"], id=row["svc_id"]) for row in rows]
 
-    def get_mvrs_for_svc(self, svc_urn_id: UrnId) -> List[UrnId]:
+    def get_mvrs_for_svc(self, svc_urn_id: UrnId) -> list[UrnId]:
         rows = self._db.connection.execute(
             "SELECT mvr_urn, mvr_id FROM mvr_svc_links WHERE svc_urn = ? AND svc_id = ?",
             (svc_urn_id.urn, svc_urn_id.id),
         ).fetchall()
         return [UrnId(urn=row["mvr_urn"], id=row["mvr_id"]) for row in rows]
 
-    def get_annotations_impls(self) -> Dict[UrnId, List[AnnotationData]]:
+    def get_annotations_impls(self) -> dict[UrnId, list[AnnotationData]]:
         rows = self._db.connection.execute("SELECT req_urn, req_id, element_kind, fqn FROM annotations_impls").fetchall()
-        result: Dict[UrnId, List[AnnotationData]] = {}
+        result: dict[UrnId, list[AnnotationData]] = {}
         for row in rows:
             key = UrnId(urn=row["req_urn"], id=row["req_id"])
             annotation = AnnotationData(element_kind=row["element_kind"], fully_qualified_name=row["fqn"])
             result.setdefault(key, []).append(annotation)
         return result
 
-    def get_annotations_tests(self) -> Dict[UrnId, List[AnnotationData]]:
+    def get_annotations_tests(self) -> dict[UrnId, list[AnnotationData]]:
         rows = self._db.connection.execute("SELECT svc_urn, svc_id, element_kind, fqn FROM annotations_tests").fetchall()
-        result: Dict[UrnId, List[AnnotationData]] = {}
+        result: dict[UrnId, list[AnnotationData]] = {}
         for row in rows:
             key = UrnId(urn=row["svc_urn"], id=row["svc_id"])
             annotation = AnnotationData(element_kind=row["element_kind"], fully_qualified_name=row["fqn"])
             result.setdefault(key, []).append(annotation)
         return result
 
-    def get_annotations_impls_for_req(self, req_urn_id: UrnId) -> List[AnnotationData]:
+    def get_annotations_impls_for_req(self, req_urn_id: UrnId) -> list[AnnotationData]:
         rows = self._db.connection.execute(
             "SELECT element_kind, fqn FROM annotations_impls WHERE req_urn = ? AND req_id = ?",
             (req_urn_id.urn, req_urn_id.id),
         ).fetchall()
         return [AnnotationData(element_kind=row["element_kind"], fully_qualified_name=row["fqn"]) for row in rows]
 
-    def get_annotations_tests_for_svc(self, svc_urn_id: UrnId) -> List[AnnotationData]:
+    def get_annotations_tests_for_svc(self, svc_urn_id: UrnId) -> list[AnnotationData]:
         rows = self._db.connection.execute(
             "SELECT element_kind, fqn FROM annotations_tests WHERE svc_urn = ? AND svc_id = ?",
             (svc_urn_id.urn, svc_urn_id.id),
@@ -122,7 +122,7 @@ class RequirementsRepository:
 
     # -- Test result resolution --
 
-    def get_automated_test_results(self) -> Dict[UrnId, List[TestData]]:
+    def get_automated_test_results(self) -> dict[UrnId, list[TestData]]:
         """Replaces CombinedIndexedDatasetGenerator.__process_automated_test_result.
 
         For each test annotation:
@@ -134,10 +134,10 @@ class RequirementsRepository:
             "SELECT svc_urn, svc_id, element_kind, fqn FROM annotations_tests"
         ).fetchall()
 
-        result: Dict[UrnId, List[TestData]] = {}
+        result: dict[UrnId, list[TestData]] = {}
 
         for ann in annotations:
-            svc_urn_id = UrnId(urn=ann["svc_urn"], id=ann["fqn"])
+            test_urn_id = UrnId(urn=ann["svc_urn"], id=ann["fqn"])
 
             if ann["element_kind"] == "CLASS":
                 test_data = self._process_class_annotated_test_results(ann["svc_urn"], ann["fqn"])
@@ -159,7 +159,7 @@ class RequirementsRepository:
                         status=TEST_RUN_STATUS.MISSING,
                     )
 
-            result.setdefault(svc_urn_id, []).append(test_data)
+            result.setdefault(test_urn_id, []).append(test_data)
 
         return result
 

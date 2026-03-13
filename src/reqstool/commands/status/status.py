@@ -1,7 +1,8 @@
 # Copyright © LFV
 
+from __future__ import annotations
+
 import json
-from typing import List, Tuple
 
 from colorama import Fore, Style
 from reqstool_python_decorators.decorators.decorators import Requirements
@@ -11,7 +12,7 @@ from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
 from reqstool.models.requirements import IMPLEMENTATION
-from reqstool.services.statistics_service import RequirementStatus, StatisticsService, TestStats, TotalStats
+from reqstool.services.statistics_service import StatisticsService, TestStats, TotalStats
 from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
@@ -23,30 +24,28 @@ class StatusCommand:
         self.__format: str = format
         self.result = self.__status_result()
 
-    def __status_result(self) -> Tuple[str, int]:
-        db, _ = build_database(
+    def __status_result(self) -> tuple[str, int]:
+        with build_database(
             location=self.__initial_location,
             semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
-        )
-        repo = RequirementsRepository(db)
-        stats_service = StatisticsService(repo)
+        ) as (db, _):
+            repo = RequirementsRepository(db)
+            stats_service = StatisticsService(repo)
 
-        if self.__format == "json":
-            status = json.dumps(stats_service.to_status_dict(), indent=2)
-        else:
-            status = _status_table(stats_service=stats_service)
+            if self.__format == "json":
+                status = json.dumps(stats_service.to_status_dict(), indent=2)
+            else:
+                status = _status_table(stats_service=stats_service)
 
-        db.close()
-
-        return (
-            status,
-            stats_service.total_statistics.total_requirements - stats_service.total_statistics.completed_requirements,
-        )
+            return (
+                status,
+                stats_service.total_statistics.total_requirements - stats_service.total_statistics.completed_requirements,
+            )
 
 
 def _build_table(
     req_id: str, urn: str, impls: int, tests: TestStats, mvrs: TestStats, completed: bool, implementation: IMPLEMENTATION
-) -> List[str]:
+) -> list[str]:
     row = [urn]
     # add color to requirement if it's completed or not
     req_id_color = f"{Fore.GREEN}" if completed else f"{Fore.RED}"
@@ -63,7 +62,7 @@ def _build_table(
     return row
 
 
-def _get_row_with_totals(stats_service: StatisticsService) -> List[str]:
+def _get_row_with_totals(stats_service: StatisticsService) -> list[str]:
     ts = stats_service.total_statistics
     total_automatic = ts.passed_automatic_tests + ts.failed_automatic_tests
     total_manual = ts.passed_manual_tests + ts.failed_manual_tests
@@ -89,7 +88,7 @@ def _get_row_with_totals(stats_service: StatisticsService) -> List[str]:
     ]
 
 
-def _build_merged_headers(col_widths: List[int]) -> str:
+def _build_merged_headers(col_widths: list[int]) -> str:
     """Build a 3-line merged header block with group headers spanning sub-columns."""
     # col_widths: widths for all 13 columns (content width, not including borders)
     # Columns 0-2: URN, ID, Implementation (vertically centered)
@@ -158,7 +157,7 @@ def _build_merged_headers(col_widths: List[int]) -> str:
     return f"{top}\n{row1}\n{div}\n{row2}"
 
 
-def _parse_col_widths(sep_line: str) -> List[int]:
+def _parse_col_widths(sep_line: str) -> list[int]:
     """Parse column content widths from a tabulate separator line like ╞═══╪═══╡."""
     col_widths = []
     current_width = 0
@@ -228,112 +227,68 @@ def _status_table(stats_service: StatisticsService) -> str:
 
     legend_line = "T = Total, P = Passed, F = Failed, S = Skipped, M = Missing"
 
-    statistics = _summarize_statistics(
-        nr_of_total_reqs=ts.total_requirements,
-        nr_of_completed_reqs=ts.completed_requirements,
-        implemented=ts.with_implementation,
-        left_to_implement=ts.total_requirements - (ts.with_implementation + ts.without_implementation_total),
-        total_tests=ts.total_tests,
-        passed_tests=ts.passed_tests,
-        failed_tests=ts.failed_tests,
-        skipped_tests=ts.skipped_tests,
-        missing_automated_tests=ts.missing_automated_tests,
-        missing_manual_tests=ts.missing_manual_tests,
-        nr_of_total_svcs=ts.total_svcs,
-        nr_of_reqs_without_implementation=ts.without_implementation_total,
-        nr_of_completed_reqs_without_implementation=ts.without_implementation_completed,
-    )
+    statistics = _summarize_statistics(ts)
 
     status = table_with_title + legend_line + statistics
 
     return status
 
 
-def _summarize_statistics(
-    nr_of_total_reqs: int,
-    nr_of_completed_reqs: int,
-    implemented: int,
-    left_to_implement: int,
-    total_tests: int,
-    passed_tests: int,
-    failed_tests: int,
-    skipped_tests: int,
-    missing_automated_tests: int,
-    missing_manual_tests: int,
-    nr_of_total_svcs: int,
-    nr_of_reqs_without_implementation: int,
-    nr_of_completed_reqs_without_implementation: int,
-) -> str:
-    header_test_data = ("\b" * len(str(total_tests))) + f"Total Tests: {str(total_tests)}"
-    header_svcs_data = ("\b" * len(str(nr_of_total_svcs))) + f"Total SVCs: {str(nr_of_total_svcs)}"
+def _summarize_statistics(ts: TotalStats) -> str:
+    nr_of_reqs_without_implementation = ts.without_implementation_total
+    nr_of_completed_reqs_without_implementation = ts.without_implementation_completed
+    code_reqs = ts.total_requirements - nr_of_reqs_without_implementation
+    code_completed = ts.completed_requirements - nr_of_completed_reqs_without_implementation
+
+    header_test_data = ("\b" * len(str(ts.total_tests))) + f"Total Tests: {str(ts.total_tests)}"
+    header_svcs_data = ("\b" * len(str(ts.total_svcs))) + f"Total SVCs: {str(ts.total_svcs)}"
     CODE, NA, IMPLEMENTATIONS = __colorize_headers(
-        total=nr_of_total_reqs,
-        total_completed=nr_of_completed_reqs,
+        total=ts.total_requirements,
+        total_completed=ts.completed_requirements,
         total_reqs_no_impl=nr_of_reqs_without_implementation,
         completed_reqs_no_impl=nr_of_completed_reqs_without_implementation,
     )
 
     implementation_data = [
         [
-            str(nr_of_total_reqs - nr_of_reqs_without_implementation)
+            str(code_reqs)
+            + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
+            str(ts.with_implementation)
+            + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
+            str(code_completed)
+            + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
+            str(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed))
             + __numbers_as_percentage(
-                numerator=nr_of_total_reqs - nr_of_reqs_without_implementation,
-                denominator=(nr_of_total_reqs - nr_of_reqs_without_implementation),
-            ),
-            str(implemented)
-            + __numbers_as_percentage(
-                numerator=implemented,
-                denominator=(nr_of_total_reqs - nr_of_reqs_without_implementation),
-            ),
-            str(nr_of_completed_reqs - nr_of_completed_reqs_without_implementation)
-            + __numbers_as_percentage(
-                numerator=(nr_of_completed_reqs - nr_of_completed_reqs_without_implementation),
-                denominator=(nr_of_total_reqs - nr_of_reqs_without_implementation),
-            ),
-            str(
-                nr_of_total_reqs
-                - (
-                    nr_of_reqs_without_implementation
-                    + (nr_of_completed_reqs - nr_of_completed_reqs_without_implementation)
-                )
-            )
-            + __numbers_as_percentage(
-                numerator=(
-                    nr_of_total_reqs
-                    - (
-                        nr_of_reqs_without_implementation
-                        + (nr_of_completed_reqs - nr_of_completed_reqs_without_implementation)
-                    )
-                ),
-                denominator=(nr_of_total_reqs - nr_of_reqs_without_implementation),
+                numerator=(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed)),
+                denominator=code_reqs,
             ),
             str(nr_of_reqs_without_implementation)
             + __numbers_as_percentage(
-                numerator=(nr_of_reqs_without_implementation),
-                denominator=(nr_of_reqs_without_implementation),
+                numerator=nr_of_reqs_without_implementation,
+                denominator=nr_of_reqs_without_implementation,
             ),
             str(nr_of_completed_reqs_without_implementation)
             + __numbers_as_percentage(
-                numerator=(nr_of_completed_reqs_without_implementation),
-                denominator=(nr_of_reqs_without_implementation),
+                numerator=nr_of_completed_reqs_without_implementation,
+                denominator=nr_of_reqs_without_implementation,
             ),
             str(nr_of_reqs_without_implementation - nr_of_completed_reqs_without_implementation)
             + __numbers_as_percentage(
                 numerator=(nr_of_reqs_without_implementation - nr_of_completed_reqs_without_implementation),
-                denominator=(nr_of_reqs_without_implementation),
+                denominator=nr_of_reqs_without_implementation,
             ),
         ]
     ]
 
     table_svc_data = [
         [
-            str(passed_tests) + __numbers_as_percentage(numerator=passed_tests, denominator=total_tests),
-            str(failed_tests) + __numbers_as_percentage(numerator=failed_tests, denominator=total_tests),
-            str(skipped_tests) + __numbers_as_percentage(numerator=skipped_tests, denominator=total_tests),
-            str(missing_automated_tests)
-            + __numbers_as_percentage(numerator=missing_automated_tests, denominator=nr_of_total_svcs),
-            str(missing_manual_tests)
-            + __numbers_as_percentage(numerator=missing_manual_tests, denominator=nr_of_total_svcs),
+            str(ts.passed_tests) + __numbers_as_percentage(numerator=ts.passed_tests, denominator=ts.total_tests),
+            str(ts.failed_tests) + __numbers_as_percentage(numerator=ts.failed_tests, denominator=ts.total_tests),
+            str(ts.skipped_tests) + __numbers_as_percentage(numerator=ts.skipped_tests, denominator=ts.total_tests),
+            str(ts.missing_automated_tests)
+            + __numbers_as_percentage(numerator=ts.missing_automated_tests, denominator=ts.total_svcs),
+            str(ts.missing_manual_tests)
+            + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
         ]
     ]
 
@@ -419,7 +374,7 @@ def _format_cell(value: int, color: str = "") -> str:
     return f"{color}{value}{Style.RESET_ALL}" if color else str(value)
 
 
-def _extend_row(result: TestStats, row: List[str], kind: str) -> None:
+def _extend_row(result: TestStats, row: list[str], kind: str) -> None:
     if result.not_applicable:
         row.extend(["-", "-", "-", "-", "-"])
         return

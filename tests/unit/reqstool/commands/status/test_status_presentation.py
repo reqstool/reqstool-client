@@ -4,7 +4,7 @@ from colorama import Fore
 
 from reqstool.commands.status.status import _build_table, _extend_row, _format_cell, _summarize_statistics
 from reqstool.models.requirements import IMPLEMENTATION
-from reqstool.services.statistics_service import TestStats
+from reqstool.services.statistics_service import TestStats, TotalStats
 
 
 # ---------------------------------------------------------------------------
@@ -210,21 +210,7 @@ def test_build_table_returns_13_columns():
 
 def test_summarize_statistics_zero_counts_no_crash():
     """_summarize_statistics must not raise when all counts are 0."""
-    result = _summarize_statistics(
-        nr_of_total_reqs=0,
-        nr_of_completed_reqs=0,
-        implemented=0,
-        left_to_implement=0,
-        total_tests=0,
-        passed_tests=0,
-        failed_tests=0,
-        skipped_tests=0,
-        missing_automated_tests=0,
-        missing_manual_tests=0,
-        nr_of_total_svcs=0,
-        nr_of_reqs_without_implementation=0,
-        nr_of_completed_reqs_without_implementation=0,
-    )
+    result = _summarize_statistics(TotalStats())
     assert isinstance(result, str)
     assert "IMPLEMENTATIONS" in result
 
@@ -232,19 +218,14 @@ def test_summarize_statistics_zero_counts_no_crash():
 def test_summarize_statistics_all_complete_has_green_header():
     """All requirements complete: IMPLEMENTATIONS header is green."""
     result = _summarize_statistics(
-        nr_of_total_reqs=2,
-        nr_of_completed_reqs=2,
-        implemented=2,
-        left_to_implement=0,
-        total_tests=2,
-        passed_tests=2,
-        failed_tests=0,
-        skipped_tests=0,
-        missing_automated_tests=0,
-        missing_manual_tests=0,
-        nr_of_total_svcs=2,
-        nr_of_reqs_without_implementation=0,
-        nr_of_completed_reqs_without_implementation=0,
+        TotalStats(
+            total_requirements=2,
+            completed_requirements=2,
+            with_implementation=2,
+            total_tests=2,
+            passed_tests=2,
+            total_svcs=2,
+        )
     )
     assert Fore.GREEN in result
 
@@ -252,19 +233,16 @@ def test_summarize_statistics_all_complete_has_green_header():
 def test_summarize_statistics_incomplete_has_red_header():
     """Incomplete requirements: at least one header is red."""
     result = _summarize_statistics(
-        nr_of_total_reqs=3,
-        nr_of_completed_reqs=1,
-        implemented=1,
-        left_to_implement=2,
-        total_tests=3,
-        passed_tests=1,
-        failed_tests=2,
-        skipped_tests=0,
-        missing_automated_tests=2,
-        missing_manual_tests=0,
-        nr_of_total_svcs=3,
-        nr_of_reqs_without_implementation=0,
-        nr_of_completed_reqs_without_implementation=0,
+        TotalStats(
+            total_requirements=3,
+            completed_requirements=1,
+            with_implementation=1,
+            total_tests=3,
+            passed_tests=1,
+            failed_tests=2,
+            missing_automated_tests=2,
+            total_svcs=3,
+        )
     )
     assert Fore.RED in result
 
@@ -272,18 +250,14 @@ def test_summarize_statistics_incomplete_has_red_header():
 def test_summarize_statistics_contains_percentage_string():
     """With nonzero counts, the output contains a formatted percentage."""
     result = _summarize_statistics(
-        nr_of_total_reqs=4,
-        nr_of_completed_reqs=2,
-        implemented=2,
-        left_to_implement=2,
-        total_tests=4,
-        passed_tests=2,
-        failed_tests=2,
-        skipped_tests=0,
-        missing_automated_tests=0,
-        missing_manual_tests=0,
-        nr_of_total_svcs=4,
-        nr_of_reqs_without_implementation=0,
-        nr_of_completed_reqs_without_implementation=0,
+        TotalStats(
+            total_requirements=4,
+            completed_requirements=2,
+            with_implementation=2,
+            total_tests=4,
+            passed_tests=2,
+            failed_tests=2,
+            total_svcs=4,
+        )
     )
     assert "%" in result

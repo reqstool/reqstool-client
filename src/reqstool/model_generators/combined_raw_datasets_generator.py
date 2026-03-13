@@ -1,6 +1,7 @@
 # Copyright © LFV
 
 import logging
+from collections import defaultdict
 from typing import Dict, List, Optional
 
 from reqstool_python_decorators.decorators.decorators import Requirements
@@ -41,7 +42,7 @@ class CombinedRawDatasetsGenerator:
         )
         self.semantic_validator = semantic_validator
         self._parsing_order: List[str] = []
-        self._parsing_graph: Dict[str, List[str]] = {}
+        self._parsing_graph: Dict[str, List[str]] = defaultdict(list)
         self._database = database
         self.combined_raw_datasets = self.__generate()
 
@@ -90,6 +91,7 @@ class CombinedRawDatasetsGenerator:
         self.__populate_annotations(crd)
         self.__populate_test_results(crd)
         self.__populate_parsing_graph(crd)
+        self._database.commit()
 
     def __populate_requirements(self, crd: CombinedRawDataset) -> None:
         for urn in crd.urn_parsing_order:
@@ -142,22 +144,16 @@ class CombinedRawDatasetsGenerator:
             case VARIANTS.SYSTEM:
                 parsed_systems = self.__import_systems(raw_datasets, parent_rd=rd)
                 parsed_microservices = self.__import_implementations(raw_datasets, implementations=rd.implementations)
-                Utils.extend_data_sequence_to_dict_list_entry(
-                    self._parsing_graph, key=rd.metadata.urn, data=parsed_systems
-                )
-                Utils.extend_data_sequence_to_dict_list_entry(
-                    self._parsing_graph, key=rd.metadata.urn, data=parsed_microservices
-                )
+                self._parsing_graph[rd.metadata.urn].extend(parsed_systems)
+                self._parsing_graph[rd.metadata.urn].extend(parsed_microservices)
 
                 # add current urn as parent to all microservices
                 for ms_urn in parsed_microservices:
-                    Utils.append_data_item_to_dict_list_entry(self._parsing_graph, key=ms_urn, data=rd.metadata.urn)
+                    self._parsing_graph[ms_urn].append(rd.metadata.urn)
 
             case VARIANTS.MICROSERVICE:
                 parsed_systems = self.__import_systems(raw_datasets, parent_rd=rd)
-                Utils.extend_data_sequence_to_dict_list_entry(
-                    self._parsing_graph, key=rd.metadata.urn, data=parsed_systems
-                )
+                self._parsing_graph[rd.metadata.urn].extend(parsed_systems)
             case _:
                 raise RuntimeError("Unsupported initial source system type (this should not happen)")
 
@@ -192,9 +188,7 @@ class CombinedRawDatasetsGenerator:
                     raw_datasets=raw_datasets, parent_rd=current_imported_model.requirements_data
                 )
 
-                Utils.extend_data_sequence_to_dict_list_entry(
-                    dictionary=self._parsing_graph, key=current_urn, data=imported_systems
-                )
+                self._parsing_graph[current_urn].extend(imported_systems)
 
         self.__level -= 1
 

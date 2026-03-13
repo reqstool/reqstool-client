@@ -1,9 +1,10 @@
 # Copyright © LFV
 
 
+from __future__ import annotations
+
 import json
 import logging
-from typing import List, Optional
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
@@ -23,24 +24,23 @@ class GenerateJsonCommand:
         self,
         location: LocationInterface,
         filter_data: bool,
-        req_ids: Optional[List[str]] = None,
-        svc_ids: Optional[List[str]] = None,
+        req_ids: list[str] | None = None,
+        svc_ids: list[str] | None = None,
     ):
         self.__initial_location: LocationInterface = location
         self.__filter_data: bool = filter_data
-        self.__req_ids: Optional[List[str]] = req_ids
-        self.__svc_ids: Optional[List[str]] = svc_ids
+        self.__req_ids: list[str] | None = req_ids
+        self.__svc_ids: list[str] | None = svc_ids
         self.result = self.__run()
 
     def __run(self) -> str:
         holder = ValidationErrorHolder()
-        db, _ = build_database(
+        with build_database(
             location=self.__initial_location,
             semantic_validator=SemanticValidator(validation_error_holder=holder),
             filter_data=self.__filter_data,
-        )
-        repo = RequirementsRepository(db)
-        export_service = ExportService(repo)
-        export_dict = export_service.to_export_dict(req_ids=self.__req_ids, svc_ids=self.__svc_ids)
-        db.close()
-        return json.dumps(export_dict, separators=(", ", ": "))
+        ) as (db, _):
+            repo = RequirementsRepository(db)
+            export_service = ExportService(repo)
+            export_dict = export_service.to_export_dict(req_ids=self.__req_ids, svc_ids=self.__svc_ids)
+            return json.dumps(export_dict, separators=(", ", ": "))

@@ -1,6 +1,6 @@
 # Copyright © LFV
 
-from reqstool.storage.el_compiler import ELToSQLCompiler
+from reqstool.storage.el_to_sql_compiler import ELToSQLCompiler
 
 
 def test_compile_ids_equals_single():

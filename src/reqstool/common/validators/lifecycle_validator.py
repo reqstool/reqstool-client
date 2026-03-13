@@ -1,8 +1,10 @@
 # Copyright © LFV
 
+from __future__ import annotations
+
 from collections import namedtuple
 import logging
-from typing import Union
+
 from reqstool.common.models.lifecycle import LIFECYCLESTATE, lifecycle_state_sort_order
 from reqstool.common.models.urn_id import UrnId
 from reqstool.models.annotations import AnnotationData
@@ -11,6 +13,7 @@ from reqstool.models.svcs import SVCData
 from reqstool.storage.requirements_repository import RequirementsRepository
 from reqstool_python_decorators.decorators.decorators import Requirements
 
+logger = logging.getLogger(__name__)
 
 Warning = namedtuple("Warning", ["state", "message"])
 
@@ -40,12 +43,12 @@ class LifecycleValidator:
 
         self.warnings.sort(key=lambda warning: lifecycle_state_sort_order[warning.state])
         for warning in self.warnings:
-            logging.warning(warning.message)
+            logger.warning(warning.message)
 
     def _check_defunct_annotations(
         self,
         annotations: dict[UrnId, list[AnnotationData]],
-        collection_to_check: dict[UrnId, Union[RequirementData, SVCData]],
+        collection_to_check: dict[UrnId, RequirementData | SVCData],
     ):
         """
         Creates warnings for defunct requirements or SVCs that are annotated in the code.

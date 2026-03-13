@@ -1,7 +1,8 @@
 # Copyright © LFV
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Dict, List
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
@@ -30,9 +31,11 @@ class TestStats:
     not_applicable: bool = False
 
     def is_completed(self) -> bool:
+        if self.not_applicable:
+            return True
         if self.missing > 0:
             return False
-        return self.total == self.passed
+        return self.total > 0 and self.total == self.passed
 
 
 @dataclass(frozen=True)
@@ -70,12 +73,12 @@ class TotalStats:
 class StatisticsService:
     def __init__(self, repository: RequirementsRepository):
         self._repo = repository
-        self._requirement_stats: Dict[UrnId, RequirementStatus] = {}
+        self._requirement_stats: dict[UrnId, RequirementStatus] = {}
         self._totals: TotalStats = TotalStats()
         self._calculate()
 
     @property
-    def requirement_statistics(self) -> Dict[UrnId, RequirementStatus]:
+    def requirement_statistics(self) -> dict[UrnId, RequirementStatus]:
         return self._requirement_stats
 
     @property
@@ -106,7 +109,7 @@ class StatisticsService:
                 self._totals.failed_manual_tests += 1
 
         # Count automated test results for totals
-        parsed_test_annotation_urns: List[UrnId] = []
+        parsed_test_annotation_urns: list[UrnId] = []
         for svc_urn_id, annotation_list in annotations_tests.items():
             for ann in annotation_list:
                 test_urn_id = UrnId(urn=svc_urn_id.urn, id=ann.fully_qualified_name)
@@ -114,19 +117,18 @@ class StatisticsService:
                     parsed_test_annotation_urns.append(test_urn_id)
                     if test_urn_id in automated_test_results:
                         for test_data in automated_test_results[test_urn_id]:
-                            if test_data not in []:  # placeholder for dedup (matches original logic)
-                                match test_data.status:
-                                    case TEST_RUN_STATUS.PASSED:
-                                        self._totals.passed_tests += 1
-                                        self._totals.passed_automatic_tests += 1
-                                    case TEST_RUN_STATUS.FAILED:
-                                        self._totals.failed_tests += 1
-                                        self._totals.failed_automatic_tests += 1
-                                    case TEST_RUN_STATUS.SKIPPED:
-                                        self._totals.skipped_tests += 1
-                                    case TEST_RUN_STATUS.MISSING:
-                                        self._totals.missing_automated_tests += 1
-                                        self._totals.total_tests -= 1
+                            match test_data.status:
+                                case TEST_RUN_STATUS.PASSED:
+                                    self._totals.passed_tests += 1
+                                    self._totals.passed_automatic_tests += 1
+                                case TEST_RUN_STATUS.FAILED:
+                                    self._totals.failed_tests += 1
+                                    self._totals.failed_automatic_tests += 1
+                                case TEST_RUN_STATUS.SKIPPED:
+                                    self._totals.skipped_tests += 1
+                                case TEST_RUN_STATUS.MISSING:
+                                    self._totals.missing_automated_tests += 1
+                                    self._totals.total_tests -= 1
 
         # Per-requirement statistics
         for urn_id, req_data in requirements.items():
@@ -186,8 +188,6 @@ class StatisticsService:
 
             # Update totals
             self._totals.total_requirements += 1
-            self._totals.missing_automated_tests += automated_test_stats.missing
-            self._totals.missing_manual_tests += mvr_stats.missing
 
             if nr_of_implementations > 0:
                 self._totals.with_implementation += 1
@@ -209,7 +209,7 @@ class StatisticsService:
             raise TypeError(f"Requirement {urn_id} should not have an implementation")
         return False
 
-    def _get_test_stats(self, tests: List[TestData], svcs) -> TestStats:
+    def _get_test_stats(self, tests: list[TestData], svcs) -> TestStats:
         if not tests:
             no_of_missing = sum(1 for svc in svcs if svc.verification in EXPECTS_AUTOMATED_TESTS)
             return TestStats(missing=no_of_missing)
@@ -247,12 +247,12 @@ class StatisticsService:
 
     def _get_annotated_automated_test_results_for_req(
         self,
-        svcs_urn_ids: List[UrnId],
-        all_svcs: Dict,
-        annotations_tests: Dict[UrnId, List],
-        automated_test_results: Dict[UrnId, List[TestData]],
-    ) -> List[TestData]:
-        results: List[TestData] = []
+        svcs_urn_ids: list[UrnId],
+        all_svcs: dict,
+        annotations_tests: dict[UrnId, list],
+        automated_test_results: dict[UrnId, list[TestData]],
+    ) -> list[TestData]:
+        results: list[TestData] = []
         for svc_uid in svcs_urn_ids:
             if svc_uid in annotations_tests:
                 for ann in annotations_tests[svc_uid]:
@@ -260,7 +260,9 @@ class StatisticsService:
                     if test_urn_id in automated_test_results:
                         results.extend(automated_test_results[test_urn_id])
                     else:
-                        results.append(TestData(fully_qualified_name=ann.fully_qualified_name, status=TEST_RUN_STATUS.MISSING))
+                        results.append(
+                            TestData(fully_qualified_name=ann.fully_qualified_name, status=TEST_RUN_STATUS.MISSING)
+                        )
             elif svc_uid in all_svcs and all_svcs[svc_uid].verification in EXPECTS_AUTOMATED_TESTS:
                 results.append(TestData(fully_qualified_name="", status=TEST_RUN_STATUS.MISSING))
         return results

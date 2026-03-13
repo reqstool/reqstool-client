@@ -16,7 +16,7 @@ from reqstool.models.requirements import (
 )
 from reqstool.models.svcs import SVCData, SVCsData, VERIFICATIONTYPES
 from reqstool.storage.database import RequirementsDatabase
-from reqstool.storage.filter_processor import DatabaseFilterProcessor
+from reqstool.storage.database_filter_processor import DatabaseFilterProcessor
 from reqstool.storage.populator import DatabasePopulator
 
 

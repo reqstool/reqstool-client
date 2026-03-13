@@ -1,25 +1,24 @@
 # Copyright © LFV
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Set, Tuple
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.filters.id_filters import IDFilters
 from reqstool.models.raw_datasets import RawDataset
 from reqstool.models.requirements import VARIANTS
 from reqstool.storage.database import RequirementsDatabase
-from reqstool.storage.el_compiler import ELToSQLCompiler, regexp_function
+from reqstool.storage.el_to_sql_compiler import ELToSQLCompiler
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseFilterProcessor:
-    def __init__(self, db: RequirementsDatabase, raw_datasets: Dict[str, RawDataset]):
+    def __init__(self, db: RequirementsDatabase, raw_datasets: dict[str, RawDataset]):
         self._db = db
         self._raw_datasets = raw_datasets
         self._parsing_graph = self._load_parsing_graph()
-        self._accessible_nodes = self._build_accessible_nodes()
-        self._visited_urns: List[str] = []
-
-        self._db.connection.create_function("regexp", 2, regexp_function)
 
     def apply_filters(self) -> None:
         initial_urn = self._db.get_metadata("initial_urn")
@@ -32,7 +31,7 @@ class DatabaseFilterProcessor:
     # -- Requirement filters --
 
     def _apply_req_filters(self, initial_urn: str) -> None:
-        logging.debug(f"Starting filtering of requirements from {initial_urn}")
+        logger.debug(f"Starting filtering of requirements from {initial_urn}")
 
         kept_requirements, _ = self._process_req_filters_per_urn(initial_urn)
 
@@ -42,14 +41,14 @@ class DatabaseFilterProcessor:
         }
 
         to_delete = all_reqs - kept_requirements
-        logging.debug(f"Deleting {len(to_delete)} requirements")
+        logger.debug(f"Deleting {len(to_delete)} requirements")
 
         for req_uid in to_delete:
             self._delete_requirement(req_uid)
 
-    def _process_req_filters_per_urn(self, urn: str) -> Tuple[Set[UrnId], Set[UrnId]]:
-        kept_imports: Set[UrnId] = set()
-        filtered_out_imports: Set[UrnId] = set()
+    def _process_req_filters_per_urn(self, urn: str) -> tuple[set[UrnId], set[UrnId]]:
+        kept_imports: set[UrnId] = set()
+        filtered_out_imports: set[UrnId] = set()
 
         for import_urn in self._parsing_graph.get(urn, []):
             if self._raw_datasets[import_urn].requirements_data.metadata.variant == VARIANTS.MICROSERVICE:
@@ -59,7 +58,7 @@ class DatabaseFilterProcessor:
             kept_imports.update(kept_per_import)
             filtered_out_imports.update(filtered_per_import)
 
-        filtered_out: Set[UrnId] = set()
+        filtered_out: set[UrnId] = set()
 
         reqdata = self._raw_datasets[urn].requirements_data
         for filter_urn, req_filter in reqdata.filters.items():
@@ -83,25 +82,24 @@ class DatabaseFilterProcessor:
         kept.update(own_reqs)
 
         filtered_out.update(filtered_out_imports)
-        self._visited_urns.append(urn)
 
         return kept, filtered_out
 
     # -- SVC filters --
 
     def _apply_svc_filters(self, initial_urn: str) -> None:
-        logging.debug(f"Starting filtering of svcs from {initial_urn}")
+        logger.debug(f"Starting filtering of svcs from {initial_urn}")
 
         _, filtered_out_svcs = self._process_svc_filters_per_urn(initial_urn)
 
-        logging.debug(f"Deleting {len(filtered_out_svcs)} svcs")
+        logger.debug(f"Deleting {len(filtered_out_svcs)} svcs")
 
         for svc_uid in filtered_out_svcs:
             self._delete_svc(svc_uid)
 
-    def _process_svc_filters_per_urn(self, urn: str) -> Tuple[Set[UrnId], Set[UrnId]]:
-        kept_imports: Set[UrnId] = set()
-        filtered_out_imports: Set[UrnId] = set()
+    def _process_svc_filters_per_urn(self, urn: str) -> tuple[set[UrnId], set[UrnId]]:
+        kept_imports: set[UrnId] = set()
+        filtered_out_imports: set[UrnId] = set()
 
         for import_urn in self._parsing_graph.get(urn, []):
             if self._raw_datasets[import_urn].requirements_data.metadata.variant == VARIANTS.MICROSERVICE:
@@ -111,7 +109,7 @@ class DatabaseFilterProcessor:
             kept_imports.update(kept_per_import)
             filtered_out_imports.update(filtered_per_import)
 
-        filtered_out: Set[UrnId] = set()
+        filtered_out: set[UrnId] = set()
 
         svcdata = self._raw_datasets[urn].svcs_data
         if svcdata:
@@ -142,8 +140,8 @@ class DatabaseFilterProcessor:
     # -- Shared helpers --
 
     def _get_filtered_out(
-        self, accessible: Set[UrnId], urn: str, id_filter: IDFilters, table: str
-    ) -> Set[UrnId]:
+        self, accessible: set[UrnId], urn: str, id_filter: IDFilters, table: str
+    ) -> set[UrnId]:
         tree_custom_imports = None
         tree_custom_exclude = None
 
@@ -152,7 +150,7 @@ class DatabaseFilterProcessor:
         if id_filter.custom_exclude is not None:
             tree_custom_exclude = ELToSQLCompiler.compile(id_filter.custom_exclude, urn)
 
-        filtered_out: Set[UrnId] = set()
+        filtered_out: set[UrnId] = set()
 
         for uid in accessible:
             imports_item = True
@@ -180,7 +178,11 @@ class DatabaseFilterProcessor:
 
         return filtered_out
 
-    def _eval_compiled_el(self, compiled: Tuple[str, List], uid: UrnId, table: str) -> bool:
+    _ALLOWED_FILTER_TABLES = frozenset({"requirements", "svcs"})
+
+    def _eval_compiled_el(self, compiled: tuple[str, list], uid: UrnId, table: str) -> bool:
+        if table not in self._ALLOWED_FILTER_TABLES:
+            raise ValueError(f"Invalid table for filter evaluation: {table}")
         where_clause, params = compiled
         row = self._db.connection.execute(
             f"SELECT COUNT(*) FROM {table} WHERE urn = ? AND id = ? AND {where_clause}",  # noqa: S608
@@ -189,7 +191,7 @@ class DatabaseFilterProcessor:
         return row[0] > 0
 
     def _delete_requirement(self, req_uid: UrnId) -> None:
-        logging.debug(f"Deleting requirement: {req_uid}")
+        logger.debug(f"Deleting requirement: {req_uid}")
 
         # Find SVCs linked only to this requirement — they should be deleted too
         linked_svcs = self._db.connection.execute(
@@ -213,7 +215,7 @@ class DatabaseFilterProcessor:
         self._db.connection.commit()
 
     def _delete_svc(self, svc_uid: UrnId) -> None:
-        logging.debug(f"Deleting svc: {svc_uid}")
+        logger.debug(f"Deleting svc: {svc_uid}")
 
         linked_mvrs = self._db.connection.execute(
             "SELECT mvr_urn, mvr_id FROM mvr_svc_links WHERE svc_urn = ? AND svc_id = ?",
@@ -235,18 +237,18 @@ class DatabaseFilterProcessor:
 
         self._db.connection.commit()
 
-    def _check_filter_refs(self, id_filter: IDFilters, accessible: Set[UrnId]) -> None:
+    def _check_filter_refs(self, id_filter: IDFilters, accessible: set[UrnId]) -> None:
         if id_filter.urn_ids_imports:
             for uid in id_filter.urn_ids_imports:
                 if uid not in accessible:
-                    logging.warning(f"Cannot import: {uid} does not exist or is not accessible")
+                    logger.warning(f"Cannot import: {uid} does not exist or is not accessible")
         elif id_filter.urn_ids_excludes:
             for uid in id_filter.urn_ids_excludes:
                 if uid not in accessible:
-                    logging.warning(f"Cannot exclude: {uid} does not exist or is not accessible")
+                    logger.warning(f"Cannot exclude: {uid} does not exist or is not accessible")
 
-    def _load_parsing_graph(self) -> Dict[str, List[str]]:
-        graph: Dict[str, List[str]] = {}
+    def _load_parsing_graph(self) -> dict[str, list[str]]:
+        graph: dict[str, list[str]] = {}
         rows = self._db.connection.execute("SELECT parent_urn, child_urn FROM parsing_graph").fetchall()
         # Initialize all URNs as keys (including leaves with no children)
         all_urns = {
@@ -257,19 +259,3 @@ class DatabaseFilterProcessor:
         for row in rows:
             graph.setdefault(row["parent_urn"], []).append(row["child_urn"])
         return graph
-
-    def _build_accessible_nodes(self) -> Dict[str, List[str]]:
-        result: Dict[str, List[str]] = {}
-        for node in self._parsing_graph:
-            visited: Set[str] = set()
-            queue = [node]
-            accessible = []
-            while queue:
-                current = queue.pop(0)
-                if current not in visited:
-                    visited.add(current)
-                    queue.extend(self._parsing_graph.get(current, []))
-                    if current != node:
-                        accessible.append(current)
-            result[node] = accessible
-        return result

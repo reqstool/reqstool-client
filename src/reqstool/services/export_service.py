@@ -1,7 +1,8 @@
 # Copyright © LFV
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -15,8 +16,8 @@ class ExportService:
 
     def to_export_dict(
         self,
-        req_ids: Optional[List[str]] = None,
-        svc_ids: Optional[List[str]] = None,
+        req_ids: list[str] | None = None,
+        svc_ids: list[str] | None = None,
     ) -> dict:
         initial_urn = self._repo.get_initial_urn()
         all_reqs = self._repo.get_all_requirements()

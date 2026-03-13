@@ -1,7 +1,8 @@
 # Copyright © LFV
 
+from __future__ import annotations
+
 from enum import Enum
-from typing import Dict, List, Union
 
 from jinja2 import Template
 from reqstool_python_decorators.decorators.decorators import Requirements
@@ -50,14 +51,14 @@ class ReportCommand:
         self,
         location: LocationInterface,
         group_by: GroupbyOptions,
-        sort_by: List[SortByOptions],
+        sort_by: list[SortByOptions],
         format: str = "asciidoc",
     ):
         self.__initial_location: LocationInterface = location
         self.group_by: GroupbyOptions = group_by
-        self.sort_by: List[SortByOptions] = sort_by
+        self.sort_by: list[SortByOptions] = sort_by
         self.__format_config = FORMAT_CONFIG[format]
-        self.jinja2_templates: Dict[Jinja2Templates, Template] = {
+        self.jinja2_templates: dict[Jinja2Templates, Template] = {
             j2template: Jinja2Utils.create_template(
                 template_name=j2template.filename, template_subdir=self.__format_config["template_subdir"]
             )
@@ -66,40 +67,32 @@ class ReportCommand:
         self.result = self.__run()
 
     def __run(self) -> str:
-        db, _ = build_database(
+        with build_database(
             location=self.__initial_location,
             semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
-        )
-        repo = RequirementsRepository(db)
+        ) as (db, _):
+            repo = RequirementsRepository(db)
 
-        aggregated_data: Dict[UrnId, Dict[str, Union[str, str]]] = self.__aggregated_requirements_data(repo=repo)
-        stats_service = StatisticsService(repo)
+            aggregated_data: dict[UrnId, dict[str, str]] = self.__aggregated_requirements_data(repo=repo)
+            stats_service = StatisticsService(repo)
 
-        report = self.__generate_report(repo=repo, aggregated_data=aggregated_data, statistics=stats_service)
-
-        db.close()
-
-        return report
+            return self.__generate_report(repo=repo, aggregated_data=aggregated_data, statistics=stats_service)
 
     def __generate_report(
         self,
         repo: RequirementsRepository,
-        aggregated_data: Dict[UrnId, Dict[str, Union[str, Dict[str, str]]]],
+        aggregated_data: dict[UrnId, dict[str, str | dict[str, str]]],
         statistics: StatisticsService,
     ):
-        # Create a dict adapter for the Jinja2 template that uses the old TotalStatisticsItem attribute names
-        ts = statistics.total_statistics
-        total_stats_for_template = _TotalStatsTemplateAdapter(ts)
-
         statistics_table = Jinja2Utils.render(
-            data=total_stats_for_template, template=self.jinja2_templates[Jinja2Templates.TOTAL_STATISTICS]
+            data=statistics.total_statistics, template=self.jinja2_templates[Jinja2Templates.TOTAL_STATISTICS]
         )
 
-        grouped_requirements: Dict[str, List[UrnId]] = GroupByOrganizor(
+        grouped_requirements: dict[str, list[UrnId]] = GroupByOrganizor(
             repo=repo, group_by=self.group_by, sort_by=self.sort_by
         ).grouped_requirements
 
-        template_data: Dict[str, List[str]] = {
+        template_data: dict[str, list[str]] = {
             group_by: [self.__extract_template_data(req_template=aggregated_data[urn_id]) for urn_id in urn_ids]
             for group_by, urn_ids in grouped_requirements.items()
         }
@@ -148,8 +141,8 @@ class ReportCommand:
 
     def __aggregated_requirements_data(
         self, repo: RequirementsRepository
-    ) -> Dict[UrnId, Dict[str, Union[str, Dict[str, str]]]]:
-        requirement_data: Dict[UrnId, Dict[str, Union[str, Dict[str, str]]]] = {}
+    ) -> dict[UrnId, dict[str, str | dict[str, str]]]:
+        requirement_data: dict[UrnId, dict[str, str | dict[str, str]]] = {}
 
         all_requirements = repo.get_all_requirements()
         all_svcs = repo.get_all_svcs()
@@ -158,25 +151,25 @@ class ReportCommand:
 
         for urn_id, req_data in all_requirements.items():
             # Get all svc UrnIds related to current requirement
-            svcs_urn_ids: List[UrnId] = repo.get_svcs_for_req(urn_id)
+            svcs_urn_ids: list[UrnId] = repo.get_svcs_for_req(urn_id)
 
             # Get svcs for current requirement
-            svcs: List[SVCData] = [all_svcs[sid] for sid in svcs_urn_ids if sid in all_svcs]
+            svcs: list[SVCData] = [all_svcs[sid] for sid in svcs_urn_ids if sid in all_svcs]
 
             # Get all verification types for current req
             verifications_as_string = ", ".join(str(svc.verification.value) for svc in svcs)
 
             # get all implementations for current requirement
-            impls: List = self._get_annotation_impls(repo=repo, urn_id=urn_id)
+            impls: list = self._get_annotation_impls(repo=repo, urn_id=urn_id)
 
             # Get MVR IDs via SVCs
-            mvr_ids: List[UrnId] = [mid for svc_uid in svcs_urn_ids for mid in repo.get_mvrs_for_svc(svc_uid)]
+            mvr_ids: list[UrnId] = [mid for svc_uid in svcs_urn_ids for mid in repo.get_mvrs_for_svc(svc_uid)]
 
             # Get mvrs for current requirement if there are any (else [])
-            mvrs: List[MVRData] = [all_mvrs[mvr_id] for mvr_id in mvr_ids if mvr_id in all_mvrs] if mvr_ids else []
+            mvrs: list[MVRData] = [all_mvrs[mvr_id] for mvr_id in mvr_ids if mvr_id in all_mvrs] if mvr_ids else []
 
             # generate templates for tests related to current requirement
-            automated_test_results_for_req: List = self._get_annotated_automated_test_results_for_req(
+            automated_test_results_for_req: list = self._get_annotated_automated_test_results_for_req(
                 repo=repo, svcs_urn_ids=svcs_urn_ids, automated_test_results=automated_test_results
             )
 
@@ -212,9 +205,9 @@ class ReportCommand:
     def _get_annotated_automated_test_results_for_req(
         self,
         repo: RequirementsRepository,
-        svcs_urn_ids: List[UrnId],
-        automated_test_results: Dict[UrnId, List],
-    ) -> List:
+        svcs_urn_ids: list[UrnId],
+        automated_test_results: dict[UrnId, list],
+    ) -> list:
         results = []
         annotations_tests = repo.get_annotations_tests()
         for svc_uid in svcs_urn_ids:
@@ -239,26 +232,10 @@ class ReportCommand:
 
     def _get_annotation_impls(self, repo: RequirementsRepository, urn_id: UrnId):
         impls_list = []
-        impls_for_urn: List[AnnotationData] = repo.get_annotations_impls_for_req(urn_id)
+        impls_for_urn: list[AnnotationData] = repo.get_annotations_impls_for_req(urn_id)
         if impls_for_urn:
             for impl in impls_for_urn:
                 impl_template = {"element_kind": impl.element_kind, "fqn": impl.fully_qualified_name}
                 impls_list.append(impl_template)
 
         return impls_list
-
-
-class _TotalStatsTemplateAdapter:
-    """Adapter to present TotalStats with the old TotalStatisticsItem attribute names for Jinja2 templates."""
-
-    def __init__(self, ts):
-        self.nr_of_total_requirements = ts.total_requirements
-        self.nr_of_completed_requirements = ts.completed_requirements
-        self.nr_of_reqs_with_implementation = ts.with_implementation
-        self.nr_of_total_svcs = ts.total_svcs
-        self.nr_of_total_tests = ts.total_tests
-        self.nr_of_passed_tests = ts.passed_tests
-        self.nr_of_failed_tests = ts.failed_tests
-        self.nr_of_skipped_tests = ts.skipped_tests
-        self.nr_of_missing_automated_tests = ts.missing_automated_tests
-        self.nr_of_missing_manual_tests = ts.missing_manual_tests
