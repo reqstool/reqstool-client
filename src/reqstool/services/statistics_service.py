@@ -93,13 +93,19 @@ class StatisticsService:
         annotations_tests = self._repo.get_annotations_tests()
         automated_test_results = self._repo.get_automated_test_results()
 
-        # Calculate totals for SVCs, manual tests, annotated tests
+        self._calculate_global_totals(all_svcs, all_mvrs, annotations_tests, automated_test_results)
+
+        for urn_id, req_data in requirements.items():
+            self._calculate_requirement_stats(
+                urn_id, req_data, all_svcs, all_mvrs, annotations_impls, annotations_tests, automated_test_results
+            )
+
+    def _calculate_global_totals(self, all_svcs, all_mvrs, annotations_tests, automated_test_results):
         self._totals.total_svcs = len(all_svcs)
         self._totals.total_manual_tests = len(all_mvrs)
         self._totals.total_annotated_tests = len(automated_test_results)
         self._totals.total_tests = self._totals.total_annotated_tests + self._totals.total_manual_tests
 
-        # Count MVR pass/fail for totals
         for mvr_data in all_mvrs.values():
             if mvr_data.passed:
                 self._totals.passed_tests += 1
@@ -108,7 +114,9 @@ class StatisticsService:
                 self._totals.failed_tests += 1
                 self._totals.failed_manual_tests += 1
 
-        # Count automated test results for totals
+        self._count_automated_test_totals(annotations_tests, automated_test_results)
+
+    def _count_automated_test_totals(self, annotations_tests, automated_test_results):
         parsed_test_annotation_urns: list[UrnId] = []
         for svc_urn_id, annotation_list in annotations_tests.items():
             for ann in annotation_list:
@@ -129,80 +137,81 @@ class StatisticsService:
                                 case TEST_RUN_STATUS.MISSING:
                                     self._totals.total_tests -= 1
 
-        # Per-requirement statistics
-        for urn_id, req_data in requirements.items():
-            svcs_urn_ids = self._repo.get_svcs_for_req(urn_id)
-            svcs = [all_svcs[sid] for sid in svcs_urn_ids if sid in all_svcs]
+    def _calculate_requirement_stats(
+        self, urn_id, req_data, all_svcs, all_mvrs, annotations_impls, annotations_tests, automated_test_results
+    ):
+        svcs_urn_ids = self._repo.get_svcs_for_req(urn_id)
+        svcs = [all_svcs[sid] for sid in svcs_urn_ids if sid in all_svcs]
 
-            should_have_mvrs = any(svc.verification in EXPECTS_MVRS for svc in svcs)
-            should_have_automated_tests = any(svc.verification in EXPECTS_AUTOMATED_TESTS for svc in svcs)
+        should_have_mvrs = any(svc.verification in EXPECTS_MVRS for svc in svcs)
+        should_have_automated_tests = any(svc.verification in EXPECTS_AUTOMATED_TESTS for svc in svcs)
 
-            nr_of_implementations = len(annotations_impls.get(urn_id, []))
+        nr_of_implementations = len(annotations_impls.get(urn_id, []))
 
-            # MVR stats
-            mvr_ids = [mid for svc_uid in svcs_urn_ids for mid in self._repo.get_mvrs_for_svc(svc_uid)]
-            mvrs = [all_mvrs[mid] for mid in mvr_ids if mid in all_mvrs]
+        mvr_stats = self._get_requirement_mvr_stats(svcs_urn_ids, all_mvrs, svcs, should_have_mvrs)
+        automated_test_stats = self._get_requirement_automated_stats(
+            svcs_urn_ids, all_svcs, annotations_tests, automated_test_results, svcs, should_have_automated_tests
+        )
 
-            if should_have_mvrs:
-                mvr_stats = self._get_mvr_stats(mvrs=mvrs if mvrs else None, svcs=svcs)
-            else:
-                mvr_stats = TestStats(not_applicable=True)
+        implementation_ok = self._check_implementation(
+            urn_id=urn_id, nr_of_implementations=nr_of_implementations, implementation=req_data.implementation
+        )
 
-            # Automated test stats
-            test_results_for_req = self._get_annotated_automated_test_results_for_req(
-                svcs_urn_ids=svcs_urn_ids,
-                all_svcs=all_svcs,
-                annotations_tests=annotations_tests,
-                automated_test_results=automated_test_results,
-            )
+        completed = (
+            implementation_ok
+            and mvr_stats.is_completed()
+            and automated_test_stats.is_completed()
+            and (should_have_mvrs or should_have_automated_tests)
+        )
 
-            if should_have_automated_tests:
-                automated_test_stats = self._get_test_stats(tests=test_results_for_req, svcs=svcs)
-            else:
-                automated_test_stats = TestStats(not_applicable=True)
+        self._requirement_stats[urn_id] = RequirementStatus(
+            completed=completed,
+            implementations=nr_of_implementations,
+            implementation_type=req_data.implementation,
+            automated_tests=automated_test_stats,
+            manual_tests=mvr_stats,
+        )
 
-            # Check implementation
-            implementation_ok = self._check_implementation(
-                urn_id=urn_id,
-                nr_of_implementations=nr_of_implementations,
-                implementation=req_data.implementation,
-            )
+        self._update_requirement_totals(req_data, nr_of_implementations, completed, automated_test_stats, mvr_stats)
 
-            completed = (
-                implementation_ok
-                and mvr_stats.is_completed()
-                and automated_test_stats.is_completed()
-                and (should_have_mvrs or should_have_automated_tests)
-            )
+    def _get_requirement_mvr_stats(self, svcs_urn_ids, all_mvrs, svcs, should_have_mvrs):
+        if not should_have_mvrs:
+            return TestStats(not_applicable=True)
+        mvr_ids = [mid for svc_uid in svcs_urn_ids for mid in self._repo.get_mvrs_for_svc(svc_uid)]
+        mvrs = [all_mvrs[mid] for mid in mvr_ids if mid in all_mvrs]
+        return self._get_mvr_stats(mvrs=mvrs if mvrs else None, svcs=svcs)
 
-            req_status = RequirementStatus(
-                completed=completed,
-                implementations=nr_of_implementations,
-                implementation_type=req_data.implementation,
-                automated_tests=automated_test_stats,
-                manual_tests=mvr_stats,
-            )
+    def _get_requirement_automated_stats(
+        self, svcs_urn_ids, all_svcs, annotations_tests, automated_test_results, svcs, should_have_automated_tests
+    ):
+        if not should_have_automated_tests:
+            return TestStats(not_applicable=True)
+        test_results_for_req = self._get_annotated_automated_test_results_for_req(
+            svcs_urn_ids=svcs_urn_ids,
+            all_svcs=all_svcs,
+            annotations_tests=annotations_tests,
+            automated_test_results=automated_test_results,
+        )
+        return self._get_test_stats(tests=test_results_for_req, svcs=svcs)
 
-            self._requirement_stats[urn_id] = req_status
+    def _update_requirement_totals(self, req_data, nr_of_implementations, completed, automated_test_stats, mvr_stats):
+        self._totals.total_requirements += 1
 
-            # Update totals
-            self._totals.total_requirements += 1
+        if nr_of_implementations > 0:
+            self._totals.with_implementation += 1
 
-            if nr_of_implementations > 0:
-                self._totals.with_implementation += 1
-
-            if req_data.implementation == IMPLEMENTATION.NOT_APPLICABLE:
-                self._totals.without_implementation_total += 1
-                if completed:
-                    self._totals.without_implementation_completed += 1
-
+        if req_data.implementation == IMPLEMENTATION.NOT_APPLICABLE:
+            self._totals.without_implementation_total += 1
             if completed:
-                self._totals.completed_requirements += 1
+                self._totals.without_implementation_completed += 1
 
-            if not automated_test_stats.not_applicable:
-                self._totals.missing_automated_tests += automated_test_stats.missing
-            if not mvr_stats.not_applicable:
-                self._totals.missing_manual_tests += mvr_stats.missing
+        if completed:
+            self._totals.completed_requirements += 1
+
+        if not automated_test_stats.not_applicable:
+            self._totals.missing_automated_tests += automated_test_stats.missing
+        if not mvr_stats.not_applicable:
+            self._totals.missing_manual_tests += mvr_stats.missing
 
     def _check_implementation(self, urn_id: UrnId, nr_of_implementations: int, implementation: IMPLEMENTATION) -> bool:
         if nr_of_implementations > 0 and implementation == IMPLEMENTATION.IN_CODE:
