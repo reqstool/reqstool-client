@@ -1,29 +1,57 @@
 # Copyright © LFV
 
-from colorama import Fore
+from colorama import Fore, Style
 
-from reqstool.commands.status.status import _build_table, _extend_row, _format_cell, _summarize_statistics
+from reqstool.commands.status.status import _build_table, _extend_row, _format_test_cell, _ORANGE, _summarize_statistics
 from reqstool.models.requirements import IMPLEMENTATION
 from reqstool.services.statistics_service import TestStats, TotalStats
 
 
 # ---------------------------------------------------------------------------
-# _format_cell
+# _format_test_cell
 # ---------------------------------------------------------------------------
 
 
-def test_format_cell_zero_returns_dash():
-    assert _format_cell(0) == "-"
+def test_format_test_cell_not_applicable():
+    assert _format_test_cell(TestStats(not_applicable=True)) == ""
 
 
-def test_format_cell_nonzero_without_color():
-    assert _format_cell(5) == "5"
+def test_format_test_cell_all_zeros():
+    result = _format_test_cell(TestStats(total=0, passed=0, failed=0, skipped=0, missing=0))
+    # All slots are dim dashes
+    assert Style.DIM in result
+    plain = result.replace(Style.DIM, "").replace(Style.RESET_ALL, "").replace(" ", "").replace("-", "")
+    assert plain == ""
 
 
-def test_format_cell_nonzero_with_color():
-    result = _format_cell(3, Fore.GREEN)
-    assert Fore.GREEN in result
-    assert "3" in result
+def test_format_test_cell_mixed_values():
+    result = _format_test_cell(TestStats(total=3, passed=2, failed=1, skipped=0, missing=0))
+    # Strip ANSI to check content
+    plain = result.replace(Fore.GREEN, "").replace(Fore.RED, "").replace(Fore.YELLOW, "").replace(Style.RESET_ALL, "")
+    assert " 3" in plain
+    assert " 2" in plain
+    assert " 1" in plain
+
+
+def test_format_test_cell_colors():
+    result = _format_test_cell(TestStats(total=1, passed=1, failed=2, skipped=3, missing=4))
+    assert Fore.GREEN in result  # passed
+    assert Fore.RED in result  # failed
+    assert Fore.YELLOW in result  # skipped
+    assert _ORANGE in result  # missing
+
+
+def test_format_test_cell_zero_slots_are_blank():
+    result = _format_test_cell(TestStats(total=5, passed=0, failed=0, skipped=0, missing=3))
+    plain = (
+        result.replace(Fore.GREEN, "")
+        .replace(Fore.RED, "")
+        .replace(Fore.YELLOW, "")
+        .replace(_ORANGE, "")
+        .replace(Style.RESET_ALL, "")
+    )
+    assert " 5" in plain
+    assert " 3" in plain
 
 
 # ---------------------------------------------------------------------------
@@ -32,69 +60,28 @@ def test_format_cell_nonzero_with_color():
 
 
 def test_extend_row_not_applicable():
-    """not_applicable=True appends five dashes."""
+    """not_applicable=True appends single empty cell."""
     row = []
     _extend_row(TestStats(not_applicable=True), row, kind="automated")
-    assert len(row) == 5
-    assert all(cell == "-" for cell in row)
+    assert len(row) == 1
+    assert row[0] == ""
 
 
-def test_extend_row_total_count():
-    """Total test count appears in first cell."""
+def test_extend_row_appends_single_cell():
+    """_extend_row appends exactly one cell."""
     row = []
-    _extend_row(TestStats(total=5), row, kind="automated")
-    assert row[0] == "5"
+    _extend_row(TestStats(total=5, passed=3, failed=2), row, kind="automated")
+    assert len(row) == 1
 
 
-def test_extend_row_passed_tests_green():
-    """Passed tests produce a green cell."""
+def test_extend_row_cell_contains_values():
+    """The single cell contains the test counts."""
     row = []
-    _extend_row(TestStats(total=2, passed=2), row, kind="automated")
-    assert Fore.GREEN in row[1]
-    assert "2" in row[1]
-
-
-def test_extend_row_failed_tests_red():
-    """Failed tests produce a red cell."""
-    row = []
-    _extend_row(TestStats(total=1, failed=1), row, kind="automated")
-    assert Fore.RED in row[2]
-    assert "1" in row[2]
-
-
-def test_extend_row_skipped_tests_yellow():
-    """Skipped tests produce a yellow cell."""
-    row = []
-    _extend_row(TestStats(total=1, skipped=1), row, kind="automated")
-    assert Fore.YELLOW in row[3]
-    assert "1" in row[3]
-
-
-def test_extend_row_missing_automated_tests_red():
-    """Missing automated tests produce a red cell."""
-    row = []
-    _extend_row(TestStats(missing=3), row, kind="automated")
-    assert Fore.RED in row[4]
-    assert "3" in row[4]
-
-
-def test_extend_row_missing_manual_tests_red():
-    """Missing manual tests produce a red cell."""
-    row = []
-    _extend_row(TestStats(missing=2), row, kind="manual")
-    assert Fore.RED in row[4]
-    assert "2" in row[4]
-
-
-def test_extend_row_zero_values_show_dash():
-    """Zero values display as dash."""
-    row = []
-    _extend_row(
-        TestStats(total=0, passed=0, failed=0, skipped=0),
-        row,
-        kind="automated",
-    )
-    assert all(cell == "-" for cell in row)
+    _extend_row(TestStats(total=5, passed=3, failed=2), row, kind="automated")
+    plain = row[0].replace(Fore.GREEN, "").replace(Fore.RED, "").replace(Fore.YELLOW, "").replace(Style.RESET_ALL, "")
+    assert " 5" in plain
+    assert " 3" in plain
+    assert " 2" in plain
 
 
 # ---------------------------------------------------------------------------
@@ -189,8 +176,8 @@ def test_build_table_urn_is_first_column():
     assert row[0] == "ms-001"
 
 
-def test_build_table_returns_13_columns():
-    """Row has 13 elements: URN + ID + Impl + 5 automated + 5 manual."""
+def test_build_table_returns_5_columns():
+    """Row has 5 elements: URN + ID + Impl + Automated Tests + Manual Tests."""
     row = _build_table(
         req_id="REQ_001",
         urn="ms-001",
@@ -200,7 +187,7 @@ def test_build_table_returns_13_columns():
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
-    assert len(row) == 13
+    assert len(row) == 5
 
 
 # ---------------------------------------------------------------------------

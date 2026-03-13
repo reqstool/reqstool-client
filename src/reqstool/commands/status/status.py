@@ -71,123 +71,33 @@ def _get_row_with_totals(stats_service: StatisticsService) -> list[str]:
         for stats in stats_service.requirement_statistics.values()
         if stats.implementation_type != IMPLEMENTATION.NOT_APPLICABLE
     )
+    auto_stats = TestStats(
+        total=total_automatic,
+        passed=ts.passed_automatic_tests,
+        failed=ts.failed_automatic_tests,
+        skipped=ts.skipped_tests,
+        missing=ts.missing_automated_tests,
+    )
+    manual_stats = TestStats(
+        total=total_manual,
+        passed=ts.passed_manual_tests,
+        failed=ts.failed_manual_tests,
+        skipped=0,
+        missing=ts.missing_manual_tests,
+    )
     return [
         "Total",
         "",
         str(total_implementations),
-        _format_cell(total_automatic),
-        _format_cell(ts.passed_automatic_tests, Fore.GREEN),
-        _format_cell(ts.failed_automatic_tests, Fore.RED),
-        _format_cell(ts.skipped_tests, Fore.YELLOW),
-        _format_cell(ts.missing_automated_tests, Fore.RED),
-        _format_cell(total_manual),
-        _format_cell(ts.passed_manual_tests, Fore.GREEN),
-        _format_cell(ts.failed_manual_tests, Fore.RED),
-        "-",
-        _format_cell(ts.missing_manual_tests, Fore.RED),
+        _format_test_cell(auto_stats),
+        _format_test_cell(manual_stats),
     ]
-
-
-def _build_merged_headers(col_widths: list[int]) -> str:
-    """Build a 3-line merged header block with group headers spanning sub-columns."""
-    # col_widths: widths for all 13 columns (content width, not including borders)
-    # Columns 0-2: URN, ID, Implementation (vertically centered)
-    # Columns 3-7: Automated Tests (T, P, F, S, M)
-    # Columns 8-12: Manual Tests (T, P, F, S, M)
-    sub_headers = ["T", "P", "F", "S", "M"]
-
-    def center(text: str, width: int) -> str:
-        return text.center(width)
-
-    # Top border
-    top = "╒"
-    for i, w in enumerate(col_widths):
-        top += "═" * (w + 2)
-        if i == 2 or i == 7:
-            top += "╤"
-        elif i == len(col_widths) - 1:
-            top += "╕"
-        else:
-            top += "═" if i < 2 or (3 <= i < 7) or (8 <= i < 12) else "╤"
-    # Rebuild top border properly
-    top = "╒"
-    # URN
-    top += "═" * (col_widths[0] + 2) + "╤"
-    # ID
-    top += "═" * (col_widths[1] + 2) + "╤"
-    # Implementation
-    top += "═" * (col_widths[2] + 2) + "╤"
-    # Automated Tests group (cols 3-7, merged)
-    auto_width = sum(col_widths[3:8]) + 2 * 5 + 4  # 5 cols * 2 padding + 4 inner separators
-    top += "═" * auto_width + "╤"
-    # Manual Tests group (cols 8-13, merged)
-    manual_width = sum(col_widths[8:13]) + 2 * 5 + 4
-    top += "═" * manual_width + "╕"
-
-    # Row 1: group headers
-    row1 = "│"
-    row1 += center("", col_widths[0] + 2) + "│"
-    row1 += center("", col_widths[1] + 2) + "│"
-    row1 += center("", col_widths[2] + 2) + "│"
-    row1 += center("Automated Tests", auto_width) + "│"
-    row1 += center("Manual Tests", manual_width) + "│"
-
-    # Divider between row1 and row2
-    div = "│"
-    div += " " * (col_widths[0] + 2) + "│"
-    div += " " * (col_widths[1] + 2) + "│"
-    div += " " * (col_widths[2] + 2) + "├"
-    for i in range(3, 8):
-        div += "─" * (col_widths[i] + 2)
-        div += "┬" if i < 7 else "┤"
-    for i in range(8, 13):
-        div += "─" * (col_widths[i] + 2)
-        div += "┬" if i < 12 else "┤"
-
-    # Row 2: sub-headers
-    row2 = "│"
-    row2 += center("URN", col_widths[0] + 2) + "│"
-    row2 += center("ID", col_widths[1] + 2) + "│"
-    row2 += center("Implementation", col_widths[2] + 2) + "│"
-    for i, h in enumerate(sub_headers):
-        row2 += center(h, col_widths[3 + i] + 2) + "│"
-    for i, h in enumerate(sub_headers):
-        row2 += center(h, col_widths[8 + i] + 2) + "│"
-
-    return f"{top}\n{row1}\n{div}\n{row2}"
-
-
-def _parse_col_widths(sep_line: str) -> list[int]:
-    """Parse column content widths from a tabulate separator line like ╞═══╪═══╡."""
-    col_widths = []
-    current_width = 0
-    for ch in sep_line[1:-1]:
-        if ch == "╪":
-            col_widths.append(current_width)
-            current_width = 0
-        else:
-            current_width += 1
-    col_widths.append(current_width)
-    return [w - 2 for w in col_widths]
-
-
-def _replace_header_with_merged(table: str) -> tuple:
-    """Replace tabulate's flat header with a two-row merged header. Returns (table, lines)."""
-    lines = table.split("\n")
-    sep_line = next((line for line in lines if "╞" in line), None)
-    if sep_line:
-        col_widths = _parse_col_widths(sep_line)
-        merged_header = _build_merged_headers(col_widths)
-        sep_idx = next(i for i, line in enumerate(lines) if "╞" in line)
-        lines = [merged_header] + lines[sep_idx:]
-        table = "\n".join(lines)
-    return table, lines
 
 
 # builds the status table
 def _status_table(stats_service: StatisticsService) -> str:
     table_data = []
-    headers = ["URN", "ID", "Implementation", "T", "P", "F", "S", "M", "T", "P", "F", "S", "M"]
+    headers = ["URN", "ID", "Implementation", "Automated Tests", "Manual Tests"]
 
     for req, stats in stats_service.requirement_statistics.items():
         table_data.append(
@@ -207,7 +117,7 @@ def _status_table(stats_service: StatisticsService) -> str:
     col_align = ["center"] * len(headers) if table_data else []
     table = tabulate(tablefmt="fancy_grid", tabular_data=table_data, headers=headers, colalign=col_align)
 
-    table, lines = _replace_header_with_merged(table)
+    lines = table.split("\n")
 
     # Find a line without ANSI codes to measure visible width
     visible_table_width = 75
@@ -225,7 +135,12 @@ def _status_table(stats_service: StatisticsService) -> str:
 
     table_with_title = f"{title}\n{table}\n"
 
-    legend_line = "T = Total, P = Passed, F = Failed, S = Skipped, M = Missing"
+    legend_line = (
+        f"T = Total, {Fore.GREEN}P = Passed{Style.RESET_ALL}, "
+        f"{Fore.RED}F = Failed{Style.RESET_ALL}, "
+        f"{Fore.YELLOW}S = Skipped{Style.RESET_ALL}, "
+        f"{_ORANGE}M = Missing{Style.RESET_ALL}"
+    )
 
     statistics = _summarize_statistics(ts)
 
@@ -368,19 +283,35 @@ def __colorize_headers(
     return CODE, NA, IMPLEMENTATIONS
 
 
-def _format_cell(value: int, color: str = "") -> str:
-    if value == 0:
-        return "-"
-    return f"{color}{value}{Style.RESET_ALL}" if color else str(value)
+_ORANGE = "\033[38;5;208m"
+_DIM = Style.DIM
+
+
+def _format_test_cell(stats: TestStats) -> str:
+    """Format a TestStats into a single fixed-width string with colored counts."""
+    if stats.not_applicable:
+        return ""
+
+    slots = [
+        (stats.total, ""),
+        (stats.passed, Fore.GREEN),
+        (stats.failed, Fore.RED),
+        (stats.skipped, Fore.YELLOW),
+        (stats.missing, _ORANGE),
+    ]
+
+    parts = []
+    for value, color in slots:
+        if value == 0:
+            parts.append(f"{_DIM} -{Style.RESET_ALL}")
+        else:
+            text = f"{value:>2}"
+            if color:
+                text = f"{color}{text}{Style.RESET_ALL}"
+            parts.append(text)
+
+    return " ".join(parts)
 
 
 def _extend_row(result: TestStats, row: list[str], kind: str) -> None:
-    if result.not_applicable:
-        row.extend(["-", "-", "-", "-", "-"])
-        return
-
-    row.append(_format_cell(result.total))
-    row.append(_format_cell(result.passed, Fore.GREEN))
-    row.append(_format_cell(result.failed, Fore.RED))
-    row.append(_format_cell(result.skipped, Fore.YELLOW))
-    row.append(_format_cell(result.missing, Fore.RED))
+    row.append(_format_test_cell(result))
