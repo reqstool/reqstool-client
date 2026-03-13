@@ -24,7 +24,6 @@ from reqstool.models.svcs import SVCsData
 from reqstool.models.test_data import TestsData
 from reqstool.requirements_indata.requirements_indata import RequirementsIndata
 from reqstool.storage.database import RequirementsDatabase
-from reqstool.storage.populator import DatabasePopulator
 
 
 @Requirements("REQ_005", "REQ_006", "REQ_007")
@@ -83,11 +82,57 @@ class CombinedRawDatasetsGenerator:
 
         self._database.set_metadata("initial_urn", crd.initial_model_urn)
 
+        # Multi-pass insertion to satisfy FK constraints across URNs.
+        # Order: requirements → SVCs → MVRs → annotations → test results → graph
+        self.__populate_requirements(crd)
+        self.__populate_svcs(crd)
+        self.__populate_mvrs(crd)
+        self.__populate_annotations(crd)
+        self.__populate_test_results(crd)
+        self.__populate_parsing_graph(crd)
+
+    def __populate_requirements(self, crd: CombinedRawDataset) -> None:
         for urn in crd.urn_parsing_order:
             rd = crd.raw_datasets[urn]
             self._database.insert_urn_metadata(rd.requirements_data.metadata)
-            DatabasePopulator.populate_from_raw_dataset(self._database, urn, rd)
+            for req_data in rd.requirements_data.requirements.values():
+                self._database.insert_requirement(urn, req_data)
 
+    def __populate_svcs(self, crd: CombinedRawDataset) -> None:
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            if rd.svcs_data is not None and rd.svcs_data.cases:
+                for svc_data in rd.svcs_data.cases.values():
+                    self._database.insert_svc(urn, svc_data)
+
+    def __populate_mvrs(self, crd: CombinedRawDataset) -> None:
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            if rd.mvrs_data is not None and rd.mvrs_data.results:
+                for mvr_data in rd.mvrs_data.results.values():
+                    self._database.insert_mvr(urn, mvr_data)
+
+    def __populate_annotations(self, crd: CombinedRawDataset) -> None:
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            if rd.annotations_data is not None:
+                for req_urn_id, annotations in rd.annotations_data.implementations.items():
+                    for annotation in annotations:
+                        self._database.insert_annotation_impl(req_urn_id, annotation)
+                for svc_urn_id, annotations in rd.annotations_data.tests.items():
+                    for annotation in annotations:
+                        self._database.insert_annotation_test(svc_urn_id, annotation)
+
+    def __populate_test_results(self, crd: CombinedRawDataset) -> None:
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            if rd.automated_tests is not None:
+                for test_urn_id, test_data in rd.automated_tests.tests.items():
+                    self._database.insert_test_result(
+                        test_urn_id.urn, test_data.fully_qualified_name, test_data.status
+                    )
+
+    def __populate_parsing_graph(self, crd: CombinedRawDataset) -> None:
         for parent_urn, children in crd.parsing_graph.items():
             for child_urn in children:
                 self._database.insert_parsing_graph_edge(parent_urn, child_urn)

@@ -8,21 +8,18 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.commands.report.criterias.group_by import GroupbyOptions, GroupByOrganizor
 from reqstool.commands.report.criterias.sort_by import SortByOptions
-from reqstool.commands.status.statistics_container import StatisticsContainer
-from reqstool.commands.status.statistics_generator import StatisticsGenerator
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.jinja2 import Jinja2Utils
-from reqstool.common.utils import Utils
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
-from reqstool.model_generators.combined_indexed_dataset_generator import CombinedIndexedDatasetGenerator
-from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
 from reqstool.models.annotations import AnnotationData
-from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.mvrs import MVRData
 from reqstool.models.svcs import SVCData
 from reqstool.models.test_data import TEST_RUN_STATUS
+from reqstool.services.statistics_service import StatisticsService
+from reqstool.storage.pipeline import build_database
+from reqstool.storage.requirements_repository import RequirementsRepository
 
 FORMAT_CONFIG = {
     "asciidoc": {"template_subdir": "asciidoc", "h1": "= ", "h2": "== "},
@@ -69,36 +66,37 @@ class ReportCommand:
         self.result = self.__run()
 
     def __run(self) -> str:
-        semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
-        # generate datasets
-        crd = CombinedRawDatasetsGenerator(
-            initial_location=self.__initial_location, semantic_validator=semantic_validator
-        ).combined_raw_datasets
-        cid: CombinedIndexedDataset = CombinedIndexedDatasetGenerator(_crd=crd, _filtered=True).combined_indexed_dataset
+        db, _ = build_database(
+            location=self.__initial_location,
+            semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
+        )
+        repo = RequirementsRepository(db)
 
-        aggregated_data: Dict[UrnId, Dict[str, Union[str, str]]] = self.__aggregated_requirements_data(cid=cid)
+        aggregated_data: Dict[UrnId, Dict[str, Union[str, str]]] = self.__aggregated_requirements_data(repo=repo)
+        stats_service = StatisticsService(repo)
 
-        # build statistics
-        statistics: StatisticsContainer = StatisticsGenerator(
-            initial_location=self.__initial_location, semantic_validator=semantic_validator
-        ).result
+        report = self.__generate_report(repo=repo, aggregated_data=aggregated_data, statistics=stats_service)
 
-        report = self.__generate_report(cid=cid, aggregated_data=aggregated_data, statistics=statistics)
+        db.close()
 
         return report
 
     def __generate_report(
         self,
-        cid: CombinedIndexedDataset,
+        repo: RequirementsRepository,
         aggregated_data: Dict[UrnId, Dict[str, Union[str, Dict[str, str]]]],
-        statistics: StatisticsContainer,
+        statistics: StatisticsService,
     ):
+        # Create a dict adapter for the Jinja2 template that uses the old TotalStatisticsItem attribute names
+        ts = statistics.total_statistics
+        total_stats_for_template = _TotalStatsTemplateAdapter(ts)
+
         statistics_table = Jinja2Utils.render(
-            data=statistics.total_statistics, template=self.jinja2_templates[Jinja2Templates.TOTAL_STATISTICS]
+            data=total_stats_for_template, template=self.jinja2_templates[Jinja2Templates.TOTAL_STATISTICS]
         )
 
         grouped_requirements: Dict[str, List[UrnId]] = GroupByOrganizor(
-            cid=cid, group_by=self.group_by, sort_by=self.sort_by
+            repo=repo, group_by=self.group_by, sort_by=self.sort_by
         ).grouped_requirements
 
         template_data: Dict[str, List[str]] = {
@@ -149,31 +147,37 @@ class ReportCommand:
         return rendered
 
     def __aggregated_requirements_data(
-        self, cid: CombinedIndexedDataset
+        self, repo: RequirementsRepository
     ) -> Dict[UrnId, Dict[str, Union[str, Dict[str, str]]]]:
         requirement_data: Dict[UrnId, Dict[str, Union[str, Dict[str, str]]]] = {}
 
-        for urn_id, req_data in cid.requirements.items():
+        all_requirements = repo.get_all_requirements()
+        all_svcs = repo.get_all_svcs()
+        all_mvrs = repo.get_all_mvrs()
+        automated_test_results = repo.get_automated_test_results()
+
+        for urn_id, req_data in all_requirements.items():
             # Get all svc UrnIds related to current requirement
-            svcs_urn_ids: List[UrnId] = cid.svcs_from_req.get(urn_id, [])
+            svcs_urn_ids: List[UrnId] = repo.get_svcs_for_req(urn_id)
 
             # Get svcs for current requirement
-            svcs: List[SVCData] = [cid.svcs[urn_id] for urn_id in svcs_urn_ids]
+            svcs: List[SVCData] = [all_svcs[sid] for sid in svcs_urn_ids if sid in all_svcs]
 
             # Get all verification types for current req
             verifications_as_string = ", ".join(str(svc.verification.value) for svc in svcs)
 
             # get all implementations for current requirement
-            impls: List = self._get_annotation_impls(cid=cid, urn_id=urn_id)
+            impls: List = self._get_annotation_impls(repo=repo, urn_id=urn_id)
 
-            mvr_ids: List[UrnId] = Utils.get_mvr_urn_ids_for_svcs_urn_id(cid=cid, svcs_urn_ids=svcs_urn_ids)
+            # Get MVR IDs via SVCs
+            mvr_ids: List[UrnId] = [mid for svc_uid in svcs_urn_ids for mid in repo.get_mvrs_for_svc(svc_uid)]
 
             # Get mvrs for current requirement if there are any (else [])
-            mvrs: List[MVRData] = [cid.mvrs[mvr_id] for mvr_id in mvr_ids] if mvr_ids else []
+            mvrs: List[MVRData] = [all_mvrs[mvr_id] for mvr_id in mvr_ids if mvr_id in all_mvrs] if mvr_ids else []
 
             # generate templates for tests related to current requirement
-            automated_test_results: List = self._get_annotated_automated_test_results_for_req(
-                cid=cid, svcs_urn_ids=svcs_urn_ids
+            automated_test_results_for_req: List = self._get_annotated_automated_test_results_for_req(
+                repo=repo, svcs_urn_ids=svcs_urn_ids, automated_test_results=automated_test_results
             )
 
             req_temp_data = {
@@ -182,9 +186,9 @@ class ReportCommand:
                 "description": req_data.description,
                 "rationale": req_data.rationale,
                 "references": ", ".join(
-                    f"{urn_id.urn}:{urn_id.id}"
+                    f"{uid.urn}:{uid.id}"
                     for reference in req_data.references
-                    for urn_id in reference.requirement_ids
+                    for uid in sorted(reference.requirement_ids)
                 ),
                 "revision": req_data.revision,
                 "significance": req_data.significance.value,
@@ -197,7 +201,7 @@ class ReportCommand:
                 "requirement": req_temp_data,
                 "impls": impls,
                 "svcs": svcs,
-                "tests": automated_test_results,
+                "tests": automated_test_results_for_req,
                 "mvrs": mvrs,
             }
 
@@ -207,45 +211,54 @@ class ReportCommand:
 
     def _get_annotated_automated_test_results_for_req(
         self,
-        cid: CombinedIndexedDataset,
+        repo: RequirementsRepository,
         svcs_urn_ids: List[UrnId],
+        automated_test_results: Dict[UrnId, List],
     ) -> List:
-        automated_test_results = []
-        for urn_id in svcs_urn_ids:
-            if urn_id in cid.annotations_tests:
-                annotations = cid.annotations_tests[urn_id]
+        results = []
+        annotations_tests = repo.get_annotations_tests()
+        for svc_uid in svcs_urn_ids:
+            if svc_uid in annotations_tests:
+                annotations = annotations_tests[svc_uid]
                 for test in annotations:
-                    test_urn_id = UrnId(urn=urn_id.urn, id=test.fully_qualified_name)
-                    results = self.__get_annotated_test_results(cid=cid, urn_id=test_urn_id)
-                    results_as_string = ", ".join(str(result.status.value) for result in results)
+                    test_urn_id = UrnId(urn=svc_uid.urn, id=test.fully_qualified_name)
+                    if test_urn_id in automated_test_results:
+                        test_results = automated_test_results[test_urn_id]
+                        results_as_string = ", ".join(str(r.status.value) for r in test_results)
+                    else:
+                        results_as_string = str(TEST_RUN_STATUS.MISSING.value)
                     annot_test = {
-                        "svc_id": urn_id.id,
+                        "svc_id": svc_uid.id,
                         "element_kind": test.element_kind,
                         "fqn": test.fully_qualified_name,
                         "test_result": results_as_string,
                     }
-                    automated_test_results.append(annot_test)
+                    results.append(annot_test)
 
-        return automated_test_results
+        return results
 
-    def __get_annotated_test_results(self, cid: CombinedIndexedDataset, urn_id: UrnId) -> List[TEST_RUN_STATUS]:
-        test_results: List[TEST_RUN_STATUS] = []
-        # do lookup for each test from previous method, and if result is missing, add a Missing status
-        if urn_id in cid.automated_test_result:
-            tests = cid.automated_test_result[urn_id]
-            for test in tests:
-                test_results.append(test)
-        else:
-            test_results.append(TEST_RUN_STATUS.MISSING)
-
-        return test_results
-
-    def _get_annotation_impls(self, cid: CombinedIndexedDataset, urn_id: UrnId):
+    def _get_annotation_impls(self, repo: RequirementsRepository, urn_id: UrnId):
         impls_list = []
-        impls_for_urn: List[AnnotationData] = cid.annotations_impls[urn_id] if urn_id in cid.annotations_impls else []
+        impls_for_urn: List[AnnotationData] = repo.get_annotations_impls_for_req(urn_id)
         if impls_for_urn:
             for impl in impls_for_urn:
                 impl_template = {"element_kind": impl.element_kind, "fqn": impl.fully_qualified_name}
                 impls_list.append(impl_template)
 
         return impls_list
+
+
+class _TotalStatsTemplateAdapter:
+    """Adapter to present TotalStats with the old TotalStatisticsItem attribute names for Jinja2 templates."""
+
+    def __init__(self, ts):
+        self.nr_of_total_requirements = ts.total_requirements
+        self.nr_of_completed_requirements = ts.completed_requirements
+        self.nr_of_reqs_with_implementation = ts.with_implementation
+        self.nr_of_total_svcs = ts.total_svcs
+        self.nr_of_total_tests = ts.total_tests
+        self.nr_of_passed_tests = ts.passed_tests
+        self.nr_of_failed_tests = ts.failed_tests
+        self.nr_of_skipped_tests = ts.skipped_tests
+        self.nr_of_missing_automated_tests = ts.missing_automated_tests
+        self.nr_of_missing_manual_tests = ts.missing_manual_tests

@@ -6,9 +6,9 @@ from typing import Union
 from reqstool.common.models.lifecycle import LIFECYCLESTATE, lifecycle_state_sort_order
 from reqstool.common.models.urn_id import UrnId
 from reqstool.models.annotations import AnnotationData
-from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.requirements import RequirementData
 from reqstool.models.svcs import SVCData
+from reqstool.storage.requirements_repository import RequirementsRepository
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 
@@ -21,17 +21,22 @@ class LifecycleValidator:
     Logs warnings if any requirement or SVC is used despite being marked deprecated or obsolete.
     """
 
-    def __init__(self, cid: CombinedIndexedDataset):
-        self._cid = cid
+    def __init__(self, repo: RequirementsRepository):
+        self._repo = repo
         self.warnings: list[Warning] = []
 
         self._validate()
 
     def _validate(self):
-        self._check_defunct_annotations(self._cid.annotations_impls, self._cid.requirements)
-        self._check_defunct_annotations(self._cid.annotations_tests, self._cid.svcs)
-        self._check_mvr_references()
-        self._check_svc_references()
+        requirements = self._repo.get_all_requirements()
+        svcs = self._repo.get_all_svcs()
+        annotations_impls = self._repo.get_annotations_impls()
+        annotations_tests = self._repo.get_annotations_tests()
+
+        self._check_defunct_annotations(annotations_impls, requirements)
+        self._check_defunct_annotations(annotations_tests, svcs)
+        self._check_mvr_references(svcs)
+        self._check_svc_references(requirements, svcs)
 
         self.warnings.sort(key=lambda warning: lifecycle_state_sort_order[warning.state])
         for warning in self.warnings:
@@ -54,12 +59,17 @@ class LifecycleValidator:
                     Warning(state, f"Urn {urn_id} is used in an annotation despite being {state.value}.")
                 )
 
-    def _check_mvr_references(self):
+    def _check_mvr_references(self, svcs: dict[UrnId, SVCData]):
         """
         Creates warnings if any MVR contains a reference to defunct SVCs
         """
-        mvrs_from_svc = self._cid.mvrs_from_svc
-        svcs = self._cid.svcs
+        all_mvrs = self._repo.get_all_mvrs()
+
+        # Build mvrs_from_svc index
+        mvrs_from_svc: dict[UrnId, list[UrnId]] = {}
+        for mvr_uid, mvr_data in all_mvrs.items():
+            for svc_uid in mvr_data.svc_ids:
+                mvrs_from_svc.setdefault(svc_uid, []).append(mvr_uid)
 
         for urn_id, related_urn_ids in mvrs_from_svc.items():
             if urn_id not in svcs:
@@ -75,18 +85,20 @@ class LifecycleValidator:
                     )
                 )
 
-    def _check_svc_references(self):
+    def _check_svc_references(self, requirements: dict[UrnId, RequirementData], svcs: dict[UrnId, SVCData]):
         """
         Creates warnings if any defunct requirement is referenced by active SVCs
         """
-        reqs = self._cid.requirements
-        svcs_from_req = self._cid.svcs_from_req
-        svcs = self._cid.svcs
+        # Build svcs_from_req index
+        svcs_from_req: dict[UrnId, list[UrnId]] = {}
+        for svc_uid, svc_data in svcs.items():
+            for req_uid in svc_data.requirement_ids:
+                svcs_from_req.setdefault(req_uid, []).append(svc_uid)
 
         for urn_id, referenced_urn_ids in svcs_from_req.items():
-            if urn_id not in reqs:
+            if urn_id not in requirements:
                 continue
-            state = reqs[urn_id].lifecycle.state
+            state = requirements[urn_id].lifecycle.state
             if state in (LIFECYCLESTATE.DEPRECATED, LIFECYCLESTATE.OBSOLETE):
                 svcs_in_use = [
                     id

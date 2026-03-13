@@ -2,9 +2,9 @@
 
 from colorama import Fore
 
-from reqstool.commands.status.statistics_container import TestStatisticsItem
 from reqstool.commands.status.status import _build_table, _extend_row, _format_cell, _summarize_statistics
 from reqstool.models.requirements import IMPLEMENTATION
+from reqstool.services.statistics_service import TestStats
 
 
 # ---------------------------------------------------------------------------
@@ -34,7 +34,7 @@ def test_format_cell_nonzero_with_color():
 def test_extend_row_not_applicable():
     """not_applicable=True appends five dashes."""
     row = []
-    _extend_row(TestStatisticsItem(not_applicable=True), row, kind="automated")
+    _extend_row(TestStats(not_applicable=True), row, kind="automated")
     assert len(row) == 5
     assert all(cell == "-" for cell in row)
 
@@ -42,14 +42,14 @@ def test_extend_row_not_applicable():
 def test_extend_row_total_count():
     """Total test count appears in first cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=5), row, kind="automated")
+    _extend_row(TestStats(total=5), row, kind="automated")
     assert row[0] == "5"
 
 
 def test_extend_row_passed_tests_green():
     """Passed tests produce a green cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=2, nr_of_passed_tests=2), row, kind="automated")
+    _extend_row(TestStats(total=2, passed=2), row, kind="automated")
     assert Fore.GREEN in row[1]
     assert "2" in row[1]
 
@@ -57,7 +57,7 @@ def test_extend_row_passed_tests_green():
 def test_extend_row_failed_tests_red():
     """Failed tests produce a red cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=1, nr_of_failed_tests=1), row, kind="automated")
+    _extend_row(TestStats(total=1, failed=1), row, kind="automated")
     assert Fore.RED in row[2]
     assert "1" in row[2]
 
@@ -65,7 +65,7 @@ def test_extend_row_failed_tests_red():
 def test_extend_row_skipped_tests_yellow():
     """Skipped tests produce a yellow cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=1, nr_of_skipped_tests=1), row, kind="automated")
+    _extend_row(TestStats(total=1, skipped=1), row, kind="automated")
     assert Fore.YELLOW in row[3]
     assert "1" in row[3]
 
@@ -73,7 +73,7 @@ def test_extend_row_skipped_tests_yellow():
 def test_extend_row_missing_automated_tests_red():
     """Missing automated tests produce a red cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_missing_automated_tests=3), row, kind="automated")
+    _extend_row(TestStats(missing=3), row, kind="automated")
     assert Fore.RED in row[4]
     assert "3" in row[4]
 
@@ -81,7 +81,7 @@ def test_extend_row_missing_automated_tests_red():
 def test_extend_row_missing_manual_tests_red():
     """Missing manual tests produce a red cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_missing_manual_tests=2), row, kind="manual")
+    _extend_row(TestStats(missing=2), row, kind="manual")
     assert Fore.RED in row[4]
     assert "2" in row[4]
 
@@ -90,7 +90,7 @@ def test_extend_row_zero_values_show_dash():
     """Zero values display as dash."""
     row = []
     _extend_row(
-        TestStatisticsItem(nr_of_total_tests=0, nr_of_passed_tests=0, nr_of_failed_tests=0, nr_of_skipped_tests=0),
+        TestStats(total=0, passed=0, failed=0, skipped=0),
         row,
         kind="automated",
     )
@@ -108,8 +108,8 @@ def test_build_table_completed_req_is_green():
         req_id="REQ_001",
         urn="ms-001",
         impls=1,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
@@ -123,8 +123,8 @@ def test_build_table_incomplete_req_is_red():
         req_id="REQ_001",
         urn="ms-001",
         impls=0,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=False,
         implementation=IMPLEMENTATION.IN_CODE,
     )
@@ -137,8 +137,8 @@ def test_build_table_not_applicable_shows_na():
         req_id="REQ_001",
         urn="ms-001",
         impls=0,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=True,
         implementation=IMPLEMENTATION.NOT_APPLICABLE,
     )
@@ -151,8 +151,8 @@ def test_build_table_in_code_with_impls_shows_count():
         req_id="REQ_001",
         urn="ms-001",
         impls=2,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
@@ -166,8 +166,8 @@ def test_build_table_in_code_no_impls_shows_zero():
         req_id="REQ_001",
         urn="ms-001",
         impls=0,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=False,
         implementation=IMPLEMENTATION.IN_CODE,
     )
@@ -181,8 +181,8 @@ def test_build_table_urn_is_first_column():
         req_id="REQ_001",
         urn="ms-001",
         impls=1,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
@@ -195,8 +195,8 @@ def test_build_table_returns_13_columns():
         req_id="REQ_001",
         urn="ms-001",
         impls=1,
-        tests=TestStatisticsItem(nr_of_total_tests=3, nr_of_passed_tests=2, nr_of_failed_tests=1),
-        mvrs=TestStatisticsItem(nr_of_total_tests=1, nr_of_passed_tests=1),
+        tests=TestStats(total=3, passed=2, failed=1),
+        mvrs=TestStats(total=1, passed=1),
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )

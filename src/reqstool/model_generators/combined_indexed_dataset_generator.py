@@ -5,7 +5,6 @@ from typing import Dict, List, Set
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
-from reqstool.common.validators.lifecycle_validator import LifecycleValidator
 from reqstool.model_generators.indexed_dataset_filter_processor import _IndexedDatasetFilterProcessor
 from reqstool.models.annotations import AnnotationData
 from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
@@ -88,8 +87,6 @@ class CombinedIndexedDatasetGenerator:
             mvrs_from_urn=self._mvrs_from_urn,
             mvrs_from_svc=self._mvrs_from_svc,
         )
-
-        LifecycleValidator(combined_indexed_dataset)
 
         return combined_indexed_dataset
 

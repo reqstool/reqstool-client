@@ -1,17 +1,19 @@
 # Copyright © LFV
 
+import json
 from typing import List, Tuple
 
 from colorama import Fore, Style
 from reqstool_python_decorators.decorators.decorators import Requirements
 from tabulate import tabulate
 
-from reqstool.commands.status.statistics_container import StatisticsContainer, TestStatisticsItem
-from reqstool.commands.status.statistics_generator import StatisticsGenerator
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
 from reqstool.models.requirements import IMPLEMENTATION
+from reqstool.services.statistics_service import RequirementStatus, StatisticsService, TestStats, TotalStats
+from reqstool.storage.pipeline import build_database
+from reqstool.storage.requirements_repository import RequirementsRepository
 
 
 @Requirements("REQ_027")
@@ -22,25 +24,28 @@ class StatusCommand:
         self.result = self.__status_result()
 
     def __status_result(self) -> Tuple[str, int]:
-        statistics: StatisticsContainer = StatisticsGenerator(
-            initial_location=self.__initial_location,
+        db, _ = build_database(
+            location=self.__initial_location,
             semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
-        ).result
+        )
+        repo = RequirementsRepository(db)
+        stats_service = StatisticsService(repo)
 
         if self.__format == "json":
-            status = statistics.model_dump_json(indent=2)
+            status = json.dumps(stats_service.to_status_dict(), indent=2)
         else:
-            status = _status_table(stats_container=statistics)
+            status = _status_table(stats_service=stats_service)
+
+        db.close()
 
         return (
             status,
-            statistics.total_statistics.nr_of_total_requirements
-            - statistics.total_statistics.nr_of_completed_requirements,
+            stats_service.total_statistics.total_requirements - stats_service.total_statistics.completed_requirements,
         )
 
 
 def _build_table(
-    req_id: str, urn: str, impls: int, tests: str, mvrs: str, completed: bool, implementation: IMPLEMENTATION
+    req_id: str, urn: str, impls: int, tests: TestStats, mvrs: TestStats, completed: bool, implementation: IMPLEMENTATION
 ) -> List[str]:
     row = [urn]
     # add color to requirement if it's completed or not
@@ -58,29 +63,29 @@ def _build_table(
     return row
 
 
-def _get_row_with_totals(stats_container: StatisticsContainer) -> List[str]:
-    ts = stats_container.total_statistics
-    total_automatic = ts.nr_of_passed_automatic_tests + ts.nr_of_failed_automatic_tests
-    total_manual = ts.nr_of_passed_manual_tests + ts.nr_of_failed_manual_tests
+def _get_row_with_totals(stats_service: StatisticsService) -> List[str]:
+    ts = stats_service.total_statistics
+    total_automatic = ts.passed_automatic_tests + ts.failed_automatic_tests
+    total_manual = ts.passed_manual_tests + ts.failed_manual_tests
     total_implementations = sum(
-        stats.nr_of_implementations
-        for stats in stats_container.requirement_statistics.values()
-        if stats.implementation != IMPLEMENTATION.NOT_APPLICABLE
+        stats.implementations
+        for stats in stats_service.requirement_statistics.values()
+        if stats.implementation_type != IMPLEMENTATION.NOT_APPLICABLE
     )
     return [
         "Total",
         "",
         str(total_implementations),
         _format_cell(total_automatic),
-        _format_cell(ts.nr_of_passed_automatic_tests, Fore.GREEN),
-        _format_cell(ts.nr_of_failed_automatic_tests, Fore.RED),
-        _format_cell(ts.nr_of_skipped_tests, Fore.YELLOW),
-        _format_cell(ts.nr_of_missing_automated_tests, Fore.RED),
+        _format_cell(ts.passed_automatic_tests, Fore.GREEN),
+        _format_cell(ts.failed_automatic_tests, Fore.RED),
+        _format_cell(ts.skipped_tests, Fore.YELLOW),
+        _format_cell(ts.missing_automated_tests, Fore.RED),
         _format_cell(total_manual),
-        _format_cell(ts.nr_of_passed_manual_tests, Fore.GREEN),
-        _format_cell(ts.nr_of_failed_manual_tests, Fore.RED),
+        _format_cell(ts.passed_manual_tests, Fore.GREEN),
+        _format_cell(ts.failed_manual_tests, Fore.RED),
         "-",
-        _format_cell(ts.nr_of_missing_manual_tests, Fore.RED),
+        _format_cell(ts.missing_manual_tests, Fore.RED),
     ]
 
 
@@ -181,24 +186,24 @@ def _replace_header_with_merged(table: str) -> tuple:
 
 
 # builds the status table
-def _status_table(stats_container: StatisticsContainer) -> str:
+def _status_table(stats_service: StatisticsService) -> str:
     table_data = []
     headers = ["URN", "ID", "Implementation", "T", "P", "F", "S", "M", "T", "P", "F", "S", "M"]
 
-    for req, stats in stats_container.requirement_statistics.items():
+    for req, stats in stats_service.requirement_statistics.items():
         table_data.append(
             _build_table(
                 req_id=req.id,
                 urn=req.urn,
-                impls=stats.nr_of_implementations,
-                tests=stats.automated_tests_stats,
-                mvrs=stats.mvrs_stats,
+                impls=stats.implementations,
+                tests=stats.automated_tests,
+                mvrs=stats.manual_tests,
                 completed=stats.completed,
-                implementation=stats.implementation,
+                implementation=stats.implementation_type,
             )
         )
 
-    table_data.append(_get_row_with_totals(stats_container))
+    table_data.append(_get_row_with_totals(stats_service))
 
     col_align = ["center"] * len(headers) if table_data else []
     table = tabulate(tablefmt="fancy_grid", tabular_data=table_data, headers=headers, colalign=col_align)
@@ -212,9 +217,8 @@ def _status_table(stats_container: StatisticsContainer) -> str:
             visible_table_width = len(line)
             break
 
-    header_req_data = (
-        "\b" * len(str(stats_container.total_statistics.nr_of_total_requirements))
-    ) + f"REQUIREMENTS: {str(stats_container.total_statistics.nr_of_total_requirements)}"
+    ts = stats_service.total_statistics
+    header_req_data = ("\b" * len(str(ts.total_requirements))) + f"REQUIREMENTS: {str(ts.total_requirements)}"
     inner_width = visible_table_width - 2  # subtract ╒ and ╕
     title = (
         "╒" + "═" * inner_width + "╕" + f"\n│{header_req_data.center(inner_width)}│" + "\n╘" + "═" * inner_width + "╛"
@@ -225,25 +229,19 @@ def _status_table(stats_container: StatisticsContainer) -> str:
     legend_line = "T = Total, P = Passed, F = Failed, S = Skipped, M = Missing"
 
     statistics = _summarize_statistics(
-        nr_of_total_reqs=stats_container.total_statistics.nr_of_total_requirements,
-        nr_of_completed_reqs=stats_container.total_statistics.nr_of_completed_requirements,
-        implemented=stats_container.total_statistics.nr_of_reqs_with_implementation,
-        left_to_implement=stats_container.total_statistics.nr_of_total_requirements
-        - (
-            stats_container.total_statistics.nr_of_reqs_with_implementation
-            + stats_container.total_statistics.nr_of_total_reqs_no_implementation
-        ),
-        total_tests=stats_container.total_statistics.nr_of_total_tests,
-        passed_tests=stats_container.total_statistics.nr_of_passed_tests,
-        failed_tests=stats_container.total_statistics.nr_of_failed_tests,
-        skipped_tests=stats_container.total_statistics.nr_of_skipped_tests,
-        missing_automated_tests=stats_container.total_statistics.nr_of_missing_automated_tests,
-        missing_manual_tests=stats_container.total_statistics.nr_of_missing_manual_tests,
-        nr_of_total_svcs=stats_container.total_statistics.nr_of_total_svcs,
-        nr_of_reqs_without_implementation=(stats_container.total_statistics.nr_of_total_reqs_no_implementation),
-        nr_of_completed_reqs_without_implementation=(
-            stats_container.total_statistics.nr_of_completed_reqs_no_implementation
-        ),
+        nr_of_total_reqs=ts.total_requirements,
+        nr_of_completed_reqs=ts.completed_requirements,
+        implemented=ts.with_implementation,
+        left_to_implement=ts.total_requirements - (ts.with_implementation + ts.without_implementation_total),
+        total_tests=ts.total_tests,
+        passed_tests=ts.passed_tests,
+        failed_tests=ts.failed_tests,
+        skipped_tests=ts.skipped_tests,
+        missing_automated_tests=ts.missing_automated_tests,
+        missing_manual_tests=ts.missing_manual_tests,
+        nr_of_total_svcs=ts.total_svcs,
+        nr_of_reqs_without_implementation=ts.without_implementation_total,
+        nr_of_completed_reqs_without_implementation=ts.without_implementation_completed,
     )
 
     status = table_with_title + legend_line + statistics
@@ -421,17 +419,13 @@ def _format_cell(value: int, color: str = "") -> str:
     return f"{color}{value}{Style.RESET_ALL}" if color else str(value)
 
 
-def _extend_row(result: TestStatisticsItem, row: List[str], kind: str) -> None:
+def _extend_row(result: TestStats, row: List[str], kind: str) -> None:
     if result.not_applicable:
         row.extend(["-", "-", "-", "-", "-"])
         return
 
-    row.append(_format_cell(result.nr_of_total_tests))
-    row.append(_format_cell(result.nr_of_passed_tests, Fore.GREEN))
-    row.append(_format_cell(result.nr_of_failed_tests, Fore.RED))
-    row.append(_format_cell(result.nr_of_skipped_tests, Fore.YELLOW))
-
-    if kind == "automated":
-        row.append(_format_cell(result.nr_of_missing_automated_tests, Fore.RED))
-    else:
-        row.append(_format_cell(result.nr_of_missing_manual_tests, Fore.RED))
+    row.append(_format_cell(result.total))
+    row.append(_format_cell(result.passed, Fore.GREEN))
+    row.append(_format_cell(result.failed, Fore.RED))
+    row.append(_format_cell(result.skipped, Fore.YELLOW))
+    row.append(_format_cell(result.missing, Fore.RED))
