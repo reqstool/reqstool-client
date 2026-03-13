@@ -24,6 +24,7 @@ from reqstool.commands.report import report
 from reqstool.commands.report.criterias.group_by import GroupbyOptions
 from reqstool.commands.report.criterias.sort_by import SortByOptions
 from reqstool.commands.status.status import StatusCommand
+from reqstool.common.utils import Utils
 from reqstool.common.validators.syntax_validator import JsonSchemaItem
 from reqstool.locations.git_location import GitLocation
 from reqstool.locations.local_location import LocalLocation
