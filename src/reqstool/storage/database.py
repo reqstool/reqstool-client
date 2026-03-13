@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import sqlite3
 
 from reqstool.common.models.urn_id import UrnId
@@ -13,6 +14,8 @@ from reqstool.models.test_data import TEST_RUN_STATUS
 from reqstool.storage.authorizer import authorizer
 from reqstool.storage.el_to_sql_compiler import regexp_function
 from reqstool.storage.schema import SCHEMA_DDL
+
+logger = logging.getLogger(__name__)
 
 
 class RequirementsDatabase:
@@ -96,10 +99,13 @@ class RequirementsDatabase:
         )
 
         for req_urn_id in svc.requirement_ids:
-            self._conn.execute(
-                "INSERT INTO svc_requirement_links (svc_urn, svc_id, req_urn, req_id) VALUES (?, ?, ?, ?)",
-                (urn, svc.id.id, req_urn_id.urn, req_urn_id.id),
-            )
+            try:
+                self._conn.execute(
+                    "INSERT INTO svc_requirement_links (svc_urn, svc_id, req_urn, req_id) VALUES (?, ?, ?, ?)",
+                    (urn, svc.id.id, req_urn_id.urn, req_urn_id.id),
+                )
+            except sqlite3.IntegrityError:
+                logger.warning("SVC %s:%s references non-existent requirement %s", urn, svc.id.id, req_urn_id)
 
     def insert_mvr(self, urn: str, mvr: MVRData) -> None:
         self._conn.execute(
@@ -108,22 +114,31 @@ class RequirementsDatabase:
         )
 
         for svc_urn_id in mvr.svc_ids:
-            self._conn.execute(
-                "INSERT INTO mvr_svc_links (mvr_urn, mvr_id, svc_urn, svc_id) VALUES (?, ?, ?, ?)",
-                (urn, mvr.id.id, svc_urn_id.urn, svc_urn_id.id),
-            )
+            try:
+                self._conn.execute(
+                    "INSERT INTO mvr_svc_links (mvr_urn, mvr_id, svc_urn, svc_id) VALUES (?, ?, ?, ?)",
+                    (urn, mvr.id.id, svc_urn_id.urn, svc_urn_id.id),
+                )
+            except sqlite3.IntegrityError:
+                logger.warning("MVR %s:%s references non-existent SVC %s", urn, mvr.id.id, svc_urn_id)
 
     def insert_annotation_impl(self, req_urn_id: UrnId, annotation: AnnotationData) -> None:
-        self._conn.execute(
-            "INSERT OR IGNORE INTO annotations_impls (req_urn, req_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
-            (req_urn_id.urn, req_urn_id.id, annotation.element_kind, annotation.fully_qualified_name),
-        )
+        try:
+            self._conn.execute(
+                "INSERT OR IGNORE INTO annotations_impls (req_urn, req_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
+                (req_urn_id.urn, req_urn_id.id, annotation.element_kind, annotation.fully_qualified_name),
+            )
+        except sqlite3.IntegrityError:
+            logger.warning("Annotation impl references non-existent requirement %s", req_urn_id)
 
     def insert_annotation_test(self, svc_urn_id: UrnId, annotation: AnnotationData) -> None:
-        self._conn.execute(
-            "INSERT OR IGNORE INTO annotations_tests (svc_urn, svc_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
-            (svc_urn_id.urn, svc_urn_id.id, annotation.element_kind, annotation.fully_qualified_name),
-        )
+        try:
+            self._conn.execute(
+                "INSERT OR IGNORE INTO annotations_tests (svc_urn, svc_id, element_kind, fqn) VALUES (?, ?, ?, ?)",
+                (svc_urn_id.urn, svc_urn_id.id, annotation.element_kind, annotation.fully_qualified_name),
+            )
+        except sqlite3.IntegrityError:
+            logger.warning("Annotation test references non-existent SVC %s", svc_urn_id)
 
     def insert_test_result(self, urn: str, fqn: str, status: TEST_RUN_STATUS) -> None:
         self._conn.execute(

@@ -127,7 +127,6 @@ class StatisticsService:
                                 case TEST_RUN_STATUS.SKIPPED:
                                     self._totals.skipped_tests += 1
                                 case TEST_RUN_STATUS.MISSING:
-                                    self._totals.missing_automated_tests += 1
                                     self._totals.total_tests -= 1
 
         # Per-requirement statistics
@@ -199,6 +198,11 @@ class StatisticsService:
 
             if completed:
                 self._totals.completed_requirements += 1
+
+            if not automated_test_stats.not_applicable:
+                self._totals.missing_automated_tests += automated_test_stats.missing
+            if not mvr_stats.not_applicable:
+                self._totals.missing_manual_tests += mvr_stats.missing
 
     def _check_implementation(self, urn_id: UrnId, nr_of_implementations: int, implementation: IMPLEMENTATION) -> bool:
         if nr_of_implementations > 0 and implementation == IMPLEMENTATION.IN_CODE:
