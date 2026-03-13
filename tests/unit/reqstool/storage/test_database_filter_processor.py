@@ -60,7 +60,6 @@ def _setup_db_with_raw_datasets(raw_datasets, parsing_graph, initial_urn):
 
     db.set_metadata("initial_urn", initial_urn)
 
-    parse_position = 0
     for urn, rd in raw_datasets.items():
         db.insert_urn_metadata(rd.requirements_data.metadata)
         DatabasePopulator.populate_from_raw_dataset(db, urn, rd)
