@@ -126,8 +126,7 @@ def test_insert_requirement_references(db, sample_requirement):
     db.insert_requirement("ms-001", sample_requirement)
 
     rows = db.connection.execute(
-        "SELECT ref_req_urn, ref_req_id FROM requirement_references"
-        " WHERE req_urn = 'ms-001' AND req_id = 'REQ_001'"
+        "SELECT ref_req_urn, ref_req_id FROM requirement_references" " WHERE req_urn = 'ms-001' AND req_id = 'REQ_001'"
     ).fetchall()
     assert len(rows) == 1
     assert rows[0]["ref_req_urn"] == "sys-001"

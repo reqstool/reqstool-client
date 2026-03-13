@@ -36,7 +36,10 @@ def _make_svc(urn, svc_id, req_ids):
         title=f"SVC {svc_id}",
         verification=VERIFICATIONTYPES.AUTOMATED_TEST,
         revision="1.0.0",
-        requirement_ids=[UrnId(urn=uid.split(":")[0], id=uid.split(":")[1]) if ":" in uid else UrnId(urn=urn, id=uid) for uid in req_ids],
+        requirement_ids=[
+            UrnId(urn=uid.split(":")[0], id=uid.split(":")[1]) if ":" in uid else UrnId(urn=urn, id=uid)
+            for uid in req_ids
+        ],
     )
 
 
@@ -44,7 +47,10 @@ def _make_mvr(urn, mvr_id, svc_ids):
     return MVRData(
         id=UrnId(urn=urn, id=mvr_id),
         passed=True,
-        svc_ids=[UrnId(urn=uid.split(":")[0], id=uid.split(":")[1]) if ":" in uid else UrnId(urn=urn, id=uid) for uid in svc_ids],
+        svc_ids=[
+            UrnId(urn=uid.split(":")[0], id=uid.split(":")[1]) if ":" in uid else UrnId(urn=urn, id=uid)
+            for uid in svc_ids
+        ],
     )
 
 
@@ -111,9 +117,7 @@ def test_filter_excludes_requirement(simple_system_with_filter):
     processor = DatabaseFilterProcessor(db, raw_datasets)
     processor.apply_filters()
 
-    remaining = {
-        row["id"] for row in db.connection.execute("SELECT id FROM requirements").fetchall()
-    }
+    remaining = {row["id"] for row in db.connection.execute("SELECT id FROM requirements").fetchall()}
     assert "REQ_A" in remaining
     assert "REQ_B" not in remaining
     assert "REQ_C" in remaining

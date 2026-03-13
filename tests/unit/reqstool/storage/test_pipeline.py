@@ -21,7 +21,9 @@ def mock_semantic_validator():
 @patch("reqstool.storage.pipeline.CombinedRawDatasetsGenerator")
 @patch("reqstool.storage.pipeline.DatabaseFilterProcessor")
 @patch("reqstool.storage.pipeline.LifecycleValidator")
-def test_build_database_returns_db_and_crd(mock_lifecycle, mock_filter, mock_crdg, mock_location, mock_semantic_validator):
+def test_build_database_returns_db_and_crd(
+    mock_lifecycle, mock_filter, mock_crdg, mock_location, mock_semantic_validator
+):
     mock_crd = MagicMock(spec=CombinedRawDataset)
     mock_crd.raw_datasets = {}
     mock_crdg.return_value.combined_raw_datasets = mock_crd
@@ -41,9 +43,10 @@ def test_build_database_calls_filter_processor(
     mock_crd.raw_datasets = {}
     mock_crdg.return_value.combined_raw_datasets = mock_crd
 
-    with build_database(
-        location=mock_location, semantic_validator=mock_semantic_validator, filter_data=True
-    ) as (db, _):
+    with build_database(location=mock_location, semantic_validator=mock_semantic_validator, filter_data=True) as (
+        db,
+        _,
+    ):
         mock_filter.return_value.apply_filters.assert_called_once()
 
 
@@ -57,9 +60,10 @@ def test_build_database_skips_filter_when_disabled(
     mock_crd.raw_datasets = {}
     mock_crdg.return_value.combined_raw_datasets = mock_crd
 
-    with build_database(
-        location=mock_location, semantic_validator=mock_semantic_validator, filter_data=False
-    ) as (db, _):
+    with build_database(location=mock_location, semantic_validator=mock_semantic_validator, filter_data=False) as (
+        db,
+        _,
+    ):
         mock_filter.assert_not_called()
 
 

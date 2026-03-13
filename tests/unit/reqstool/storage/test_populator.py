@@ -64,7 +64,9 @@ def raw_dataset():
     )
 
     annotations = AnnotationsData(
-        implementations={req_urn_id: [AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar")]},
+        implementations={
+            req_urn_id: [AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar")]
+        },
         tests={svc_urn_id: [AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.FooTest.testBar")]},
     )
 

@@ -130,9 +130,7 @@ class CombinedRawDatasetsGenerator:
             rd = crd.raw_datasets[urn]
             if rd.automated_tests is not None:
                 for test_urn_id, test_data in rd.automated_tests.tests.items():
-                    self._database.insert_test_result(
-                        test_urn_id.urn, test_data.fully_qualified_name, test_data.status
-                    )
+                    self._database.insert_test_result(test_urn_id.urn, test_data.fully_qualified_name, test_data.status)
 
     def __populate_parsing_graph(self, crd: CombinedRawDataset) -> None:
         for parent_urn, children in crd.parsing_graph.items():

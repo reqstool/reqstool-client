@@ -89,7 +89,9 @@ class RequirementsRepository:
         return [UrnId(urn=row["mvr_urn"], id=row["mvr_id"]) for row in rows]
 
     def get_annotations_impls(self) -> dict[UrnId, list[AnnotationData]]:
-        rows = self._db.connection.execute("SELECT req_urn, req_id, element_kind, fqn FROM annotations_impls").fetchall()
+        rows = self._db.connection.execute(
+            "SELECT req_urn, req_id, element_kind, fqn FROM annotations_impls"
+        ).fetchall()
         result: dict[UrnId, list[AnnotationData]] = {}
         for row in rows:
             key = UrnId(urn=row["req_urn"], id=row["req_id"])
@@ -98,7 +100,9 @@ class RequirementsRepository:
         return result
 
     def get_annotations_tests(self) -> dict[UrnId, list[AnnotationData]]:
-        rows = self._db.connection.execute("SELECT svc_urn, svc_id, element_kind, fqn FROM annotations_tests").fetchall()
+        rows = self._db.connection.execute(
+            "SELECT svc_urn, svc_id, element_kind, fqn FROM annotations_tests"
+        ).fetchall()
         result: dict[UrnId, list[AnnotationData]] = {}
         for row in rows:
             key = UrnId(urn=row["svc_urn"], id=row["svc_id"])

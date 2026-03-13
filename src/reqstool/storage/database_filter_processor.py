@@ -139,9 +139,7 @@ class DatabaseFilterProcessor:
 
     # -- Shared helpers --
 
-    def _get_filtered_out(
-        self, accessible: set[UrnId], urn: str, id_filter: IDFilters, table: str
-    ) -> set[UrnId]:
+    def _get_filtered_out(self, accessible: set[UrnId], urn: str, id_filter: IDFilters, table: str) -> set[UrnId]:
         tree_custom_imports = None
         tree_custom_exclude = None
 
@@ -199,9 +197,7 @@ class DatabaseFilterProcessor:
             (req_uid.urn, req_uid.id),
         ).fetchall()
 
-        self._db.connection.execute(
-            "DELETE FROM requirements WHERE urn = ? AND id = ?", (req_uid.urn, req_uid.id)
-        )
+        self._db.connection.execute("DELETE FROM requirements WHERE urn = ? AND id = ?", (req_uid.urn, req_uid.id))
 
         # Delete SVCs that no longer link to any requirements (CASCADE removed the link rows)
         for row in linked_svcs:
@@ -251,9 +247,7 @@ class DatabaseFilterProcessor:
         graph: dict[str, list[str]] = {}
         rows = self._db.connection.execute("SELECT parent_urn, child_urn FROM parsing_graph").fetchall()
         # Initialize all URNs as keys (including leaves with no children)
-        all_urns = {
-            row["urn"] for row in self._db.connection.execute("SELECT urn FROM urn_metadata").fetchall()
-        }
+        all_urns = {row["urn"] for row in self._db.connection.execute("SELECT urn FROM urn_metadata").fetchall()}
         for urn in all_urns:
             graph[urn] = []
         for row in rows:
