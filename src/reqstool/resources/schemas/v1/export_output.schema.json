@@ -234,7 +234,7 @@
                     "description": "Human-readable title"
                 },
                 "description": {
-                    "type": "string",
+                    "type": ["string", "null"],
                     "description": "Detailed description"
                 },
                 "verification": {

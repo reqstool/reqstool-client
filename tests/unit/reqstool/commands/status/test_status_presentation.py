@@ -1,29 +1,57 @@
 # Copyright © LFV
 
-from colorama import Fore
+from colorama import Fore, Style
 
-from reqstool.commands.status.statistics_container import TestStatisticsItem
-from reqstool.commands.status.status import _build_table, _extend_row, _format_cell, _summarize_statistics
+from reqstool.commands.status.status import _build_table, _extend_row, _format_test_cell, _ORANGE, _summarize_statistics
 from reqstool.models.requirements import IMPLEMENTATION
+from reqstool.services.statistics_service import TestStats, TotalStats
 
 
 # ---------------------------------------------------------------------------
-# _format_cell
+# _format_test_cell
 # ---------------------------------------------------------------------------
 
 
-def test_format_cell_zero_returns_dash():
-    assert _format_cell(0) == "-"
+def test_format_test_cell_not_applicable():
+    assert _format_test_cell(TestStats(not_applicable=True)) == ""
 
 
-def test_format_cell_nonzero_without_color():
-    assert _format_cell(5) == "5"
+def test_format_test_cell_all_zeros():
+    result = _format_test_cell(TestStats(total=0, passed=0, failed=0, skipped=0, missing=0))
+    # All slots are dim dashes
+    assert Style.DIM in result
+    plain = result.replace(Style.DIM, "").replace(Style.RESET_ALL, "").replace(" ", "").replace("-", "")
+    assert plain == ""
 
 
-def test_format_cell_nonzero_with_color():
-    result = _format_cell(3, Fore.GREEN)
-    assert Fore.GREEN in result
-    assert "3" in result
+def test_format_test_cell_mixed_values():
+    result = _format_test_cell(TestStats(total=3, passed=2, failed=1, skipped=0, missing=0))
+    # Strip ANSI to check content
+    plain = result.replace(Fore.GREEN, "").replace(Fore.RED, "").replace(Fore.YELLOW, "").replace(Style.RESET_ALL, "")
+    assert " 3" in plain
+    assert " 2" in plain
+    assert " 1" in plain
+
+
+def test_format_test_cell_colors():
+    result = _format_test_cell(TestStats(total=1, passed=1, failed=2, skipped=3, missing=4))
+    assert Fore.GREEN in result  # passed
+    assert Fore.RED in result  # failed
+    assert Fore.YELLOW in result  # skipped
+    assert _ORANGE in result  # missing
+
+
+def test_format_test_cell_zero_slots_are_blank():
+    result = _format_test_cell(TestStats(total=5, passed=0, failed=0, skipped=0, missing=3))
+    plain = (
+        result.replace(Fore.GREEN, "")
+        .replace(Fore.RED, "")
+        .replace(Fore.YELLOW, "")
+        .replace(_ORANGE, "")
+        .replace(Style.RESET_ALL, "")
+    )
+    assert " 5" in plain
+    assert " 3" in plain
 
 
 # ---------------------------------------------------------------------------
@@ -32,69 +60,28 @@ def test_format_cell_nonzero_with_color():
 
 
 def test_extend_row_not_applicable():
-    """not_applicable=True appends five dashes."""
+    """not_applicable=True appends single empty cell."""
     row = []
-    _extend_row(TestStatisticsItem(not_applicable=True), row, kind="automated")
-    assert len(row) == 5
-    assert all(cell == "-" for cell in row)
+    _extend_row(TestStats(not_applicable=True), row, kind="automated")
+    assert len(row) == 1
+    assert row[0] == ""
 
 
-def test_extend_row_total_count():
-    """Total test count appears in first cell."""
+def test_extend_row_appends_single_cell():
+    """_extend_row appends exactly one cell."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=5), row, kind="automated")
-    assert row[0] == "5"
+    _extend_row(TestStats(total=5, passed=3, failed=2), row, kind="automated")
+    assert len(row) == 1
 
 
-def test_extend_row_passed_tests_green():
-    """Passed tests produce a green cell."""
+def test_extend_row_cell_contains_values():
+    """The single cell contains the test counts."""
     row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=2, nr_of_passed_tests=2), row, kind="automated")
-    assert Fore.GREEN in row[1]
-    assert "2" in row[1]
-
-
-def test_extend_row_failed_tests_red():
-    """Failed tests produce a red cell."""
-    row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=1, nr_of_failed_tests=1), row, kind="automated")
-    assert Fore.RED in row[2]
-    assert "1" in row[2]
-
-
-def test_extend_row_skipped_tests_yellow():
-    """Skipped tests produce a yellow cell."""
-    row = []
-    _extend_row(TestStatisticsItem(nr_of_total_tests=1, nr_of_skipped_tests=1), row, kind="automated")
-    assert Fore.YELLOW in row[3]
-    assert "1" in row[3]
-
-
-def test_extend_row_missing_automated_tests_red():
-    """Missing automated tests produce a red cell."""
-    row = []
-    _extend_row(TestStatisticsItem(nr_of_missing_automated_tests=3), row, kind="automated")
-    assert Fore.RED in row[4]
-    assert "3" in row[4]
-
-
-def test_extend_row_missing_manual_tests_red():
-    """Missing manual tests produce a red cell."""
-    row = []
-    _extend_row(TestStatisticsItem(nr_of_missing_manual_tests=2), row, kind="manual")
-    assert Fore.RED in row[4]
-    assert "2" in row[4]
-
-
-def test_extend_row_zero_values_show_dash():
-    """Zero values display as dash."""
-    row = []
-    _extend_row(
-        TestStatisticsItem(nr_of_total_tests=0, nr_of_passed_tests=0, nr_of_failed_tests=0, nr_of_skipped_tests=0),
-        row,
-        kind="automated",
-    )
-    assert all(cell == "-" for cell in row)
+    _extend_row(TestStats(total=5, passed=3, failed=2), row, kind="automated")
+    plain = row[0].replace(Fore.GREEN, "").replace(Fore.RED, "").replace(Fore.YELLOW, "").replace(Style.RESET_ALL, "")
+    assert " 5" in plain
+    assert " 3" in plain
+    assert " 2" in plain
 
 
 # ---------------------------------------------------------------------------
@@ -108,8 +95,8 @@ def test_build_table_completed_req_is_green():
         req_id="REQ_001",
         urn="ms-001",
         impls=1,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
@@ -123,8 +110,8 @@ def test_build_table_incomplete_req_is_red():
         req_id="REQ_001",
         urn="ms-001",
         impls=0,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=False,
         implementation=IMPLEMENTATION.IN_CODE,
     )
@@ -137,8 +124,8 @@ def test_build_table_not_applicable_shows_na():
         req_id="REQ_001",
         urn="ms-001",
         impls=0,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=True,
         implementation=IMPLEMENTATION.NOT_APPLICABLE,
     )
@@ -151,8 +138,8 @@ def test_build_table_in_code_with_impls_shows_count():
         req_id="REQ_001",
         urn="ms-001",
         impls=2,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
@@ -166,8 +153,8 @@ def test_build_table_in_code_no_impls_shows_zero():
         req_id="REQ_001",
         urn="ms-001",
         impls=0,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=False,
         implementation=IMPLEMENTATION.IN_CODE,
     )
@@ -181,26 +168,26 @@ def test_build_table_urn_is_first_column():
         req_id="REQ_001",
         urn="ms-001",
         impls=1,
-        tests=TestStatisticsItem(not_applicable=True),
-        mvrs=TestStatisticsItem(not_applicable=True),
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
     assert row[0] == "ms-001"
 
 
-def test_build_table_returns_13_columns():
-    """Row has 13 elements: URN + ID + Impl + 5 automated + 5 manual."""
+def test_build_table_returns_5_columns():
+    """Row has 5 elements: URN + ID + Impl + Automated Tests + Manual Tests."""
     row = _build_table(
         req_id="REQ_001",
         urn="ms-001",
         impls=1,
-        tests=TestStatisticsItem(nr_of_total_tests=3, nr_of_passed_tests=2, nr_of_failed_tests=1),
-        mvrs=TestStatisticsItem(nr_of_total_tests=1, nr_of_passed_tests=1),
+        tests=TestStats(total=3, passed=2, failed=1),
+        mvrs=TestStats(total=1, passed=1),
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
-    assert len(row) == 13
+    assert len(row) == 5
 
 
 # ---------------------------------------------------------------------------
@@ -210,21 +197,7 @@ def test_build_table_returns_13_columns():
 
 def test_summarize_statistics_zero_counts_no_crash():
     """_summarize_statistics must not raise when all counts are 0."""
-    result = _summarize_statistics(
-        nr_of_total_reqs=0,
-        nr_of_completed_reqs=0,
-        implemented=0,
-        left_to_implement=0,
-        total_tests=0,
-        passed_tests=0,
-        failed_tests=0,
-        skipped_tests=0,
-        missing_automated_tests=0,
-        missing_manual_tests=0,
-        nr_of_total_svcs=0,
-        nr_of_reqs_without_implementation=0,
-        nr_of_completed_reqs_without_implementation=0,
-    )
+    result = _summarize_statistics(TotalStats())
     assert isinstance(result, str)
     assert "IMPLEMENTATIONS" in result
 
@@ -232,19 +205,14 @@ def test_summarize_statistics_zero_counts_no_crash():
 def test_summarize_statistics_all_complete_has_green_header():
     """All requirements complete: IMPLEMENTATIONS header is green."""
     result = _summarize_statistics(
-        nr_of_total_reqs=2,
-        nr_of_completed_reqs=2,
-        implemented=2,
-        left_to_implement=0,
-        total_tests=2,
-        passed_tests=2,
-        failed_tests=0,
-        skipped_tests=0,
-        missing_automated_tests=0,
-        missing_manual_tests=0,
-        nr_of_total_svcs=2,
-        nr_of_reqs_without_implementation=0,
-        nr_of_completed_reqs_without_implementation=0,
+        TotalStats(
+            total_requirements=2,
+            completed_requirements=2,
+            with_implementation=2,
+            total_tests=2,
+            passed_tests=2,
+            total_svcs=2,
+        )
     )
     assert Fore.GREEN in result
 
@@ -252,19 +220,16 @@ def test_summarize_statistics_all_complete_has_green_header():
 def test_summarize_statistics_incomplete_has_red_header():
     """Incomplete requirements: at least one header is red."""
     result = _summarize_statistics(
-        nr_of_total_reqs=3,
-        nr_of_completed_reqs=1,
-        implemented=1,
-        left_to_implement=2,
-        total_tests=3,
-        passed_tests=1,
-        failed_tests=2,
-        skipped_tests=0,
-        missing_automated_tests=2,
-        missing_manual_tests=0,
-        nr_of_total_svcs=3,
-        nr_of_reqs_without_implementation=0,
-        nr_of_completed_reqs_without_implementation=0,
+        TotalStats(
+            total_requirements=3,
+            completed_requirements=1,
+            with_implementation=1,
+            total_tests=3,
+            passed_tests=1,
+            failed_tests=2,
+            missing_automated_tests=2,
+            total_svcs=3,
+        )
     )
     assert Fore.RED in result
 
@@ -272,18 +237,14 @@ def test_summarize_statistics_incomplete_has_red_header():
 def test_summarize_statistics_contains_percentage_string():
     """With nonzero counts, the output contains a formatted percentage."""
     result = _summarize_statistics(
-        nr_of_total_reqs=4,
-        nr_of_completed_reqs=2,
-        implemented=2,
-        left_to_implement=2,
-        total_tests=4,
-        passed_tests=2,
-        failed_tests=2,
-        skipped_tests=0,
-        missing_automated_tests=0,
-        missing_manual_tests=0,
-        nr_of_total_svcs=4,
-        nr_of_reqs_without_implementation=0,
-        nr_of_completed_reqs_without_implementation=0,
+        TotalStats(
+            total_requirements=4,
+            completed_requirements=2,
+            with_implementation=2,
+            total_tests=4,
+            passed_tests=2,
+            failed_tests=2,
+            total_svcs=4,
+        )
     )
     assert "%" in result

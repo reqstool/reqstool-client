@@ -13,8 +13,8 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.commands.report.criterias.sort_by import SortByOptions
 from reqstool.common.models.urn_id import UrnId
-from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.requirements import RequirementData
+from reqstool.storage.requirements_repository import RequirementsRepository
 
 
 class GroupbyOptions(Enum):
@@ -26,7 +26,7 @@ class GroupbyOptions(Enum):
 class GroupByOrganizor(BaseModel, ABC):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    cid: CombinedIndexedDataset
+    repo: RequirementsRepository
     group_by: GroupbyOptions
     sort_by: List[SortByOptions]
 
@@ -49,31 +49,33 @@ class GroupByOrganizor(BaseModel, ABC):
         if len(self.sort_by) == 0:
             return
 
+        requirements = self.repo.get_all_requirements()
+
         for group, urn_ids in self.grouped_requirements.items():
             urn_ids.sort(
                 key=lambda urn_id: attrgetter(*[sort_option.value for sort_option in self.sort_by])(
-                    self.cid.requirements[urn_id]
+                    requirements[urn_id]
                 )
             )
 
     def _group(self):
 
-        for urn_id, req_data in self.cid.requirements.items():
-            group = group_by_functions[self.group_by](req_data=req_data, cid=self.cid)
+        for urn_id, req_data in self.repo.get_all_requirements().items():
+            group = group_by_functions[self.group_by](req_data=req_data, repo=self.repo)
 
             self._add_req_to_group(group=group, urn_id=urn_id)
 
 
 # Define the Callable interface with type annotations
-GroupByFunction = Callable[[RequirementData, CombinedIndexedDataset], str]
+GroupByFunction = Callable[[RequirementData, RequirementsRepository], str]
 
 # Define lambda functions for grouping
-group_by_category: GroupByFunction = lambda req_data, cid: (
+group_by_category: GroupByFunction = lambda req_data, repo: (
     req_data.categories[0].value if req_data.categories and len(req_data.categories) > 0 else "No Category"
 )
 
-group_by_initial_imported: GroupByFunction = lambda req_data, cid: (
-    f"Initial URN ({cid.initial_model_urn})" if req_data.id.urn == cid.initial_model_urn else "Imported"
+group_by_initial_imported: GroupByFunction = lambda req_data, repo: (
+    f"Initial URN ({repo.get_initial_urn()})" if req_data.id.urn == repo.get_initial_urn() else "Imported"
 )
 
 # Create a dictionary to map operation names to lambda functions

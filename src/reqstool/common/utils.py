@@ -15,7 +15,6 @@ from packaging.version import InvalidVersion, Version as PkgVersion
 from requests_file import FileAdapter
 
 from reqstool.common.models.urn_id import UrnId
-from reqstool.models.combined_indexed_dataset import CombinedIndexedDataset
 from reqstool.models.raw_datasets import RawDataset
 from reqstool.models.requirements import VARIANTS, RequirementData
 from reqstool.models.svcs import SVCData
@@ -120,25 +119,6 @@ class Utils:
         return all_reqs
 
     @staticmethod
-    def flatten_all_reqs_unfiltered(raw_datasets: Dict[str, RawDataset]) -> Dict[str, RequirementData]:
-        """Returns a Dict of all RequirementData of all imported models
-
-        Args:
-            models (Dict[str, RawDataset]): The models where RequirementData should be extracted
-
-        Returns:
-            Dict[str, RequirementData]: All RequirementData from models
-        """
-        all_reqs = {}
-        for model_id, model_info in raw_datasets.items():
-            for req_id, req_info in model_info.requirements_data.requirements.items():
-                unique_id = model_id + ":" + req_id
-                if unique_id not in all_reqs:
-                    all_reqs[unique_id] = req_info
-
-        return all_reqs
-
-    @staticmethod
     def flatten_all_svcs(raw_datasets: Dict[str, RawDataset]) -> Dict[str, SVCData]:
         """Returns a Dict of all filtered SVCData of all imported models
 
@@ -159,55 +139,6 @@ class Utils:
                         all_svcs[svc_id] = svc
 
         return all_svcs
-
-    @staticmethod
-    def flatten_all_svcs_unfiltered(raw_datasets: Dict[str, RawDataset]) -> Dict[str, SVCData]:
-        """Returns a Dict of all SVCData of all imported models
-
-        Args:
-            models (Dict[str, RawDataset]): The models where the SVCData should be extracted
-
-        Returns:
-            Dict[str, SVCData]: All SVCData from models
-        """
-        all_svcs = {}
-
-        for model_id, model_info in raw_datasets.items():
-            if Utils.model_is_external(raw_datasets=model_info):
-                continue
-            if model_info.svcs_data is not None:
-                for svc_id, svc in model_info.svcs_data.cases.items():
-                    unique_id = model_id + ":" + svc.id
-                    if unique_id not in all_svcs:
-                        all_svcs[unique_id] = svc
-
-        return all_svcs
-
-    @staticmethod
-    def generate_all_svc_req_refs(raw_datasets: Dict[str, RawDataset]) -> Dict[str, str]:  # NOSONAR
-        """Generates a collection where the unique Requirement ID's are coupled with all filtered SVC's refering to them
-
-        Args:
-            models (Dict[str, RawDataset]): collection of all RawDatasets that needs processing
-
-        Returns:
-            Dict[str, str]: A collection of RequirmentID's and it's related SVC ID's
-        """
-        svc_req_refs = {}
-        for model_id, model_info in raw_datasets.items():
-            for req_id, svc_info in model_info.filtered_svcs.items():
-                for svc in svc_info:
-                    unique_id = model_id + ":" + svc.id
-                    for req in svc.requirement_ids:
-                        if ":" not in req:
-                            unique_ref_id = model_id + ":" + req
-                        else:
-                            unique_ref_id = req
-                        if unique_ref_id not in svc_req_refs:
-                            svc_req_refs[unique_ref_id] = [unique_id]
-                        else:
-                            svc_req_refs[unique_ref_id].append(unique_id)
-        return svc_req_refs
 
     @staticmethod
     def flatten_list(list_to_flatten: Iterable) -> List[any]:
@@ -250,10 +181,6 @@ class Utils:
 
         return urn_id
 
-    @staticmethod
-    def get_mvr_urn_ids_for_svcs_urn_id(cid: CombinedIndexedDataset, svcs_urn_ids: List[UrnId]) -> List[UrnId]:
-        return [urn_id for svc_urn_id in svcs_urn_ids for urn_id in cid.mvrs_from_svc.get(svc_urn_id, [])]
-
     # Checks conditions for filtered ids and logs an error if they are not properly formatted
     @staticmethod
     def check_ids_to_filter(ids: Sequence[str], current_urn: str) -> Sequence[str]:
@@ -271,69 +198,6 @@ class Utils:
                 id_with_urn = current_urn + ":" + id
                 checked_ids.append(id_with_urn)
         return checked_ids
-
-    @staticmethod
-    def append_data_item_to_dict_list_entry(dictionary: dict, key, data: str):
-        if key not in dictionary:
-            logging.debug(f"Creating empty dict with key {key} for: {dictionary}")
-            dictionary[key] = []
-
-        dictionary[key].append(data)
-
-    @staticmethod
-    def extend_data_sequence_to_dict_list_entry(dictionary: dict, key, data: Sequence):
-        if key not in dictionary:
-            logging.debug(f"Creating empty dict with key {key} for: {dictionary}")
-            dictionary[key] = []
-
-        dictionary[key].extend(data)
-
-    @staticmethod
-    def create_accessible_nodes_dict(graph: Dict[str, List[str]]):
-        """
-        Creates a dictionary containing _all_ nodes that can be accessed from each node in the graph.
-
-        Parameters:
-        - graph (dict): A dictionary representing the graph where keys are nodes and values are lists
-                        of nodes that can be accessed from the corresponding key.
-
-        Returns:
-        - dict: A dictionary where keys are nodes, and values are lists of _all_ nodes that can be accessed
-                from the corresponding key.
-        """
-
-        def get_accessible_nodes(graph: Dict[str, List[str]], start_node: str):
-            """
-            Performs breadth-first search to find all nodes accessible from a given starting node.
-
-            Parameters:
-            - graph (dict): A dictionary representing the graph.
-            - start_node: The starting node for the breadth-first search.
-
-            Returns:
-            - list: A list of nodes accessible from the starting node.
-            """
-            visited = set()
-            queue = [start_node]
-            accessible_nodes = []
-
-            while queue:
-                current_node = queue.pop(0)
-                if current_node not in visited:
-                    visited.add(current_node)
-                    queue.extend(graph[current_node])
-                    if current_node != start_node:
-                        accessible_nodes.append(current_node)
-
-            return accessible_nodes
-
-        accessible_nodes_dict = {}
-
-        for node in graph:
-            accessible_nodes = get_accessible_nodes(graph, node)
-            accessible_nodes_dict[node] = accessible_nodes
-
-        return accessible_nodes_dict
 
     @staticmethod
     def parse_version(version_str: str, urn_id: UrnId) -> PkgVersion:
