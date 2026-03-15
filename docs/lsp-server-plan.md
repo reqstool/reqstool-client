@@ -144,7 +144,7 @@ ReqstoolLanguageServer (pygls)
 
 | File | Change |
 |---|---|
-| `pyproject.toml` | Add `pygls` and `lsprotocol` to dependencies |
+| `pyproject.toml` | Add `pygls` and `lsprotocol` as optional `[lsp]` extra |
 | `src/reqstool/command.py` | Add `lsp` subcommand (lazy import) |
 
 ---
@@ -152,21 +152,30 @@ ReqstoolLanguageServer (pygls)
 ## Step 1: Dependencies and CLI Entry Point
 
 ### `pyproject.toml`
-Add to `dependencies`:
-```
-"pygls>=2.0,<3.0",
-"lsprotocol>=2024.0.0",
+Add as an optional dependency extra (not in the main `dependencies` list):
+```toml
+[project.optional-dependencies]
+lsp = [
+    "pygls>=2.0,<3.0",
+    "lsprotocol>=2024.0.0",
+]
 ```
 
+Users install with `pip install reqstool[lsp]` (or `hatch env create` with the extra). The base `pip install reqstool` remains lightweight for CI pipelines.
+
 ### `src/reqstool/command.py`
-Add `lsp` subparser:
+Add `lsp` subparser with a runtime import guard:
 ```python
 # In get_arguments():
-subparsers.add_parser("lsp", help="Start the Language Server Protocol server")
+subparsers.add_parser("lsp", help="Start the Language Server Protocol server (requires reqstool[lsp])")
 
 # In main():
 elif args.command == "lsp":
-    from reqstool.lsp.server import start_server
+    try:
+        from reqstool.lsp.server import start_server
+    except ImportError:
+        print("LSP server requires extra dependencies: pip install reqstool[lsp]", file=sys.stderr)
+        sys.exit(1)
     start_server()
 ```
 
