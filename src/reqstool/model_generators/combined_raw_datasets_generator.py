@@ -71,9 +71,9 @@ class CombinedRawDatasetsGenerator:
             parsing_graph=self._parsing_graph,
         )
 
-        self._populate_database(combined_raw_datasets)
-
         self.semantic_validator.validate_post_parsing(combined_raw_dataset=combined_raw_datasets)
+
+        self._populate_database(combined_raw_datasets)
 
         return combined_raw_datasets
 
@@ -85,6 +85,7 @@ class CombinedRawDatasetsGenerator:
 
         # Multi-pass insertion to satisfy FK constraints across URNs.
         # Order: requirements → SVCs → MVRs → annotations → test results → graph
+        # Each pass is committed as a batch for performance.
         self.__populate_requirements(crd)
         self.__populate_svcs(crd)
         self.__populate_mvrs(crd)

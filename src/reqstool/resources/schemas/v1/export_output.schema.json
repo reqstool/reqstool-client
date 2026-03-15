@@ -235,7 +235,7 @@
                 },
                 "description": {
                     "type": ["string", "null"],
-                    "description": "Detailed description"
+                    "description": "Detailed description (nullable — SVC description is optional in svcs.yml)"
                 },
                 "verification": {
                     "type": "string",

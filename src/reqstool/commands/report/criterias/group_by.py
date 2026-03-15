@@ -59,23 +59,25 @@ class GroupByOrganizor(BaseModel, ABC):
             )
 
     def _group(self):
+        all_requirements = self.repo.get_all_requirements()
+        initial_urn = self.repo.get_initial_urn()
 
-        for urn_id, req_data in self.repo.get_all_requirements().items():
-            group = group_by_functions[self.group_by](req_data=req_data, repo=self.repo)
+        for urn_id, req_data in all_requirements.items():
+            group = group_by_functions[self.group_by](req_data=req_data, initial_urn=initial_urn)
 
             self._add_req_to_group(group=group, urn_id=urn_id)
 
 
 # Define the Callable interface with type annotations
-GroupByFunction = Callable[[RequirementData, RequirementsRepository], str]
+GroupByFunction = Callable[[RequirementData, str], str]
 
 # Define lambda functions for grouping
-group_by_category: GroupByFunction = lambda req_data, repo: (
+group_by_category: GroupByFunction = lambda req_data, initial_urn: (
     req_data.categories[0].value if req_data.categories and len(req_data.categories) > 0 else "No Category"
 )
 
-group_by_initial_imported: GroupByFunction = lambda req_data, repo: (
-    f"Initial URN ({repo.get_initial_urn()})" if req_data.id.urn == repo.get_initial_urn() else "Imported"
+group_by_initial_imported: GroupByFunction = lambda req_data, initial_urn: (
+    f"Initial URN ({initial_urn})" if req_data.id.urn == initial_urn else "Imported"
 )
 
 # Create a dictionary to map operation names to lambda functions
