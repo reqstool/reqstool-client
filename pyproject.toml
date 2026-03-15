@@ -53,6 +53,12 @@ dependencies = [
     "beautifulsoup4==4.14.3",
 ]
 
+[project.optional-dependencies]
+lsp = [
+    "pygls>=2.0,<3.0",
+    "lsprotocol>=2024.0.0",
+]
+
 [project.urls]
 Homepage = "https://reqstool.github.io"
 Repository = "https://github.com/reqstool/reqstool-client"
@@ -75,6 +81,7 @@ dataset_directory = "docs/reqstool"
 output_directory = "build/reqstool"
 
 [tool.hatch.envs.dev]
+features = ["lsp"]
 dependencies = [
     "pytest==8.3.5",
     "pytest-sugar==1.0.0",

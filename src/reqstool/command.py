@@ -273,6 +273,9 @@ class Command:
         status_source_subparsers = status_parser.add_subparsers(dest="source", required=True)
         self._add_subparsers_source(status_source_subparsers)
 
+        # command: lsp
+        subparsers.add_parser("lsp", help="Start the Language Server Protocol server (requires reqstool[lsp])")
+
         args = self.__parser.parse_args()
 
         return args
@@ -400,6 +403,16 @@ def main():
             command.command_generate_json(generate_json_args=args)
         elif args.command == "status":
             exit_code = command.command_status(status_args=args)
+        elif args.command == "lsp":
+            try:
+                from reqstool.lsp.server import start_server
+            except ImportError:
+                print(
+                    "LSP server requires extra dependencies: pip install reqstool[lsp]",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            start_server()
         else:
             command.print_help()
     except MissingRequirementsFileError as exc:
