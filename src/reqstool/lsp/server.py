@@ -7,6 +7,7 @@ import logging
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 
+from reqstool.lsp.features.hover import handle_hover
 from reqstool.lsp.workspace_manager import WorkspaceManager
 
 logger = logging.getLogger(__name__)
@@ -110,6 +111,22 @@ def cmd_refresh(ls: ReqstoolLanguageServer, *args) -> None:
     ls.workspace_manager.rebuild_all()
     _publish_all_diagnostics(ls)
     ls.window_show_message(types.ShowMessageParams(type=types.MessageType.Info, message="reqstool: projects refreshed"))
+
+
+# -- Feature handlers --
+
+
+@server.feature(types.TEXT_DOCUMENT_HOVER)
+def on_hover(ls: ReqstoolLanguageServer, params: types.HoverParams) -> types.Hover | None:
+    document = ls.workspace.get_text_document(params.text_document.uri)
+    project = ls.workspace_manager.project_for_file(params.text_document.uri)
+    return handle_hover(
+        uri=params.text_document.uri,
+        position=params.position,
+        text=document.source,
+        language_id=document.language_id or "",
+        project=project,
+    )
 
 
 # -- Internal helpers --
