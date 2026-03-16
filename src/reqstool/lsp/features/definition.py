@@ -49,15 +49,18 @@ def _definition_from_source(
     if match is None:
         return []
 
-    reqstool_path = project.reqstool_path
-    if not reqstool_path:
+    initial_urn = project.get_initial_urn()
+    if not initial_urn:
         return []
 
     if match.kind == "Requirements":
-        yaml_file = os.path.join(reqstool_path, "requirements.yml")
+        yaml_file = project.get_yaml_path(initial_urn, "requirements")
     elif match.kind == "SVCs":
-        yaml_file = os.path.join(reqstool_path, "software_verification_cases.yml")
+        yaml_file = project.get_yaml_path(initial_urn, "svcs")
     else:
+        return []
+
+    if yaml_file is None:
         return []
 
     return _find_id_in_yaml(yaml_file, match.raw_id)
@@ -77,8 +80,8 @@ def _definition_from_yaml(
     if project is None or not project.ready:
         return []
 
-    reqstool_path = project.reqstool_path
-    if not reqstool_path:
+    initial_urn = project.get_initial_urn()
+    if not initial_urn:
         return []
 
     # Determine what kind of ID this is based on the YAML file
@@ -86,11 +89,15 @@ def _definition_from_yaml(
 
     if file_kind == "requirements":
         # From requirement ID → find references in SVC file (e.g. requirement_ids: ["REQ_PASS"])
-        svc_file = os.path.join(reqstool_path, "software_verification_cases.yml")
+        svc_file = project.get_yaml_path(initial_urn, "svcs")
+        if svc_file is None:
+            return []
         return _find_reference_in_yaml(svc_file, raw_id)
     elif file_kind == "svcs":
         # From SVC ID → find references in MVR file (e.g. svc_ids: ["SVC_021"])
-        mvr_file = os.path.join(reqstool_path, "manual_verification_results.yml")
+        mvr_file = project.get_yaml_path(initial_urn, "mvrs")
+        if mvr_file is None:
+            return []
         return _find_reference_in_yaml(mvr_file, raw_id)
 
     return []

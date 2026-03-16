@@ -27,6 +27,7 @@ class ProjectState:
         self._repo: RequirementsRepository | None = None
         self._ready: bool = False
         self._error: str | None = None
+        self._urn_source_paths: dict[str, dict[str, str]] = {}
 
     @property
     def ready(self) -> bool:
@@ -61,6 +62,7 @@ class ProjectState:
 
             self._db = db
             self._repo = RequirementsRepository(db)
+            self._urn_source_paths = dict(crd.urn_source_paths)
             self._ready = True
             logger.info("Built project state for %s", self._reqstool_path)
         except SystemExit as e:
@@ -80,6 +82,7 @@ class ProjectState:
             self._db.close()
             self._db = None
         self._repo = None
+        self._urn_source_paths = {}
         self._ready = False
 
     def get_initial_urn(self) -> str | None:
@@ -130,3 +133,10 @@ class ProjectState:
         if not self._ready or self._repo is None:
             return []
         return [uid.id for uid in self._repo.get_all_svcs()]
+
+    def get_yaml_path(self, urn: str, file_type: str) -> str | None:
+        """Return the resolved file path for a given URN and file type (requirements, svcs, mvrs, annotations)."""
+        urn_paths = self._urn_source_paths.get(urn)
+        if urn_paths is None:
+            return None
+        return urn_paths.get(file_type)

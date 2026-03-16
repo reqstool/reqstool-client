@@ -152,10 +152,24 @@ class RequirementsDatabase:
             (parent_urn, child_urn),
         )
 
-    def insert_urn_metadata(self, metadata: MetaData) -> None:
+    def insert_urn_metadata(
+        self,
+        metadata: MetaData,
+        location_type: str | None = None,
+        location_uri: str | None = None,
+    ) -> None:
         self._conn.execute(
-            "INSERT INTO urn_metadata (urn, variant, title, url, parse_position) VALUES (?, ?, ?, ?, ?)",
-            (metadata.urn, metadata.variant.value, metadata.title, metadata.url, self._next_parse_position),
+            "INSERT INTO urn_metadata (urn, variant, title, url, parse_position, location_type, location_uri)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                metadata.urn,
+                metadata.variant.value,
+                metadata.title,
+                metadata.url,
+                self._next_parse_position,
+                location_type,
+                location_uri,
+            ),
         )
         self._next_parse_position += 1
 
