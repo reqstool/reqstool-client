@@ -10,6 +10,7 @@ from pygls.lsp.server import LanguageServer
 from reqstool.lsp.features.completion import handle_completion
 from reqstool.lsp.features.definition import handle_definition
 from reqstool.lsp.features.diagnostics import compute_diagnostics
+from reqstool.lsp.features.document_symbols import handle_document_symbols
 from reqstool.lsp.features.hover import handle_hover
 from reqstool.lsp.workspace_manager import WorkspaceManager
 
@@ -157,6 +158,17 @@ def on_definition(ls: ReqstoolLanguageServer, params: types.DefinitionParams) ->
         position=params.position,
         text=document.source,
         language_id=document.language_id or "",
+        project=project,
+    )
+
+
+@server.feature(types.TEXT_DOCUMENT_DOCUMENT_SYMBOL)
+def on_document_symbol(ls: ReqstoolLanguageServer, params: types.DocumentSymbolParams) -> list[types.DocumentSymbol]:
+    document = ls.workspace.get_text_document(params.text_document.uri)
+    project = ls.workspace_manager.project_for_file(params.text_document.uri)
+    return handle_document_symbols(
+        uri=params.text_document.uri,
+        text=document.source,
         project=project,
     )
 
