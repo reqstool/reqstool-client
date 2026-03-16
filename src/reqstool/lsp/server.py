@@ -8,6 +8,7 @@ from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 
 from reqstool.lsp.features.completion import handle_completion
+from reqstool.lsp.features.definition import handle_definition
 from reqstool.lsp.features.diagnostics import compute_diagnostics
 from reqstool.lsp.features.hover import handle_hover
 from reqstool.lsp.workspace_manager import WorkspaceManager
@@ -139,6 +140,19 @@ def on_completion(ls: ReqstoolLanguageServer, params: types.CompletionParams) ->
     document = ls.workspace.get_text_document(params.text_document.uri)
     project = ls.workspace_manager.project_for_file(params.text_document.uri)
     return handle_completion(
+        uri=params.text_document.uri,
+        position=params.position,
+        text=document.source,
+        language_id=document.language_id or "",
+        project=project,
+    )
+
+
+@server.feature(types.TEXT_DOCUMENT_DEFINITION)
+def on_definition(ls: ReqstoolLanguageServer, params: types.DefinitionParams) -> list[types.Location]:
+    document = ls.workspace.get_text_document(params.text_document.uri)
+    project = ls.workspace_manager.project_for_file(params.text_document.uri)
+    return handle_definition(
         uri=params.text_document.uri,
         position=params.position,
         text=document.source,
