@@ -85,13 +85,13 @@ def _definition_from_yaml(
     file_kind = YAML_ID_FILES.get(filename)
 
     if file_kind == "requirements":
-        # From requirement ID → find annotations in source or SVC references
+        # From requirement ID → find references in SVC file (e.g. requirement_ids: ["REQ_PASS"])
         svc_file = os.path.join(reqstool_path, "software_verification_cases.yml")
-        return _find_id_in_yaml(svc_file, raw_id)
+        return _find_reference_in_yaml(svc_file, raw_id)
     elif file_kind == "svcs":
-        # From SVC ID → find MVR references
+        # From SVC ID → find references in MVR file (e.g. svc_ids: ["SVC_021"])
         mvr_file = os.path.join(reqstool_path, "manual_verification_results.yml")
-        return _find_id_in_yaml(mvr_file, raw_id)
+        return _find_reference_in_yaml(mvr_file, raw_id)
 
     return []
 
@@ -113,6 +113,36 @@ def _find_id_in_yaml(yaml_file: str, raw_id: str) -> list[types.Location]:
     locations: list[types.Location] = []
     for i, line in enumerate(lines):
         if pattern.match(line):
+            locations.append(
+                types.Location(
+                    uri=uri,
+                    range=types.Range(
+                        start=types.Position(line=i, character=0),
+                        end=types.Position(line=i, character=len(line.rstrip())),
+                    ),
+                )
+            )
+
+    return locations
+
+
+def _find_reference_in_yaml(yaml_file: str, raw_id: str) -> list[types.Location]:
+    """Search a YAML file for any line containing the given ID (word-boundary match)."""
+    if not os.path.isfile(yaml_file):
+        return []
+
+    try:
+        with open(yaml_file) as f:
+            lines = f.readlines()
+    except OSError:
+        return []
+
+    pattern = re.compile(r"\b" + re.escape(raw_id) + r"\b")
+    uri = _path_to_uri(yaml_file)
+
+    locations: list[types.Location] = []
+    for i, line in enumerate(lines):
+        if pattern.search(line):
             locations.append(
                 types.Location(
                     uri=uri,
