@@ -7,6 +7,7 @@ import logging
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 
+from reqstool.lsp.features.diagnostics import compute_diagnostics
 from reqstool.lsp.features.hover import handle_hover
 from reqstool.lsp.workspace_manager import WorkspaceManager
 
@@ -165,15 +166,27 @@ def _discover_and_build(ls: ReqstoolLanguageServer) -> None:
 
 
 def _publish_diagnostics_for_document(ls: ReqstoolLanguageServer, uri: str) -> None:
-    """Publish diagnostics for a single document. Placeholder for Step 6."""
-    # Will be implemented in features/diagnostics.py
-    pass
+    """Publish diagnostics for a single document."""
+    try:
+        document = ls.workspace.get_text_document(uri)
+    except Exception:
+        return
+    project = ls.workspace_manager.project_for_file(uri)
+    diagnostics = compute_diagnostics(
+        uri=uri,
+        text=document.source,
+        language_id=document.language_id or "",
+        project=project,
+    )
+    ls.text_document_publish_diagnostics(
+        types.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics)
+    )
 
 
 def _publish_all_diagnostics(ls: ReqstoolLanguageServer) -> None:
-    """Re-publish diagnostics for all open documents. Placeholder for Step 6."""
-    # Will be implemented in features/diagnostics.py
-    pass
+    """Re-publish diagnostics for all open documents."""
+    for uri in list(ls.workspace.text_documents.keys()):
+        _publish_diagnostics_for_document(ls, uri)
 
 
 def start_server() -> None:
