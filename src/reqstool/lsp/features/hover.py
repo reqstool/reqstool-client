@@ -81,12 +81,14 @@ def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover
         ]
         if req.rationale:
             parts.extend(["---", req.rationale])
-        parts.extend([
-            "---",
-            f"**Categories**: {categories}",
-            f"**Lifecycle**: {req.lifecycle.state.value}",
-            f"**SVCs**: {svc_ids}",
-        ])
+        parts.extend(
+            [
+                "---",
+                f"**Categories**: {categories}",
+                f"**Lifecycle**: {req.lifecycle.state.value}",
+                f"**SVCs**: {svc_ids}",
+            ]
+        )
         md = "\n\n".join(parts)
 
     return types.Hover(
@@ -118,11 +120,13 @@ def _hover_svc(raw_id: str, match, project: ProjectState) -> types.Hover | None:
         if svc.instructions:
             parts.append(svc.instructions)
             parts.append("---")
-        parts.extend([
-            f"**Lifecycle**: {svc.lifecycle.state.value}",
-            f"**Requirements**: {req_ids}",
-            f"**MVRs**: {mvr_info}",
-        ])
+        parts.extend(
+            [
+                f"**Lifecycle**: {svc.lifecycle.state.value}",
+                f"**Requirements**: {req_ids}",
+                f"**MVRs**: {mvr_info}",
+            ]
+        )
         md = "\n\n".join(parts)
 
     return types.Hover(

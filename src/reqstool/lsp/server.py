@@ -221,9 +221,7 @@ def _publish_diagnostics_for_document(ls: ReqstoolLanguageServer, uri: str) -> N
         language_id=document.language_id or "",
         project=project,
     )
-    ls.text_document_publish_diagnostics(
-        types.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics)
-    )
+    ls.text_document_publish_diagnostics(types.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics))
 
 
 def _publish_all_diagnostics(ls: ReqstoolLanguageServer) -> None:

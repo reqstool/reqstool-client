@@ -191,8 +191,8 @@ def _find_error_position(text: str, error) -> tuple[int, int]:
             # If there are array indices in the path, try to narrow down
             matches = list(pattern.finditer(text))
             if len(matches) == 1:
-                line = text[:matches[0].start()].count("\n")
-                col = matches[0].start() - text[:matches[0].start()].rfind("\n") - 1
+                line = text[: matches[0].start()].count("\n")
+                col = matches[0].start() - text[: matches[0].start()].rfind("\n") - 1
                 return line, col
             elif len(matches) > 1:
                 # Use the array index to pick the right match
@@ -202,13 +202,13 @@ def _find_error_position(text: str, error) -> tuple[int, int]:
                         array_idx = p
                 if array_idx is not None and array_idx < len(matches):
                     m = matches[array_idx]
-                    line = text[:m.start()].count("\n")
-                    col = m.start() - text[:m.start()].rfind("\n") - 1
+                    line = text[: m.start()].count("\n")
+                    col = m.start() - text[: m.start()].rfind("\n") - 1
                     return line, col
                 # Fall back to first match
                 m = matches[0]
-                line = text[:m.start()].count("\n")
-                col = m.start() - text[:m.start()].rfind("\n") - 1
+                line = text[: m.start()].count("\n")
+                col = m.start() - text[: m.start()].rfind("\n") - 1
                 return line, col
 
     return 0, 0

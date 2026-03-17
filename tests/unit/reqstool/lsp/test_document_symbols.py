@@ -30,12 +30,7 @@ def test_parse_yaml_items_requirements():
 
 
 def test_parse_yaml_items_svcs():
-    text = (
-        "svcs:\n"
-        "  - id: SVC_001\n"
-        "    title: Test case\n"
-        "    verification: automated-test\n"
-    )
+    text = "svcs:\n" "  - id: SVC_001\n" "    title: Test case\n" "    verification: automated-test\n"
     items = _parse_yaml_items(text)
     assert len(items) == 1
     assert items[0].fields["id"] == "SVC_001"
@@ -89,12 +84,7 @@ def test_document_symbols_requirements():
 
 
 def test_document_symbols_svcs():
-    text = (
-        "svcs:\n"
-        "  - id: SVC_001\n"
-        "    title: Login test\n"
-        "    verification: automated-test\n"
-    )
+    text = "svcs:\n" "  - id: SVC_001\n" "    title: Login test\n" "    verification: automated-test\n"
     symbols = handle_document_symbols(
         uri="file:///workspace/software_verification_cases.yml",
         text=text,
@@ -106,13 +96,7 @@ def test_document_symbols_svcs():
 
 
 def test_document_symbols_mvrs():
-    text = (
-        "results:\n"
-        "  - id: SVC_001\n"
-        "    passed: true\n"
-        "  - id: SVC_002\n"
-        "    passed: false\n"
-    )
+    text = "results:\n" "  - id: SVC_001\n" "    passed: true\n" "  - id: SVC_002\n" "    passed: false\n"
     symbols = handle_document_symbols(
         uri="file:///workspace/manual_verification_results.yml",
         text=text,

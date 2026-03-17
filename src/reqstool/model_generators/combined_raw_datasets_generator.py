@@ -305,9 +305,7 @@ class CombinedRawDatasetsGenerator:
         return None, None
 
     @staticmethod
-    def __extract_source_paths(
-        location: LocationInterface, requirements_indata: RequirementsIndata
-    ) -> Dict[str, str]:
+    def __extract_source_paths(location: LocationInterface, requirements_indata: RequirementsIndata) -> Dict[str, str]:
         """Extract resolved file paths for LocalLocation only."""
         if not isinstance(location, LocalLocation):
             return {}

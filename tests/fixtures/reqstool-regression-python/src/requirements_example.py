@@ -1,4 +1,4 @@
-from reqstool_python_decorators.decorators.decorators import Requirements, SVCs
+from reqstool_python_decorators.decorators.decorators import Requirements, SVCs  # noqa: F401
 
 
 @Requirements("REQ_PASS")

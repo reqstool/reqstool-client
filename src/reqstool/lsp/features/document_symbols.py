@@ -205,9 +205,7 @@ def _parse_yaml_items(text: str) -> list[_YamlItem]:
         if not stripped or stripped.startswith("#"):
             continue
 
-        current_item, list_indent = _process_yaml_line(
-            line, i, items, current_item, list_indent
-        )
+        current_item, list_indent = _process_yaml_line(line, i, items, current_item, list_indent)
 
     if current_item is not None:
         current_item.end_line = len(lines) - 1
