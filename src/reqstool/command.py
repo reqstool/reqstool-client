@@ -300,6 +300,12 @@ class Command:
             default=2087,
             help="TCP port (default: %(default)s)",
         )
+        lsp_parser.add_argument(
+            "--log-file",
+            metavar="PATH",
+            default=None,
+            help="Write server logs to a file (in addition to stderr)",
+        )
 
         args = self.__parser.parse_args()
 
@@ -438,7 +444,7 @@ def main():
                 )
                 sys.exit(1)
             try:
-                start_server(tcp=args.tcp, host=args.host, port=args.port)
+                start_server(tcp=args.tcp, host=args.host, port=args.port, log_file=args.log_file)
             except Exception as exc:
                 logging.fatal("reqstool LSP server crashed: %s", exc)
                 sys.exit(1)
