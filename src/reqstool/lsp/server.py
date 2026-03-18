@@ -7,11 +7,18 @@ import logging
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 
+from reqstool.lsp.features.code_actions import handle_code_actions
+from reqstool.lsp.features.codelens import handle_code_lens
 from reqstool.lsp.features.completion import handle_completion
 from reqstool.lsp.features.definition import handle_definition
+from reqstool.lsp.features.details import get_mvr_details, get_requirement_details, get_svc_details
 from reqstool.lsp.features.diagnostics import compute_diagnostics
 from reqstool.lsp.features.document_symbols import handle_document_symbols
 from reqstool.lsp.features.hover import handle_hover
+from reqstool.lsp.features.inlay_hints import handle_inlay_hints
+from reqstool.lsp.features.references import handle_references
+from reqstool.lsp.features.semantic_tokens import SEMANTIC_TOKENS_OPTIONS, handle_semantic_tokens
+from reqstool.lsp.features.workspace_symbols import handle_workspace_symbols
 from reqstool.lsp.workspace_manager import WorkspaceManager
 
 logger = logging.getLogger(__name__)
@@ -169,6 +176,118 @@ def on_document_symbol(ls: ReqstoolLanguageServer, params: types.DocumentSymbolP
     return handle_document_symbols(
         uri=params.text_document.uri,
         text=document.source,
+        project=project,
+    )
+
+
+# -- Shared helpers --
+
+
+def _get(params, key: str, default=""):
+    """Extract a field from dict or object params uniformly."""
+    return params.get(key, default) if isinstance(params, dict) else getattr(params, key, default)
+
+
+def _first_project(ls: ReqstoolLanguageServer):
+    """Fallback: return first available ready project across all workspace folders."""
+    projects = ls.workspace_manager.all_projects()
+    return projects[0] if projects else None
+
+
+_DETAILS_DISPATCH = {
+    "requirement": get_requirement_details,
+    "svc": get_svc_details,
+    "mvr": get_mvr_details,
+}
+
+
+# -- New feature handlers --
+
+
+@server.feature("reqstool/details")
+def on_details(ls: ReqstoolLanguageServer, params) -> dict | None:
+    uri = _get(params, "uri")
+    raw_id = _get(params, "id")
+    kind = _get(params, "type")
+    fn = _DETAILS_DISPATCH.get(kind)
+    if not fn:
+        return None
+    project = ls.workspace_manager.project_for_file(uri) or _first_project(ls)
+    if not project or not project.ready:
+        return None
+    return fn(raw_id, project)
+
+
+@server.feature(types.TEXT_DOCUMENT_CODE_LENS, types.CodeLensOptions(resolve_provider=False))
+def on_code_lens(ls: ReqstoolLanguageServer, params: types.CodeLensParams) -> list[types.CodeLens]:
+    document = ls.workspace.get_text_document(params.text_document.uri)
+    project = ls.workspace_manager.project_for_file(params.text_document.uri)
+    return handle_code_lens(
+        uri=params.text_document.uri,
+        text=document.source,
+        language_id=document.language_id or "",
+        project=project,
+    )
+
+
+@server.feature(types.TEXT_DOCUMENT_INLAY_HINT, types.InlayHintOptions(resolve_provider=False))
+def on_inlay_hint(ls: ReqstoolLanguageServer, params: types.InlayHintParams) -> list[types.InlayHint]:
+    document = ls.workspace.get_text_document(params.text_document.uri)
+    project = ls.workspace_manager.project_for_file(params.text_document.uri)
+    return handle_inlay_hints(
+        uri=params.text_document.uri,
+        range_=params.range,
+        text=document.source,
+        language_id=document.language_id or "",
+        project=project,
+    )
+
+
+@server.feature(types.TEXT_DOCUMENT_REFERENCES)
+def on_references(ls: ReqstoolLanguageServer, params: types.ReferenceParams) -> list[types.Location]:
+    document = ls.workspace.get_text_document(params.text_document.uri)
+    project = ls.workspace_manager.project_for_file(params.text_document.uri)
+    return handle_references(
+        uri=params.text_document.uri,
+        position=params.position,
+        text=document.source,
+        language_id=document.language_id or "",
+        project=project,
+        include_declaration=params.context.include_declaration,
+        workspace_text_documents=ls.workspace.text_documents,
+    )
+
+
+@server.feature(types.WORKSPACE_SYMBOL)
+def on_workspace_symbol(ls: ReqstoolLanguageServer, params: types.WorkspaceSymbolParams) -> list[types.WorkspaceSymbol]:
+    return handle_workspace_symbols(params.query, ls.workspace_manager)
+
+
+@server.feature(types.TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL, SEMANTIC_TOKENS_OPTIONS)
+def on_semantic_tokens(ls: ReqstoolLanguageServer, params: types.SemanticTokensParams) -> types.SemanticTokens:
+    document = ls.workspace.get_text_document(params.text_document.uri)
+    project = ls.workspace_manager.project_for_file(params.text_document.uri)
+    return handle_semantic_tokens(
+        uri=params.text_document.uri,
+        text=document.source,
+        language_id=document.language_id or "",
+        project=project,
+    )
+
+
+@server.feature(
+    types.TEXT_DOCUMENT_CODE_ACTION,
+    types.CodeActionOptions(code_action_kinds=[types.CodeActionKind.QuickFix, types.CodeActionKind.Source]),
+)
+def on_code_action(ls: ReqstoolLanguageServer, params: types.CodeActionParams) -> list[types.CodeAction]:
+    document = ls.workspace.get_text_document(params.text_document.uri)
+    project = ls.workspace_manager.project_for_file(params.text_document.uri)
+    return handle_code_actions(
+        uri=params.text_document.uri,
+        range_=params.range,
+        context=params.context,
+        text=document.source,
+        language_id=document.language_id or "",
         project=project,
     )
 

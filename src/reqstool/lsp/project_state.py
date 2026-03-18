@@ -129,10 +129,21 @@ class ProjectState:
             return []
         return [uid.id for uid in self._repo.get_all_requirements()]
 
+    def get_mvr(self, raw_id: str) -> MVRData | None:
+        if not self._ready or self._repo is None:
+            return None
+        initial_urn = self._repo.get_initial_urn()
+        urn_id = UrnId.assure_urn_id(initial_urn, raw_id)
+        return self._repo.get_all_mvrs().get(urn_id)
+
     def get_all_svc_ids(self) -> list[str]:
         if not self._ready or self._repo is None:
             return []
         return [uid.id for uid in self._repo.get_all_svcs()]
+
+    def get_yaml_paths(self) -> dict[str, dict[str, str]]:
+        """Return all URN → file_type → path mappings."""
+        return dict(self._urn_source_paths)
 
     def get_yaml_path(self, urn: str, file_type: str) -> str | None:
         """Return the resolved file path for a given URN and file type (requirements, svcs, mvrs, annotations)."""

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import urllib.parse
 
 from lsprotocol import types
 
@@ -31,10 +33,11 @@ def handle_hover(
     if basename in REQSTOOL_YAML_FILES:
         return _hover_yaml(text, position, basename)
     else:
-        return _hover_source(text, position, language_id, project)
+        return _hover_source(uri, text, position, language_id, project)
 
 
 def _hover_source(
+    uri: str,
     text: str,
     position: types.Position,
     language_id: str,
@@ -57,14 +60,19 @@ def _hover_source(
         )
 
     if match.kind == "Requirements":
-        return _hover_requirement(match.raw_id, match, project)
+        return _hover_requirement(match.raw_id, match, project, uri)
     elif match.kind == "SVCs":
-        return _hover_svc(match.raw_id, match, project)
+        return _hover_svc(match.raw_id, match, project, uri)
 
     return None
 
 
-def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover | None:
+def _open_details_link(raw_id: str, uri: str, kind: str) -> str:
+    args = urllib.parse.quote(json.dumps({"id": raw_id, "uri": uri, "type": kind}))
+    return f"[Open Details](command:reqstool.openDetails?{args})"
+
+
+def _hover_requirement(raw_id: str, match, project: ProjectState, uri: str) -> types.Hover | None:
     req = project.get_requirement(raw_id)
     if req is None:
         md = f"**Unknown requirement**: `{raw_id}`"
@@ -87,6 +95,8 @@ def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover
                 f"**Categories**: {categories}",
                 f"**Lifecycle**: {req.lifecycle.state.value}",
                 f"**SVCs**: {svc_ids}",
+                "---",
+                _open_details_link(raw_id, uri, "requirement"),
             ]
         )
         md = "\n\n".join(parts)
@@ -100,7 +110,7 @@ def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover
     )
 
 
-def _hover_svc(raw_id: str, match, project: ProjectState) -> types.Hover | None:
+def _hover_svc(raw_id: str, match, project: ProjectState, uri: str) -> types.Hover | None:
     svc = project.get_svc(raw_id)
     if svc is None:
         md = f"**Unknown SVC**: `{raw_id}`"
@@ -125,6 +135,8 @@ def _hover_svc(raw_id: str, match, project: ProjectState) -> types.Hover | None:
                 f"**Lifecycle**: {svc.lifecycle.state.value}",
                 f"**Requirements**: {req_ids}",
                 f"**MVRs**: {mvr_info}",
+                "---",
+                _open_details_link(raw_id, uri, "svc"),
             ]
         )
         md = "\n\n".join(parts)
