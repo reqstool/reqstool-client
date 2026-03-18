@@ -6,7 +6,7 @@ import logging
 import os
 import re
 
-import yaml
+from ruamel.yaml import YAML, YAMLError
 from jsonschema import Draft202012Validator
 from lsprotocol import types
 
@@ -125,8 +125,8 @@ def _yaml_diagnostics(text: str, filename: str) -> list[types.Diagnostic]:
 
     # Parse YAML first
     try:
-        data = yaml.safe_load(text)
-    except yaml.YAMLError as e:
+        data = YAML(typ="safe").load(text)
+    except YAMLError as e:
         diag_range = types.Range(
             start=types.Position(line=0, character=0),
             end=types.Position(line=0, character=0),
