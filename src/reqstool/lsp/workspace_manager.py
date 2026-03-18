@@ -65,43 +65,34 @@ class WorkspaceManager:
 
     def project_for_file(self, file_uri: str) -> ProjectState | None:
         file_path = uri_to_path(file_uri)
+        norm_file = os.path.normpath(file_path)
         best_match: ProjectState | None = None
         best_depth = -1
 
+        # First: exact match — file is under the reqstool_path directory itself
         for projects in self._folder_projects.values():
             for project in projects:
                 reqstool_path = os.path.normpath(project.reqstool_path)
-                norm_file = os.path.normpath(file_path)
-                # Check if the file is within the project's directory tree
                 if norm_file.startswith(reqstool_path + os.sep) or norm_file == reqstool_path:
                     depth = reqstool_path.count(os.sep)
                     if depth > best_depth:
                         best_match = project
                         best_depth = depth
 
-        # If no direct match, find the closest project by walking up from the file
-        if best_match is None:
-            file_dir = os.path.dirname(file_path) if os.path.isfile(file_path) else file_path
-            best_match = self._find_closest_project(file_dir)
+        if best_match is not None:
+            return best_match
 
-        return best_match
+        # Fallback: file is anywhere within the workspace folder that contains the project
+        # (e.g. a Java source file in src/ belonging to a project whose reqstool_path is docs/reqstool/)
+        for folder_uri, projects in self._folder_projects.items():
+            if not projects:
+                continue
+            folder_path = uri_to_path(folder_uri)
+            norm_folder = os.path.normpath(folder_path)
+            if norm_file.startswith(norm_folder + os.sep) or norm_file == norm_folder:
+                return max(projects, key=lambda p: os.path.normpath(p.reqstool_path).count(os.sep))
 
-    def _find_closest_project(self, file_dir: str) -> ProjectState | None:
-        """Find the project whose reqstool_path is the closest ancestor of file_dir."""
-        best_match: ProjectState | None = None
-        best_depth = -1
-
-        norm_dir = os.path.normpath(file_dir)
-        for projects in self._folder_projects.values():
-            for project in projects:
-                reqstool_path = os.path.normpath(project.reqstool_path)
-                if norm_dir.startswith(reqstool_path + os.sep) or norm_dir == reqstool_path:
-                    depth = reqstool_path.count(os.sep)
-                    if depth > best_depth:
-                        best_match = project
-                        best_depth = depth
-
-        return best_match
+        return None
 
     def all_projects(self) -> list[ProjectState]:
         result = []
