@@ -7,6 +7,7 @@ import re
 
 from lsprotocol import types
 
+from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.lsp.annotation_parser import is_inside_annotation
 from reqstool.lsp.project_state import ProjectState
 from reqstool.lsp.yaml_schema import get_enum_values, schema_for_yaml_file
@@ -55,36 +56,52 @@ def _complete_source(
     items: list[types.CompletionItem] = []
 
     if kind == "Requirements":
-        for req_id in project.get_all_requirement_ids():
-            req = project.get_requirement(req_id)
-            detail = req.title if req else ""
-            doc = req.description if req else ""
-            items.append(
-                types.CompletionItem(
-                    label=req_id,
-                    kind=types.CompletionItemKind.Reference,
-                    detail=detail,
-                    documentation=doc,
-                )
-            )
+        items = _req_completions(project)
     elif kind == "SVCs":
-        for svc_id in project.get_all_svc_ids():
-            svc = project.get_svc(svc_id)
-            detail = svc.title if svc else ""
-            doc = svc.description if svc else ""
-            items.append(
-                types.CompletionItem(
-                    label=svc_id,
-                    kind=types.CompletionItemKind.Reference,
-                    detail=detail,
-                    documentation=doc if doc else None,
-                )
-            )
+        items = _svc_completions(project)
 
     if not items:
         return None
 
     return types.CompletionList(is_incomplete=False, items=items)
+
+
+_INACTIVE = (LIFECYCLESTATE.DEPRECATED, LIFECYCLESTATE.OBSOLETE)
+
+
+def _req_completions(project: ProjectState) -> list[types.CompletionItem]:
+    items = []
+    for req_id in project.get_all_requirement_ids():
+        req = project.get_requirement(req_id)
+        if req is not None and req.lifecycle.state in _INACTIVE:
+            continue
+        items.append(
+            types.CompletionItem(
+                label=req_id,
+                kind=types.CompletionItemKind.Reference,
+                detail=req.title if req else "",
+                documentation=req.description if req else "",
+            )
+        )
+    return items
+
+
+def _svc_completions(project: ProjectState) -> list[types.CompletionItem]:
+    items = []
+    for svc_id in project.get_all_svc_ids():
+        svc = project.get_svc(svc_id)
+        if svc is not None and svc.lifecycle.state in _INACTIVE:
+            continue
+        doc = svc.description if svc else ""
+        items.append(
+            types.CompletionItem(
+                label=svc_id,
+                kind=types.CompletionItemKind.Reference,
+                detail=svc.title if svc else "",
+                documentation=doc if doc else None,
+            )
+        )
+    return items
 
 
 def _complete_yaml(

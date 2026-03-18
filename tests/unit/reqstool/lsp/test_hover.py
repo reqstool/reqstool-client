@@ -26,6 +26,32 @@ def test_hover_python_requirement(local_testdata_resources_rootdir_w_path):
         assert result is not None
         assert "REQ_010" in result.contents.value
         assert "Title REQ_010" in result.contents.value
+        assert "Implementations" in result.contents.value
+    finally:
+        state.close()
+
+
+def test_hover_python_svc_test_summary(local_testdata_resources_rootdir_w_path):
+    from reqstool.lsp.project_state import ProjectState
+
+    path = local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")
+    state = ProjectState(reqstool_path=path)
+    try:
+        state.build()
+        svc_ids = state.get_all_svc_ids()
+        assert svc_ids
+        text = f'@SVCs("{svc_ids[0]}")\ndef test_foo(): pass'
+        result = handle_hover(
+            uri="file:///test.py",
+            position=types.Position(line=0, character=8),
+            text=text,
+            language_id="python",
+            project=state,
+        )
+        assert result is not None
+        assert "Tests" in result.contents.value
+        assert "MVRs" in result.contents.value
+        assert "passed" in result.contents.value
     finally:
         state.close()
 

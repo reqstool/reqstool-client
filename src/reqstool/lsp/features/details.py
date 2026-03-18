@@ -38,6 +38,7 @@ def get_requirement_details(raw_id: str, project: ProjectState) -> dict | None:
             }
             for s in svcs
         ],
+        "source_paths": project.get_yaml_paths().get(req.id.urn, {}),
     }
 
 
@@ -61,9 +62,23 @@ def get_svc_details(raw_id: str, project: ProjectState) -> dict | None:
             "state": svc.lifecycle.state.value,
             "reason": svc.lifecycle.reason or "",
         },
-        "requirement_ids": [{"id": r.id, "urn": str(r)} for r in svc.requirement_ids],
+        "requirement_ids": [
+            {
+                "id": r.id,
+                "urn": str(r),
+                "title": req.title if (req := project.get_requirement(r.id)) else "",
+                "lifecycle_state": req.lifecycle.state.value if req else "",
+            }
+            for r in svc.requirement_ids
+        ],
         "test_annotations": [{"element_kind": a.element_kind, "fqn": a.fully_qualified_name} for a in test_annotations],
         "test_results": [{"fqn": t.fully_qualified_name, "status": t.status.value} for t in test_results],
+        "test_summary": {
+            "passed": sum(1 for t in test_results if t.status.value == "passed"),
+            "failed": sum(1 for t in test_results if t.status.value == "failed"),
+            "skipped": sum(1 for t in test_results if t.status.value == "skipped"),
+            "missing": sum(1 for t in test_results if t.status.value == "missing"),
+        },
         "mvrs": [
             {
                 "id": m.id.id,
@@ -73,6 +88,7 @@ def get_svc_details(raw_id: str, project: ProjectState) -> dict | None:
             }
             for m in mvrs
         ],
+        "source_paths": project.get_yaml_paths().get(svc.id.urn, {}),
     }
 
 
@@ -87,4 +103,5 @@ def get_mvr_details(raw_id: str, project: ProjectState) -> dict | None:
         "passed": mvr.passed,
         "comment": mvr.comment or "",
         "svc_ids": [{"id": s.id, "urn": str(s)} for s in mvr.svc_ids],
+        "source_paths": project.get_yaml_paths().get(mvr.id.urn, {}),
     }

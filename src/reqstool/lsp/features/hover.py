@@ -80,6 +80,7 @@ def _hover_requirement(raw_id: str, match, project: ProjectState, uri: str) -> t
         svcs = project.get_svcs_for_req(raw_id)
         svc_ids = ", ".join(f"`{s.id.id}`" for s in svcs) if svcs else "—"
         categories = ", ".join(c.value for c in req.categories) if req.categories else "—"
+        impl_count = len(project.get_impl_annotations_for_req(raw_id))
 
         parts = [
             f"### {req.title}",
@@ -95,6 +96,7 @@ def _hover_requirement(raw_id: str, match, project: ProjectState, uri: str) -> t
                 f"**Categories**: {categories}",
                 f"**Lifecycle**: {req.lifecycle.state.value}",
                 f"**SVCs**: {svc_ids}",
+                f"**Implementations**: {impl_count}",
                 "---",
                 _open_details_link(raw_id, uri, "requirement"),
             ]
@@ -116,8 +118,14 @@ def _hover_svc(raw_id: str, match, project: ProjectState, uri: str) -> types.Hov
         md = f"**Unknown SVC**: `{raw_id}`"
     else:
         mvrs = project.get_mvrs_for_svc(raw_id)
+        test_results = project.get_test_results_for_svc(raw_id)
         req_ids = ", ".join(f"`{r.id}`" for r in svc.requirement_ids) if svc.requirement_ids else "—"
-        mvr_info = ", ".join(f"{'pass' if m.passed else 'fail'}" for m in mvrs) if mvrs else "—"
+
+        test_passed = sum(1 for t in test_results if t.status.value == "passed")
+        test_failed = sum(1 for t in test_results if t.status.value == "failed")
+        test_missing = sum(1 for t in test_results if t.status.value == "missing")
+        mvr_passed = sum(1 for m in mvrs if m.passed)
+        mvr_failed = sum(1 for m in mvrs if not m.passed)
 
         parts = [
             f"### {svc.title}",
@@ -134,7 +142,8 @@ def _hover_svc(raw_id: str, match, project: ProjectState, uri: str) -> types.Hov
             [
                 f"**Lifecycle**: {svc.lifecycle.state.value}",
                 f"**Requirements**: {req_ids}",
-                f"**MVRs**: {mvr_info}",
+                f"**Tests**: {test_passed} passed · {test_failed} failed · {test_missing} missing",
+                f"**MVRs**: {mvr_passed} passed · {mvr_failed} failed",
                 "---",
                 _open_details_link(raw_id, uri, "svc"),
             ]

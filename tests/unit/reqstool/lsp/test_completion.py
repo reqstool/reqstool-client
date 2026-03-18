@@ -55,6 +55,35 @@ def test_completion_svcs(local_testdata_resources_rootdir_w_path):
         state.close()
 
 
+def test_completion_excludes_deprecated_and_obsolete(local_testdata_resources_rootdir_w_path):
+    from reqstool.lsp.project_state import ProjectState
+
+    # test_basic/lifecycle/ms-101 has REQ_101 (deprecated) and REQ_102/REQ_202 (obsolete)
+    path = local_testdata_resources_rootdir_w_path("test_basic/lifecycle/ms-101")
+    state = ProjectState(reqstool_path=path)
+    try:
+        state.build()
+        text = '@Requirements("'
+        result = handle_completion(
+            uri="file:///test.py",
+            position=types.Position(line=0, character=16),
+            text=text,
+            language_id="python",
+            project=state,
+        )
+        assert result is not None
+        labels = [item.label for item in result.items]
+        # No deprecated or obsolete IDs should appear
+        from reqstool.common.models.lifecycle import LIFECYCLESTATE
+
+        for req_id in labels:
+            req = state.get_requirement(req_id)
+            if req is not None:
+                assert req.lifecycle.state not in (LIFECYCLESTATE.DEPRECATED, LIFECYCLESTATE.OBSOLETE)
+    finally:
+        state.close()
+
+
 def test_completion_no_project():
     text = '@Requirements("'
     result = handle_completion(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from lsprotocol import types
 
+from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.lsp.annotation_parser import find_all_annotations
 from reqstool.lsp.project_state import ProjectState
 
@@ -50,12 +51,20 @@ def handle_code_lens(
                 command=types.Command(
                     title=label,
                     command="reqstool.openDetails",
-                    arguments=[{"id": ids[0], "uri": uri, "type": item_type}],
+                    arguments=[{"ids": ids, "uri": uri, "type": item_type}],
                 ),
             )
         )
 
     return result
+
+
+def _lifecycle_badge(state: LIFECYCLESTATE) -> str:
+    if state == LIFECYCLESTATE.DEPRECATED:
+        return "⚠ "
+    if state == LIFECYCLESTATE.OBSOLETE:
+        return "✕ "
+    return ""
 
 
 def _req_label(ids: list[str], project: ProjectState) -> str:
@@ -72,7 +81,12 @@ def _req_label(ids: list[str], project: ProjectState) -> str:
             else:
                 fail_count += 1
 
-    id_str = ", ".join(ids)
+    id_parts = []
+    for raw_id in ids:
+        req = project.get_requirement(raw_id)
+        badge = _lifecycle_badge(req.lifecycle.state) if req else ""
+        id_parts.append(f"{badge}{raw_id}")
+    id_str = ", ".join(id_parts)
     svc_count = len(all_svcs)
 
     if pass_count == 0 and fail_count == 0:
@@ -81,7 +95,13 @@ def _req_label(ids: list[str], project: ProjectState) -> str:
 
 
 def _svc_label(ids: list[str], project: ProjectState) -> str:
-    id_str = ", ".join(ids)
+    id_parts = []
+    for raw_id in ids:
+        svc = project.get_svc(raw_id)
+        badge = _lifecycle_badge(svc.lifecycle.state) if svc else ""
+        id_parts.append(f"{badge}{raw_id}")
+    id_str = ", ".join(id_parts)
+
     if len(ids) == 1:
         svc = project.get_svc(ids[0])
         if svc is not None:

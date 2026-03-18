@@ -36,7 +36,25 @@ def test_encode_tokens_sorted():
 
 
 def test_token_types_count():
-    assert len(TOKEN_TYPES) == 3
+    assert len(TOKEN_TYPES) == 4
+
+
+def test_token_types_order():
+    assert TOKEN_TYPES[0] == "reqstoolDraft"
+    assert TOKEN_TYPES[1] == "reqstoolValid"
+    assert TOKEN_TYPES[2] == "reqstoolDeprecated"
+    assert TOKEN_TYPES[3] == "reqstoolObsolete"
+
+
+def test_state_to_idx_all_distinct():
+    from reqstool.lsp.features.semantic_tokens import _STATE_TO_IDX
+    from reqstool.common.models.lifecycle import LIFECYCLESTATE
+
+    assert _STATE_TO_IDX[LIFECYCLESTATE.DRAFT] == 0
+    assert _STATE_TO_IDX[LIFECYCLESTATE.EFFECTIVE] == 1
+    assert _STATE_TO_IDX[LIFECYCLESTATE.DEPRECATED] == 2
+    assert _STATE_TO_IDX[LIFECYCLESTATE.OBSOLETE] == 3
+    assert len(set(_STATE_TO_IDX.values())) == 4  # all indices distinct
 
 
 def test_semantic_tokens_no_project():

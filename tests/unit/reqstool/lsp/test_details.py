@@ -30,6 +30,8 @@ def test_get_requirement_details_known(project):
     assert isinstance(result["implementations"], list)
     assert "svcs" in result
     assert isinstance(result["svcs"], list)
+    assert "source_paths" in result
+    assert isinstance(result["source_paths"], dict)
 
 
 def test_get_requirement_details_unknown(project):
@@ -52,7 +54,12 @@ def test_get_svc_details_known(project):
     assert isinstance(result["test_annotations"], list)
     assert "test_results" in result
     assert isinstance(result["test_results"], list)
+    assert "test_summary" in result
+    summary = result["test_summary"]
+    assert set(summary.keys()) == {"passed", "failed", "skipped", "missing"}
     assert "mvrs" in result
+    assert "source_paths" in result
+    assert isinstance(result["source_paths"], dict)
 
 
 def test_get_svc_details_unknown(project):
@@ -83,6 +90,19 @@ def test_get_requirement_details_implementations(project):
     assert "element_kind" in impl
     assert "fqn" in impl
     assert impl["element_kind"] in ("CLASS", "METHOD", "FIELD", "ENUM", "INTERFACE", "RECORD")
+
+
+def test_get_svc_details_requirement_ids_enriched(project):
+    svc_ids = project.get_all_svc_ids()
+    for svc_id in svc_ids:
+        result = get_svc_details(svc_id, project)
+        assert result is not None
+        for req_entry in result["requirement_ids"]:
+            assert "id" in req_entry
+            assert "urn" in req_entry
+            assert "title" in req_entry
+            assert "lifecycle_state" in req_entry
+        break  # one SVC is enough
 
 
 def test_get_svc_details_test_results(project):

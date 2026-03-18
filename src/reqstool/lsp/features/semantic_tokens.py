@@ -8,12 +8,12 @@ from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.lsp.annotation_parser import find_all_annotations
 from reqstool.lsp.project_state import ProjectState
 
-TOKEN_TYPES = ["reqstoolValid", "reqstoolDeprecated", "reqstoolObsolete"]
+TOKEN_TYPES = ["reqstoolDraft", "reqstoolValid", "reqstoolDeprecated", "reqstoolObsolete"]
 _STATE_TO_IDX = {
-    LIFECYCLESTATE.EFFECTIVE: 0,
     LIFECYCLESTATE.DRAFT: 0,
-    LIFECYCLESTATE.DEPRECATED: 1,
-    LIFECYCLESTATE.OBSOLETE: 2,
+    LIFECYCLESTATE.EFFECTIVE: 1,
+    LIFECYCLESTATE.DEPRECATED: 2,
+    LIFECYCLESTATE.OBSOLETE: 3,
 }
 
 SEMANTIC_TOKENS_OPTIONS = types.SemanticTokensOptions(
