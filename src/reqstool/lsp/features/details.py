@@ -10,6 +10,8 @@ def get_requirement_details(raw_id: str, project: ProjectState) -> dict | None:
     if req is None:
         return None
     svcs = project.get_svcs_for_req(raw_id)
+    impls = project.get_impl_annotations_for_req(raw_id)
+    references = [str(ref_id) for rd in (req.references or []) for ref_id in rd.requirement_ids]
     return {
         "type": "requirement",
         "id": req.id.id,
@@ -25,6 +27,8 @@ def get_requirement_details(raw_id: str, project: ProjectState) -> dict | None:
         },
         "categories": [c.value for c in req.categories],
         "implementation": req.implementation.value,
+        "references": references,
+        "implementations": [{"element_kind": a.element_kind, "fqn": a.fully_qualified_name} for a in impls],
         "svcs": [
             {
                 "id": s.id.id,
@@ -42,6 +46,8 @@ def get_svc_details(raw_id: str, project: ProjectState) -> dict | None:
     if svc is None:
         return None
     mvrs = project.get_mvrs_for_svc(raw_id)
+    test_annotations = project.get_test_annotations_for_svc(raw_id)
+    test_results = project.get_test_results_for_svc(raw_id)
     return {
         "type": "svc",
         "id": svc.id.id,
@@ -56,6 +62,8 @@ def get_svc_details(raw_id: str, project: ProjectState) -> dict | None:
             "reason": svc.lifecycle.reason or "",
         },
         "requirement_ids": [{"id": r.id, "urn": str(r)} for r in svc.requirement_ids],
+        "test_annotations": [{"element_kind": a.element_kind, "fqn": a.fully_qualified_name} for a in test_annotations],
+        "test_results": [{"fqn": t.fully_qualified_name, "status": t.status.value} for t in test_results],
         "mvrs": [
             {
                 "id": m.id.id,

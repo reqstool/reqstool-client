@@ -10,9 +10,11 @@ from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.locations.local_location import LocalLocation
 from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
+from reqstool.models.annotations import AnnotationData
 from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import RequirementData
 from reqstool.models.svcs import SVCData
+from reqstool.models.test_data import TestData
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.database_filter_processor import DatabaseFilterProcessor
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -144,6 +146,27 @@ class ProjectState:
     def get_yaml_paths(self) -> dict[str, dict[str, str]]:
         """Return all URN → file_type → path mappings."""
         return dict(self._urn_source_paths)
+
+    def get_impl_annotations_for_req(self, raw_id: str) -> list[AnnotationData]:
+        if not self._ready or self._repo is None:
+            return []
+        initial_urn = self._repo.get_initial_urn()
+        req_urn_id = UrnId.assure_urn_id(initial_urn, raw_id)
+        return self._repo.get_annotations_impls_for_req(req_urn_id)
+
+    def get_test_annotations_for_svc(self, raw_id: str) -> list[AnnotationData]:
+        if not self._ready or self._repo is None:
+            return []
+        initial_urn = self._repo.get_initial_urn()
+        svc_urn_id = UrnId.assure_urn_id(initial_urn, raw_id)
+        return self._repo.get_annotations_tests_for_svc(svc_urn_id)
+
+    def get_test_results_for_svc(self, raw_id: str) -> list[TestData]:
+        if not self._ready or self._repo is None:
+            return []
+        initial_urn = self._repo.get_initial_urn()
+        svc_urn_id = UrnId.assure_urn_id(initial_urn, raw_id)
+        return self._repo.get_test_results_for_svc(svc_urn_id)
 
     def get_yaml_path(self, urn: str, file_type: str) -> str | None:
         """Return the resolved file path for a given URN and file type (requirements, svcs, mvrs, annotations)."""
