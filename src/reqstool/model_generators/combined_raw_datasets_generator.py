@@ -1,7 +1,8 @@
 # Copyright © LFV
 
 import logging
-from typing import Dict, List
+from collections import defaultdict
+from typing import Dict, List, Optional
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
@@ -23,11 +24,17 @@ from reqstool.models.requirements import VARIANTS, RequirementsData
 from reqstool.models.svcs import SVCsData
 from reqstool.models.test_data import TestsData
 from reqstool.requirements_indata.requirements_indata import RequirementsIndata
+from reqstool.storage.database import RequirementsDatabase
 
 
 @Requirements("REQ_005", "REQ_006", "REQ_007")
 class CombinedRawDatasetsGenerator:
-    def __init__(self, initial_location: LocationInterface, semantic_validator: SemanticValidator):
+    def __init__(
+        self,
+        initial_location: LocationInterface,
+        semantic_validator: SemanticValidator,
+        database: Optional[RequirementsDatabase] = None,
+    ):
         self.__level: int = 0
         self.__initial_source_type: VARIANTS = None
         self.__initial_location_handler: LocationResolver = LocationResolver(
@@ -35,7 +42,8 @@ class CombinedRawDatasetsGenerator:
         )
         self.semantic_validator = semantic_validator
         self._parsing_order: List[str] = []
-        self._parsing_graph: Dict[str, List[str]] = {}
+        self._parsing_graph: Dict[str, List[str]] = defaultdict(list)
+        self._database = database
         self.combined_raw_datasets = self.__generate()
 
     def __generate(self) -> CombinedRawDataset:
@@ -65,29 +73,86 @@ class CombinedRawDatasetsGenerator:
 
         self.semantic_validator.validate_post_parsing(combined_raw_dataset=combined_raw_datasets)
 
+        self._populate_database(combined_raw_datasets)
+
         return combined_raw_datasets
+
+    def _populate_database(self, crd: CombinedRawDataset) -> None:
+        if self._database is None:
+            return
+
+        self._database.set_metadata("initial_urn", crd.initial_model_urn)
+
+        # Multi-pass insertion to satisfy FK constraints across URNs.
+        # Order: requirements → SVCs → MVRs → annotations → test results → graph
+        # Each pass is committed as a batch for performance.
+        self.__populate_requirements(crd)
+        self.__populate_svcs(crd)
+        self.__populate_mvrs(crd)
+        self.__populate_annotations(crd)
+        self.__populate_test_results(crd)
+        self.__populate_parsing_graph(crd)
+        self._database.commit()
+
+    def __populate_requirements(self, crd: CombinedRawDataset) -> None:
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            self._database.insert_urn_metadata(rd.requirements_data.metadata)
+            for req_data in rd.requirements_data.requirements.values():
+                self._database.insert_requirement(urn, req_data)
+
+    def __populate_svcs(self, crd: CombinedRawDataset) -> None:
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            if rd.svcs_data is not None and rd.svcs_data.cases:
+                for svc_data in rd.svcs_data.cases.values():
+                    self._database.insert_svc(urn, svc_data)
+
+    def __populate_mvrs(self, crd: CombinedRawDataset) -> None:
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            if rd.mvrs_data is not None and rd.mvrs_data.results:
+                for mvr_data in rd.mvrs_data.results.values():
+                    self._database.insert_mvr(urn, mvr_data)
+
+    def __populate_annotations(self, crd: CombinedRawDataset) -> None:
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            if rd.annotations_data is not None:
+                for req_urn_id, annotations in rd.annotations_data.implementations.items():
+                    for annotation in annotations:
+                        self._database.insert_annotation_impl(req_urn_id, annotation)
+                for svc_urn_id, annotations in rd.annotations_data.tests.items():
+                    for annotation in annotations:
+                        self._database.insert_annotation_test(svc_urn_id, annotation)
+
+    def __populate_test_results(self, crd: CombinedRawDataset) -> None:
+        for urn in crd.urn_parsing_order:
+            rd = crd.raw_datasets[urn]
+            if rd.automated_tests is not None:
+                for test_urn_id, test_data in rd.automated_tests.tests.items():
+                    self._database.insert_test_result(test_urn_id.urn, test_data.fully_qualified_name, test_data.status)
+
+    def __populate_parsing_graph(self, crd: CombinedRawDataset) -> None:
+        for parent_urn, children in crd.parsing_graph.items():
+            for child_urn in children:
+                self._database.insert_parsing_graph_edge(parent_urn, child_urn)
 
     def __handle_initial_imports(self, raw_datasets: Dict[str, RawDataset], rd: RequirementsData):
         match self.__initial_source_type:
             case VARIANTS.SYSTEM:
                 parsed_systems = self.__import_systems(raw_datasets, parent_rd=rd)
                 parsed_microservices = self.__import_implementations(raw_datasets, implementations=rd.implementations)
-                Utils.extend_data_sequence_to_dict_list_entry(
-                    self._parsing_graph, key=rd.metadata.urn, data=parsed_systems
-                )
-                Utils.extend_data_sequence_to_dict_list_entry(
-                    self._parsing_graph, key=rd.metadata.urn, data=parsed_microservices
-                )
+                self._parsing_graph[rd.metadata.urn].extend(parsed_systems)
+                self._parsing_graph[rd.metadata.urn].extend(parsed_microservices)
 
                 # add current urn as parent to all microservices
                 for ms_urn in parsed_microservices:
-                    Utils.append_data_item_to_dict_list_entry(self._parsing_graph, key=ms_urn, data=rd.metadata.urn)
+                    self._parsing_graph[ms_urn].append(rd.metadata.urn)
 
             case VARIANTS.MICROSERVICE:
                 parsed_systems = self.__import_systems(raw_datasets, parent_rd=rd)
-                Utils.extend_data_sequence_to_dict_list_entry(
-                    self._parsing_graph, key=rd.metadata.urn, data=parsed_systems
-                )
+                self._parsing_graph[rd.metadata.urn].extend(parsed_systems)
             case _:
                 raise RuntimeError("Unsupported initial source system type (this should not happen)")
 
@@ -122,9 +187,7 @@ class CombinedRawDatasetsGenerator:
                     raw_datasets=raw_datasets, parent_rd=current_imported_model.requirements_data
                 )
 
-                Utils.extend_data_sequence_to_dict_list_entry(
-                    dictionary=self._parsing_graph, key=current_urn, data=imported_systems
-                )
+                self._parsing_graph[current_urn].extend(imported_systems)
 
         self.__level -= 1
 

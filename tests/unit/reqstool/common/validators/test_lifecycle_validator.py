@@ -5,27 +5,30 @@ from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.lifecycle_validator import LifecycleValidator
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.local_location import LocalLocation
-from reqstool.model_generators.combined_indexed_dataset_generator import CombinedIndexedDatasetGenerator
 from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
-from reqstool.models.raw_datasets import CombinedRawDataset
+from reqstool.storage.database import RequirementsDatabase
+from reqstool.storage.requirements_repository import RequirementsRepository
 from reqstool_python_decorators.decorators.decorators import SVCs
 
 
 @pytest.fixture
-def combined_indexed_dataset(local_testdata_resources_rootdir_w_path):
+def lifecycle_repo(local_testdata_resources_rootdir_w_path):
+    db = RequirementsDatabase()
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
-    crd: CombinedRawDataset = CombinedRawDatasetsGenerator(
+    CombinedRawDatasetsGenerator(
         initial_location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_basic/lifecycle/ms-101")),
         semantic_validator=semantic_validator,
-    ).combined_raw_datasets
-
-    return CombinedIndexedDatasetGenerator(_crd=crd).combined_indexed_dataset
+        database=db,
+    )
+    repo = RequirementsRepository(db)
+    yield repo
+    db.close()
 
 
 @SVCs("SVC_038")
-def test_defunct_states(combined_indexed_dataset, caplog):
+def test_defunct_states(lifecycle_repo, caplog):
 
-    LifecycleValidator(combined_indexed_dataset)
+    LifecycleValidator(lifecycle_repo)
 
     assert "Urn ms-101:SVC_102 is used in an annotation despite being obsolete." in caplog.text
     assert (
@@ -37,9 +40,9 @@ def test_defunct_states(combined_indexed_dataset, caplog):
 
 
 @SVCs("SVC_038")
-def test_active_states(combined_indexed_dataset, caplog):
+def test_active_states(lifecycle_repo, caplog):
 
-    LifecycleValidator(combined_indexed_dataset)
+    LifecycleValidator(lifecycle_repo)
 
     assert "The SVC ms-101:SVC_202 is marked as effective but the MVR ms-101:MVR_202 references it." not in caplog.text
     assert "Urn ms-101:REQ_201 is used in an annotation despite being draft." not in caplog.text

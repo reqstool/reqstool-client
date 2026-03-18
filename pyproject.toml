@@ -9,7 +9,7 @@ requires = [
 build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
-python_classes = ["!TestDataModelGenerator", "!TestStatisticsItem"]
+python_classes = ["!TestDataModelGenerator"]
 addopts = [
     "-rsxX",
     "-s",

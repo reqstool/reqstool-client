@@ -234,8 +234,8 @@
                     "description": "Human-readable title"
                 },
                 "description": {
-                    "type": "string",
-                    "description": "Detailed description"
+                    "type": ["string", "null"],
+                    "description": "Detailed description (nullable — SVC description is optional in svcs.yml)"
                 },
                 "verification": {
                     "type": "string",

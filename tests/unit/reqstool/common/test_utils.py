@@ -24,16 +24,3 @@ def test_check_ids_to_filter_mixed_ids():
     assert "ms-001:REQ_001" in result
     assert "ms-001:REQ_002" in result
     assert "other-urn:REQ_003" not in result
-
-
-def test_create_accessible_nodes_dict():
-    parsing_graph: dict = {
-        "ext-001": [],
-        "ext-002": [],
-        "sys-001": ["ext-001", "ext-002", "ms-001"],
-        "ms-001": ["sys-001"],
-    }
-
-    accesible_nodes_dict = Utils.create_accessible_nodes_dict(parsing_graph)
-
-    assert accesible_nodes_dict

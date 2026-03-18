@@ -25,7 +25,7 @@ hatch run dev:pytest --cov=reqstool tests/unit
 hatch run dev:pytest --cov=reqstool tests/integration
 
 # Run a single test file
-hatch run dev:pytest tests/unit/reqstool/model_generators/test_combined_indexed_dataset_generator.py
+hatch run dev:pytest tests/unit/reqstool/storage/test_requirements_repository.py
 
 # Run a single test by name
 hatch run dev:pytest -k "test_name"
@@ -41,7 +41,7 @@ pytest markers: `slow`, `integration`, `flaky`. By default `-m "not slow and not
 
 ## Architecture
 
-The pipeline flows: **Location** → **RawDataset** → **CombinedRawDataset** → **CombinedIndexedDataset** → **Command output**.
+The pipeline flows: **Location** → **parse** → **RawDataset** (transient) → **INSERT into SQLite** → **Repository/Services query DB** → **Command output**.
 
 ### Locations (`locations/`)
 Abstractions for where source data lives. Implementations: `LocalLocation`, `GitLocation`, `MavenLocation`, `PypiLocation`. Each implements `_make_available_on_localdisk(dst_path)` to download/copy the source to a temp dir. `LocationResolver` (`location_resolver/`) handles relative path resolution when an import's location is relative to its parent.
@@ -52,7 +52,18 @@ Abstractions for where source data lives. Implementations: `LocalLocation`, `Git
 2. Parses `requirements.yml` → `RequirementsModelGenerator` → `RequirementsData`
 3. Recursively follows `imports` (other system URNs) and `implementations` (microservice URNs)
 4. For each SYSTEM/MICROSERVICE source also parses: `svcs.yml`, `mvrs.yml`, `annotations.yml`, JUnit XML test results
-5. Builds a `CombinedRawDataset` (dict keyed by URN string) plus a DAG (`parsing_graph`)
+5. Each parsed `RawDataset` is immediately inserted into the in-memory SQLite database via `DatabasePopulator`
+
+### Storage Layer (`storage/`)
+In-memory SQLite is the single source of truth after parsing:
+- `schema.py` — DDL constants defining all tables with CHECK constraints and FK cascades
+- `database.py` — `RequirementsDatabase` wrapper (connection, insert API, authorizer, regexp function)
+- `populator.py` — `DatabasePopulator` inserts `RawDataset` contents into the database
+- `pipeline.py` — `build_database()` orchestrates: parse → populate → filter → lifecycle validate
+- `filter_processor.py` — `DatabaseFilterProcessor` applies requirement/SVC filters via SQL DELETEs + CASCADE
+- `el_compiler.py` — compiles Lark EL parse trees into SQL WHERE clauses with parameterized queries
+- `authorizer.py` — SQLite authorizer callback restricting allowed SQL operations
+- `requirements_repository.py` — `RequirementsRepository` data access layer, reconstructs domain objects from DB rows
 
 ### Core Data Model (`models/`)
 All domain objects are frozen/plain `@dataclass`s:
@@ -62,16 +73,17 @@ All domain objects are frozen/plain `@dataclass`s:
 - `MVRsData` / `MVRData` — manual verification results from `mvrs.yml`
 - `AnnotationsData` / `AnnotationData` — from `annotations.yml` (code annotations exported by `reqstool-python-decorators`)
 - `TestsData` / `TestData` — JUnit XML test results
-- `CombinedRawDataset` — flat dict of all raw datasets + parsing graph
-- `CombinedIndexedDataset` — fully resolved, indexed, post-filtered dataset used by commands
+- `CombinedRawDataset` — flat dict of all raw datasets + parsing graph (used during population and by `SemanticValidator`)
 
 Variants (defined in `requirements.yml` metadata): `SYSTEM`, `MICROSERVICE`, `EXTERNAL`.
 
-### Indexing & Filtering (`model_generators/`)
-`CombinedIndexedDatasetGenerator` (`combined_indexed_dataset_generator.py`) takes a `CombinedRawDataset` and produces a `CombinedIndexedDataset` with cross-reference indexes (e.g. `svcs_from_req`, `mvrs_from_svc`). If `_filtered=True`, it delegates filter application to `IndexedDatasetFilterProcessor` (`indexed_dataset_filter_processor.py`), which applies requirement and SVC filters defined in the YAML using the expression language.
+### Services (`services/`)
+Business logic layer querying the database via `RequirementsRepository`:
+- `StatisticsService` — computes per-requirement and total statistics (`TestStats`, `RequirementStatus`, `TotalStats`)
+- `ExportService` — builds export dict conforming to `export_output.schema.json`
 
 ### Expression Language (`expression_languages/`)
-Custom Lark-based DSL for filter expressions in `requirements.yml` / `svcs.yml`. Grammar supports `and`, `or`, `not`, `ids ==`, `ids !=`, and regex matching. `GenericELTransformer[T]` is the base; `RequirementsELTransformer` and `SVCsELTransformer` are thin subclasses.
+Custom Lark-based DSL for filter expressions in `requirements.yml` / `svcs.yml`. Grammar supports `and`, `or`, `not`, `ids ==`, `ids !=`, and regex matching. `GenericELTransformer[T]` is the base; `RequirementsELTransformer` and `SVCsELTransformer` are thin subclasses. `ELToSQLCompiler` compiles parse trees into SQL WHERE clauses.
 
 ### Validation (`common/validators/`)
 - `syntax_validator.py` — JSON Schema validation against `resources/schemas/v1/`
@@ -79,7 +91,7 @@ Custom Lark-based DSL for filter expressions in `requirements.yml` / `svcs.yml`.
 - `lifecycle_validator.py` — warns when DEPRECATED/OBSOLETE items are still referenced
 
 ### Commands (`commands/`)
-Four commands, each consuming a `CombinedIndexedDataset`:
+Each command calls `build_database()` then queries via `RequirementsRepository` and services:
 - `report` — Jinja2 template rendering (`common/jinja2.py`) → AsciiDoc or Markdown via `--format`
 - `report-asciidoc` — *deprecated*, use `report --format asciidoc` instead
 - `export` — JSON output with optional `--req-ids` / `--svc-ids` filters (replaces `generate-json`)
@@ -137,7 +149,7 @@ If a diff is expected (e.g. the PR intentionally changes output), note it in the
 
 - **URN format**: `some:urn:string` — the separator is `:`. `UrnId` is the canonical composite key used throughout indexes.
 - **`@Requirements("REQ_xxx")`** decorator from `reqstool-python-decorators` annotates methods that implement a requirement. This is how the tool tracks its own requirement coverage.
-- Data flows are uni-directional: raw parsing → indexing → output. Mutation only happens inside generators before the final `CombinedIndexedDataset` is frozen.
+- Data flows are uni-directional: parsing → SQLite population → filtering (SQL DELETEs) → read-only queries via repository. Commands never mutate the database.
 - `assert` statements are used for invariant checks in the generators (not for user-facing validation).
 - Tests under `tests/unit` use file-based fixtures from `tests/resources/`.
 - After code changes, also verify scenarios in `TEST_MATRIX.md`.

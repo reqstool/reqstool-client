@@ -39,19 +39,21 @@ def test_status_json_format(local_testdata_resources_rootdir_w_path):
     status, nr_of_incomplete_requirements = result.result
 
     data = json.loads(status)
-    assert "requirement_statistics" in data
-    assert "total_statistics" in data
+    assert "metadata" in data
+    assert "requirements" in data
+    assert "totals" in data
 
-    ts = data["total_statistics"]
-    assert "nr_of_total_requirements" in ts
-    assert "nr_of_completed_requirements" in ts
+    ts = data["totals"]
+    assert "requirements" in ts
+    assert ts["requirements"]["total"] > 0
+    assert "completed" in ts["requirements"]
 
-    # Verify requirement_statistics keys are urn:id strings
-    for key in data["requirement_statistics"]:
+    # Verify requirements keys are urn:id strings
+    for key in data["requirements"]:
         assert ":" in key
 
     # Verify enum serialization uses values
-    for req_stats in data["requirement_statistics"].values():
-        assert req_stats["implementation"] in ["in-code", "N/A"]
+    for req_stats in data["requirements"].values():
+        assert req_stats["implementation_type"] in ["in-code", "N/A"]
 
     assert nr_of_incomplete_requirements == 5
