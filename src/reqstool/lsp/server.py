@@ -230,8 +230,16 @@ def _publish_all_diagnostics(ls: ReqstoolLanguageServer) -> None:
         _publish_diagnostics_for_document(ls, uri)
 
 
-def start_server() -> None:
+def start_server(tcp: bool = False, host: str = "127.0.0.1", port: int = 2087) -> None:
     """Entry point for `reqstool lsp` command."""
     logging.basicConfig(level=logging.INFO)
-    logger.info("Starting reqstool LSP server (stdio)")
-    server.start_io()
+    try:
+        if tcp:
+            logger.info("Starting reqstool LSP server (TCP %s:%d)", host, port)
+            server.start_tcp(host, port)
+        else:
+            logger.info("Starting reqstool LSP server (stdio)")
+            server.start_io()
+    except Exception:
+        logger.exception("reqstool LSP server encountered a fatal error")
+        raise

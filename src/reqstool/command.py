@@ -274,7 +274,32 @@ class Command:
         self._add_subparsers_source(status_source_subparsers)
 
         # command: lsp
-        subparsers.add_parser("lsp", help="Start the Language Server Protocol server (requires reqstool[lsp])")
+        lsp_parser = subparsers.add_parser(
+            "lsp", help="Start the Language Server Protocol server (requires reqstool[lsp])"
+        )
+        lsp_parser.add_argument(
+            "--stdio",
+            action="store_true",
+            default=True,
+            help="Use stdio transport (default)",
+        )
+        lsp_parser.add_argument(
+            "--tcp",
+            action="store_true",
+            default=False,
+            help="Use TCP transport instead of stdio",
+        )
+        lsp_parser.add_argument(
+            "--host",
+            default="127.0.0.1",
+            help="TCP host (default: %(default)s)",
+        )
+        lsp_parser.add_argument(
+            "--port",
+            type=int,
+            default=2087,
+            help="TCP port (default: %(default)s)",
+        )
 
         args = self.__parser.parse_args()
 
@@ -412,7 +437,11 @@ def main():
                     file=sys.stderr,
                 )
                 sys.exit(1)
-            start_server()
+            try:
+                start_server(tcp=args.tcp, host=args.host, port=args.port)
+            except Exception as exc:
+                logging.fatal("reqstool LSP server crashed: %s", exc)
+                sys.exit(1)
         else:
             command.print_help()
     except MissingRequirementsFileError as exc:
