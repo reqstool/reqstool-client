@@ -7,7 +7,6 @@ import logging
 from reqstool.common.models.urn_id import UrnId
 from reqstool.filters.id_filters import IDFilters
 from reqstool.models.raw_datasets import RawDataset
-from reqstool.models.requirements import VARIANTS
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.el_to_sql_compiler import ELToSQLCompiler
 
@@ -21,12 +20,35 @@ class DatabaseFilterProcessor:
         self._parsing_graph = self._load_parsing_graph()
 
     def apply_filters(self) -> None:
+        self._remove_implementation_requirements()
+
         initial_urn = self._db.get_metadata("initial_urn")
 
         self._apply_req_filters(initial_urn)
         self._apply_svc_filters(initial_urn)
 
         self._db.set_metadata("filtered", "true")
+
+    def _remove_implementation_requirements(self) -> None:
+        """Delete requirements from nodes only reachable via implementation edges.
+
+        Nodes reachable only via implementation edges are evidence contributors, not
+        requirement definers. Their requirements are out of scope from the initial URN's
+        perspective. CASCADE removes SVCs/MVRs/annotations that only linked to those
+        requirements; evidence rows linking to in-scope requirements survive.
+        """
+        self._db.connection.execute(
+            """
+            DELETE FROM requirements WHERE urn IN (
+                SELECT DISTINCT child_urn FROM parsing_graph WHERE edge_type = 'implementation'
+                EXCEPT
+                SELECT DISTINCT child_urn FROM parsing_graph WHERE edge_type = 'import'
+                EXCEPT
+                SELECT value FROM metadata WHERE key = 'initial_urn'
+            )
+            """
+        )
+        self._db.connection.commit()
 
     # -- Requirement filters --
 
@@ -50,8 +72,8 @@ class DatabaseFilterProcessor:
         kept_imports: set[UrnId] = set()
         filtered_out_imports: set[UrnId] = set()
 
-        for import_urn in self._parsing_graph.get(urn, []):
-            if self._raw_datasets[import_urn].requirements_data.metadata.variant == VARIANTS.MICROSERVICE:
+        for import_urn, edge_type in self._parsing_graph.get(urn, []):
+            if edge_type == "implementation":
                 continue
 
             kept_per_import, filtered_per_import = self._process_req_filters_per_urn(import_urn)
@@ -101,8 +123,8 @@ class DatabaseFilterProcessor:
         kept_imports: set[UrnId] = set()
         filtered_out_imports: set[UrnId] = set()
 
-        for import_urn in self._parsing_graph.get(urn, []):
-            if self._raw_datasets[import_urn].requirements_data.metadata.variant == VARIANTS.MICROSERVICE:
+        for import_urn, edge_type in self._parsing_graph.get(urn, []):
+            if edge_type == "implementation":
                 continue
 
             kept_per_import, filtered_per_import = self._process_svc_filters_per_urn(import_urn)
@@ -243,13 +265,13 @@ class DatabaseFilterProcessor:
                 if uid not in accessible:
                     logger.warning(f"Cannot exclude: {uid} does not exist or is not accessible")
 
-    def _load_parsing_graph(self) -> dict[str, list[str]]:
-        graph: dict[str, list[str]] = {}
-        rows = self._db.connection.execute("SELECT parent_urn, child_urn FROM parsing_graph").fetchall()
+    def _load_parsing_graph(self) -> dict[str, list[tuple[str, str]]]:
+        graph: dict[str, list[tuple[str, str]]] = {}
+        rows = self._db.connection.execute("SELECT parent_urn, child_urn, edge_type FROM parsing_graph").fetchall()
         # Initialize all URNs as keys (including leaves with no children)
         all_urns = {row["urn"] for row in self._db.connection.execute("SELECT urn FROM urn_metadata").fetchall()}
         for urn in all_urns:
             graph[urn] = []
         for row in rows:
-            graph.setdefault(row["parent_urn"], []).append(row["child_urn"])
+            graph.setdefault(row["parent_urn"], []).append((row["child_urn"], row["edge_type"]))
         return graph

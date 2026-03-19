@@ -101,7 +101,7 @@ class MetaData(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     urn: str
-    variant: VARIANTS
+    variant: Optional[VARIANTS] = None
     title: str
     url: Optional[str] = None
 

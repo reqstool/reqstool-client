@@ -1,0 +1,15 @@
+metadata:
+  urn: root
+  title: Root
+
+requirements:
+  - id: REQ_ROOT_001
+    title: Root requirement
+    significance: shall
+    description: A requirement defined at the root level
+    categories: [reliability]
+    revision: 0.0.1
+
+implementations:
+  local:
+    - path: ../lib-a

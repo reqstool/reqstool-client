@@ -3,11 +3,11 @@
 import logging
 import os
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.common.exceptions import MissingRequirementsFileError
+from reqstool.common.exceptions import CircularImplementationError, CircularImportError, MissingRequirementsFileError
 from reqstool.common.utils import TempDirectoryUtil, Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.location_resolver.location_resolver import LocationResolver
@@ -22,7 +22,7 @@ from reqstool.models.annotations import AnnotationsData
 from reqstool.models.implementations import ImplementationDataInterface
 from reqstool.models.mvrs import MVRsData
 from reqstool.models.raw_datasets import CombinedRawDataset, RawDataset
-from reqstool.models.requirements import VARIANTS, RequirementsData
+from reqstool.models.requirements import RequirementsData
 from reqstool.models.svcs import SVCsData
 from reqstool.models.test_data import TestsData
 from reqstool.requirements_indata.requirements_indata import RequirementsIndata
@@ -38,13 +38,12 @@ class CombinedRawDatasetsGenerator:
         database: Optional[RequirementsDatabase] = None,
     ):
         self.__level: int = 0
-        self.__initial_source_type: VARIANTS = None
         self.__initial_location_handler: LocationResolver = LocationResolver(
             parent=None, current_unresolved=initial_location
         )
         self.semantic_validator = semantic_validator
         self._parsing_order: List[str] = []
-        self._parsing_graph: Dict[str, List[str]] = defaultdict(list)
+        self._parsing_graph: Dict[str, List[Tuple[str, str]]] = defaultdict(list)
         self._database = database
         self.combined_raw_datasets = self.__generate()
 
@@ -148,30 +147,31 @@ class CombinedRawDatasetsGenerator:
 
     def __populate_parsing_graph(self, crd: CombinedRawDataset) -> None:
         for parent_urn, children in crd.parsing_graph.items():
-            for child_urn in children:
-                self._database.insert_parsing_graph_edge(parent_urn, child_urn)
+            for child_urn, edge_type in children:
+                self._database.insert_parsing_graph_edge(parent_urn, child_urn, edge_type)
 
     def __handle_initial_imports(self, raw_datasets: Dict[str, RawDataset], rd: RequirementsData):
-        match self.__initial_source_type:
-            case VARIANTS.SYSTEM:
-                parsed_systems = self.__import_systems(raw_datasets, parent_rd=rd)
-                parsed_microservices = self.__import_implementations(raw_datasets, implementations=rd.implementations)
-                self._parsing_graph[rd.metadata.urn].extend(parsed_systems)
-                self._parsing_graph[rd.metadata.urn].extend(parsed_microservices)
+        if rd.imports:
+            parsed_systems = self.__import_systems(raw_datasets, parent_rd=rd, visited={rd.metadata.urn})
+            self._parsing_graph[rd.metadata.urn].extend([(u, "import") for u in parsed_systems])
 
-                # add current urn as parent to all microservices
-                for ms_urn in parsed_microservices:
-                    self._parsing_graph[ms_urn].append(rd.metadata.urn)
+        if rd.implementations:
+            parsed_microservices = self.__import_implementations(raw_datasets, implementations=rd.implementations)
+            self._parsing_graph[rd.metadata.urn].extend([(u, "implementation") for u in parsed_microservices])
+            for ms_urn in parsed_microservices:
+                self._parsing_graph[ms_urn].append((rd.metadata.urn, "implementation"))
 
-            case VARIANTS.MICROSERVICE:
-                parsed_systems = self.__import_systems(raw_datasets, parent_rd=rd)
-                self._parsing_graph[rd.metadata.urn].extend(parsed_systems)
-            case _:
-                raise RuntimeError("Unsupported initial source system type (this should not happen)")
-
-    def __import_systems(self, raw_datasets: Dict[str, RawDataset], parent_rd: RequirementsData) -> List[str]:
-        if parent_rd.imports is None:
+    def __import_systems(
+        self,
+        raw_datasets: Dict[str, RawDataset],
+        parent_rd: RequirementsData,
+        visited: Optional[Set[str]] = None,
+    ) -> List[str]:
+        if not parent_rd.imports:
             return []
+
+        if visited is None:
+            visited = set()
 
         self.__level += 1
 
@@ -180,27 +180,23 @@ class CombinedRawDatasetsGenerator:
             current_imported_model = self.__parse_source(current_location_handler=system)
             current_urn = current_imported_model.requirements_data.metadata.urn
 
+            if current_urn in visited:
+                raise CircularImportError(current_urn, list(visited))
+
+            visited.add(current_urn)
+
             # add urn to parsing_order_list
             self._parsing_order.append(current_urn)
             parsed_urns.append(current_urn)
 
             raw_datasets[current_urn] = current_imported_model
 
-            assert (
-                current_imported_model.requirements_data.metadata.variant == VARIANTS.SYSTEM
-                or current_imported_model.requirements_data.metadata.variant == VARIANTS.EXTERNAL
+            # recursively import systems
+            imported_systems = self.__import_systems(
+                raw_datasets=raw_datasets, parent_rd=current_imported_model.requirements_data, visited=visited
             )
 
-            # if current source type is system or external import systems recursively
-            if (
-                current_imported_model.requirements_data.metadata.variant == VARIANTS.SYSTEM
-                or current_imported_model.requirements_data.metadata.variant == VARIANTS.EXTERNAL
-            ):
-                imported_systems = self.__import_systems(
-                    raw_datasets=raw_datasets, parent_rd=current_imported_model.requirements_data
-                )
-
-                self._parsing_graph[current_urn].extend(imported_systems)
+            self._parsing_graph[current_urn].extend([(u, "import") for u in imported_systems])
 
         self.__level -= 1
 
@@ -210,7 +206,11 @@ class CombinedRawDatasetsGenerator:
         self,
         raw_datasets: Dict[str, RawDataset],
         implementations: List[ImplementationDataInterface],
+        visited: Optional[Set[str]] = None,
     ) -> List[str]:
+        if visited is None:
+            visited = set()
+
         parsed_urns: List[str] = []
 
         self.__level += 1
@@ -218,11 +218,24 @@ class CombinedRawDatasetsGenerator:
             parsed_model = self.__parse_source(current_location_handler=implementation)
             current_urn = parsed_model.requirements_data.metadata.urn
 
+            if current_urn in visited:
+                raise CircularImplementationError(current_urn, list(visited))
+
+            visited.add(current_urn)
+
             # add urn to parsing_order_list
             self._parsing_order.append(current_urn)
             parsed_urns.append(current_urn)
 
             raw_datasets[current_urn] = parsed_model
+
+            # recurse into this implementation's own implementations
+            sub_impls = parsed_model.requirements_data.implementations
+            if sub_impls:
+                sub_urns = self.__import_implementations(raw_datasets, sub_impls, visited)
+                self._parsing_graph[current_urn].extend([(u, "implementation") for u in sub_urns])
+                for sub_urn in sub_urns:
+                    self._parsing_graph[sub_urn].append((current_urn, "implementation"))
 
         self.__level -= 1
 
@@ -256,17 +269,10 @@ class CombinedRawDatasetsGenerator:
         else:
             logging.info(f"{requirements_indata.dst_path}")
 
-        if self.__initial_location_handler is current_location_handler:
-            self.__initial_source_type = rmg.requirements_data.metadata.variant
-
-        if (
-            rmg.requirements_data.metadata.variant == VARIANTS.SYSTEM
-            or rmg.requirements_data.metadata.variant == VARIANTS.MICROSERVICE
-        ):
-            # parse file sources other than requirements.yml
-            annotations_data, svcs_data, automated_tests, mvrs_data = self.__parse_source_other(
-                actual_tmp_path, requirements_indata, rmg
-            )
+        # parse file sources other than requirements.yml
+        annotations_data, svcs_data, automated_tests, mvrs_data = self.__parse_source_other(
+            actual_tmp_path, requirements_indata, rmg
+        )
 
         # Capture location provenance
         location_type, location_uri = self.__extract_location_provenance(current_location_handler.current)
@@ -365,9 +371,5 @@ class CombinedRawDatasetsGenerator:
             annotations_data = AnnotationsModelGenerator(
                 uri=requirements_indata.requirements_indata_paths.annotations_yml.path, urn=current_urn
             ).model
-
-            # requirement annotations (impls) - only for microservices
-            if rmg.requirements_data.metadata.variant != VARIANTS.MICROSERVICE:
-                assert not annotations_data.implementations
 
         return annotations_data, svcs_data, automated_tests, mvrs_data

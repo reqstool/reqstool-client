@@ -1,0 +1,7 @@
+metadata:
+  urn: node-b
+  title: Node B Requirements
+
+imports:
+  local:
+    - path: ../node-a

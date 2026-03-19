@@ -1,0 +1,15 @@
+metadata:
+  urn: lib-a
+  title: Library A
+
+requirements:
+  - id: REQ_LA_001
+    title: Library A requirement
+    significance: shall
+    description: A requirement defined in lib-a
+    categories: [reliability]
+    revision: 0.0.1
+
+implementations:
+  local:
+    - path: ../lib-b

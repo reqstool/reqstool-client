@@ -1,0 +1,7 @@
+metadata:
+  urn: lib-b
+  title: Library B
+
+implementations:
+  local:
+    - path: ../lib-a
