@@ -30,35 +30,6 @@
     "required": [
         "metadata"
     ],
-    "anyOf": [
-        {
-            "if": {
-                "properties": {
-                    "metadata": {
-                        "properties": {
-                            "variant": {
-                                "anyOf": [
-                                    {
-                                        "const": "microservice"
-                                    },
-                                    {
-                                        "const": "external"
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
-            },
-            "then": {
-                "not": {
-                    "required": [
-                        "implementations"
-                    ]
-                }
-            }
-        }
-    ],
     "$defs": {
         "metadata": {
             "type": "object",
@@ -89,7 +60,6 @@
             },
             "required": [
                 "urn",
-                "variant",
                 "title"
             ]
         },

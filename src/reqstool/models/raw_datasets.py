@@ -1,6 +1,6 @@
 # Copyright © LFV
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -30,5 +30,5 @@ class CombinedRawDataset(BaseModel):
 
     initial_model_urn: str
     urn_parsing_order: List[str] = Field(default_factory=list)
-    parsing_graph: Dict[str, List[str]] = Field(default_factory=dict)
+    parsing_graph: Dict[str, List[Tuple[str, str]]] = Field(default_factory=dict)
     raw_datasets: Dict[str, RawDataset] = Field(default_factory=dict)

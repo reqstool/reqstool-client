@@ -66,7 +66,7 @@ def _setup_db_with_raw_datasets(raw_datasets, parsing_graph, initial_urn):
 
     for parent, children in parsing_graph.items():
         for child in children:
-            db.insert_parsing_graph_edge(parent, child)
+            db.insert_parsing_graph_edge(parent, child, "import")
 
     return db
 

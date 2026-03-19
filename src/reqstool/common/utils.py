@@ -16,7 +16,7 @@ from requests_file import FileAdapter
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.models.raw_datasets import RawDataset
-from reqstool.models.requirements import VARIANTS, RequirementData
+from reqstool.models.requirements import RequirementData
 from reqstool.models.svcs import SVCData
 
 
@@ -131,8 +131,6 @@ class Utils:
         all_svcs = {}
 
         for model_id, model_info in raw_datasets.items():
-            if Utils.model_is_external(raw_datasets=model_info):
-                continue
             if model_info.svcs_data is not None:
                 for svc_id, svc in model_info.svcs_data.cases.items():
                     if svc_id not in all_svcs:
@@ -143,10 +141,6 @@ class Utils:
     @staticmethod
     def flatten_list(list_to_flatten: Iterable) -> List[any]:
         return list(chain.from_iterable(list_to_flatten))
-
-    @staticmethod
-    def model_is_external(raw_datasets: RawDataset) -> bool:
-        return raw_datasets.requirements_data.metadata.variant.value == VARIANTS.EXTERNAL.value
 
     @staticmethod
     def string_contains_delimiter(string: str, delimiter: str) -> bool:

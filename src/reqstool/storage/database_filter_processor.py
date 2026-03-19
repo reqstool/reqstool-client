@@ -7,7 +7,6 @@ import logging
 from reqstool.common.models.urn_id import UrnId
 from reqstool.filters.id_filters import IDFilters
 from reqstool.models.raw_datasets import RawDataset
-from reqstool.models.requirements import VARIANTS
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.el_to_sql_compiler import ELToSQLCompiler
 
@@ -50,8 +49,8 @@ class DatabaseFilterProcessor:
         kept_imports: set[UrnId] = set()
         filtered_out_imports: set[UrnId] = set()
 
-        for import_urn in self._parsing_graph.get(urn, []):
-            if self._raw_datasets[import_urn].requirements_data.metadata.variant == VARIANTS.MICROSERVICE:
+        for import_urn, edge_type in self._parsing_graph.get(urn, []):
+            if edge_type == "implementation":
                 continue
 
             kept_per_import, filtered_per_import = self._process_req_filters_per_urn(import_urn)
@@ -101,8 +100,8 @@ class DatabaseFilterProcessor:
         kept_imports: set[UrnId] = set()
         filtered_out_imports: set[UrnId] = set()
 
-        for import_urn in self._parsing_graph.get(urn, []):
-            if self._raw_datasets[import_urn].requirements_data.metadata.variant == VARIANTS.MICROSERVICE:
+        for import_urn, edge_type in self._parsing_graph.get(urn, []):
+            if edge_type == "implementation":
                 continue
 
             kept_per_import, filtered_per_import = self._process_svc_filters_per_urn(import_urn)
@@ -243,13 +242,13 @@ class DatabaseFilterProcessor:
                 if uid not in accessible:
                     logger.warning(f"Cannot exclude: {uid} does not exist or is not accessible")
 
-    def _load_parsing_graph(self) -> dict[str, list[str]]:
-        graph: dict[str, list[str]] = {}
-        rows = self._db.connection.execute("SELECT parent_urn, child_urn FROM parsing_graph").fetchall()
+    def _load_parsing_graph(self) -> dict[str, list[tuple[str, str]]]:
+        graph: dict[str, list[tuple[str, str]]] = {}
+        rows = self._db.connection.execute("SELECT parent_urn, child_urn, edge_type FROM parsing_graph").fetchall()
         # Initialize all URNs as keys (including leaves with no children)
         all_urns = {row["urn"] for row in self._db.connection.execute("SELECT urn FROM urn_metadata").fetchall()}
         for urn in all_urns:
             graph[urn] = []
         for row in rows:
-            graph.setdefault(row["parent_urn"], []).append(row["child_urn"])
+            graph.setdefault(row["parent_urn"], []).append((row["child_urn"], row["edge_type"]))
         return graph

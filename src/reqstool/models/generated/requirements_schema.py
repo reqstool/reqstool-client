@@ -33,7 +33,7 @@ class Metadata(BaseModel):
     """
     Unique resource name
     """
-    variant: Variant
+    variant: Variant | None = None
     """
     Enum of system, microservice, or external
     """
