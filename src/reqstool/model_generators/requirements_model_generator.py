@@ -92,7 +92,7 @@ class RequirementsModelGenerator:
 
         validated = RequirementsPydanticModel.model_validate(data)
 
-        r_metadata: MetaData = self.__parse_metadata(validated.root)
+        r_metadata: MetaData = self.__parse_metadata(validated)
 
         r_implementations: List[ImplementationDataInterface] = []
         r_imports: List[ImportDataInterface] = []
@@ -100,10 +100,10 @@ class RequirementsModelGenerator:
         r_filters: Dict[str, RequirementFilter] = {}
 
         self.prefix_with_urn = False
-        r_imports = self.__parse_imports(validated.root)
+        r_imports = self.__parse_imports(validated)
         r_filters = self.__parse_requirement_filters(data=data)
-        r_implementations = self.__parse_implementations(validated.root)
-        r_requirements = self.__parse_requirements(validated.root, data=data)
+        r_implementations = self.__parse_implementations(validated)
+        r_requirements = self.__parse_requirements(validated, data=data)
 
         return RequirementsData(
             metadata=r_metadata,
