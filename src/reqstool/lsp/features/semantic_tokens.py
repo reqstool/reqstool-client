@@ -16,10 +16,7 @@ _STATE_TO_IDX = {
     LIFECYCLESTATE.OBSOLETE: 3,
 }
 
-SEMANTIC_TOKENS_OPTIONS = types.SemanticTokensOptions(
-    legend=types.SemanticTokensLegend(token_types=TOKEN_TYPES, token_modifiers=[]),
-    full=True,
-)
+SEMANTIC_TOKEN_LEGEND = types.SemanticTokensLegend(token_types=TOKEN_TYPES, token_modifiers=[])
 
 
 def _encode_tokens(tokens: list[tuple[int, int, int, int]]) -> list[int]:

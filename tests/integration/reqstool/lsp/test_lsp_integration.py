@@ -167,11 +167,11 @@ async def test_completion_requirements(lsp_client, fixture_dir):
         "REQ_MANUAL_FAIL",
         "REQ_NOT_IMPLEMENTED",
         "REQ_FAILING_TEST",
-        "REQ_SKIPPED_TEST",
         "REQ_MISSING_TEST",
-        "REQ_OBSOLETE",
     }
     assert expected_ids.issubset(labels), f"Missing REQ IDs in completion. Got: {labels}"
+    assert "REQ_SKIPPED_TEST" not in labels, "Deprecated REQ should not appear in completion"
+    assert "REQ_OBSOLETE" not in labels, "Obsolete REQ should not appear in completion"
 
 
 async def test_completion_svcs(lsp_client, fixture_dir):
@@ -192,8 +192,10 @@ async def test_completion_svcs(lsp_client, fixture_dir):
 
     assert result is not None, "Expected completion result"
     labels = {item.label for item in result.items}
-    expected_ids = {"SVC_010", "SVC_020", "SVC_021", "SVC_022", "SVC_030", "SVC_040", "SVC_050", "SVC_060", "SVC_070"}
+    expected_ids = {"SVC_010", "SVC_020", "SVC_021", "SVC_022", "SVC_030", "SVC_040", "SVC_060"}
     assert expected_ids.issubset(labels), f"Missing SVC IDs in completion. Got: {labels}"
+    assert "SVC_050" not in labels, "Deprecated SVC should not appear in completion"
+    assert "SVC_070" not in labels, "Obsolete SVC should not appear in completion"
 
 
 # ---------------------------------------------------------------------------

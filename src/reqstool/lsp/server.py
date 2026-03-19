@@ -17,7 +17,7 @@ from reqstool.lsp.features.document_symbols import handle_document_symbols
 from reqstool.lsp.features.hover import handle_hover
 from reqstool.lsp.features.inlay_hints import handle_inlay_hints
 from reqstool.lsp.features.references import handle_references
-from reqstool.lsp.features.semantic_tokens import SEMANTIC_TOKENS_OPTIONS, handle_semantic_tokens
+from reqstool.lsp.features.semantic_tokens import SEMANTIC_TOKEN_LEGEND, handle_semantic_tokens
 from reqstool.lsp.features.workspace_symbols import handle_workspace_symbols
 from reqstool.lsp.workspace_manager import WorkspaceManager
 
@@ -263,7 +263,7 @@ def on_workspace_symbol(ls: ReqstoolLanguageServer, params: types.WorkspaceSymbo
     return handle_workspace_symbols(params.query, ls.workspace_manager)
 
 
-@server.feature(types.TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL, SEMANTIC_TOKENS_OPTIONS)
+@server.feature(types.TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL, SEMANTIC_TOKEN_LEGEND)
 def on_semantic_tokens(ls: ReqstoolLanguageServer, params: types.SemanticTokensParams) -> types.SemanticTokens:
     document = ls.workspace.get_text_document(params.text_document.uri)
     project = ls.workspace_manager.project_for_file(params.text_document.uri)
