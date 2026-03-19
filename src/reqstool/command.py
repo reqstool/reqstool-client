@@ -402,6 +402,21 @@ class Command:
             else 0
         )
 
+    def command_lsp(self, lsp_args: argparse.Namespace):
+        try:
+            from reqstool.lsp.server import start_server
+        except ImportError:
+            print(
+                "LSP server requires extra dependencies: pip install reqstool[lsp]",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        try:
+            start_server(tcp=lsp_args.tcp, host=lsp_args.host, port=lsp_args.port, log_file=lsp_args.log_file)
+        except Exception as exc:
+            logging.fatal("reqstool LSP server crashed: %s", exc)
+            sys.exit(1)
+
     def print_help(self):
         self.__parser.print_help(sys.stderr)
 
@@ -435,19 +450,7 @@ def main():
         elif args.command == "status":
             exit_code = command.command_status(status_args=args)
         elif args.command == "lsp":
-            try:
-                from reqstool.lsp.server import start_server
-            except ImportError:
-                print(
-                    "LSP server requires extra dependencies: pip install reqstool[lsp]",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
-            try:
-                start_server(tcp=args.tcp, host=args.host, port=args.port, log_file=args.log_file)
-            except Exception as exc:
-                logging.fatal("reqstool LSP server crashed: %s", exc)
-                sys.exit(1)
+            command.command_lsp(lsp_args=args)
         else:
             command.print_help()
     except MissingRequirementsFileError as exc:
