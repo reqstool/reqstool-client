@@ -78,7 +78,7 @@ def test_get_mvr_details_unknown(project):
 def test_get_requirement_details_fields(project):
     result = get_requirement_details("REQ_010", project)
     assert result is not None
-    assert result["urn"].endswith(":REQ_010")
+    assert result["id"] == "REQ_010"
     assert result["lifecycle"]["state"] in ("draft", "effective", "deprecated", "obsolete")
     assert isinstance(result["categories"], list)
 
