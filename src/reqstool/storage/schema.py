@@ -114,12 +114,13 @@ CREATE TABLE IF NOT EXISTS test_results (
 CREATE TABLE IF NOT EXISTS parsing_graph (
     parent_urn TEXT NOT NULL,
     child_urn TEXT NOT NULL,
+    edge_type TEXT NOT NULL CHECK (edge_type IN ('import', 'implementation')),
     PRIMARY KEY (parent_urn, child_urn)
 );
 
 CREATE TABLE IF NOT EXISTS urn_metadata (
     urn TEXT NOT NULL PRIMARY KEY,
-    variant TEXT NOT NULL CHECK (variant IN ('system', 'microservice', 'external')),
+    variant TEXT CHECK (variant IN ('system', 'microservice', 'external')),
     title TEXT NOT NULL,
     url TEXT,
     parse_position INTEGER NOT NULL UNIQUE

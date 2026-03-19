@@ -1,81 +1,105 @@
 = How it Works
 
-This page covers the internal architecture of the reqstool client. For general concepts like annotations, parsing, and validation, see xref:reqstool::concepts.adoc[Concepts].
+This page covers the internal architecture of the reqstool client. For general concepts like annotations, parsing, and validation, see xref:reqstool::concepts.adoc[Concepts]. For detailed architectural decisions, see the link:https://github.com/reqstool/reqstool-client/blob/main/docs/DESIGN.md[DESIGN.md] in the repository.
 
-== Template generation
+== Pipeline overview
 
-The CombinedIndexedDatasetGenerator prepares the data provided from the CombinedRawDatasetsGenerator for rendering with the Jinja2 templates and is used by the ReportCommand and the StatusCommand components.
+----
+Location → parse → RawDataset → INSERT into SQLite → Repository/Services → Command output
+----
+
+Each command calls `build_database()` which:
+
+1. Parses all sources into the in-memory SQLite database (two-phase traversal, see below)
+2. Applies filters (`DatabaseFilterProcessor`) — removes out-of-scope requirements and applies user-defined `filters:` blocks
+3. Runs lifecycle validation (warns on DEPRECATED/OBSOLETE references)
+4. Commands then query via `RequirementsRepository` and service layer
+
+== Two-phase graph traversal
+
+The requirement graph is a directed graph of URNs connected by two edge types:
+
+* **`import`** — "I reference requirements from this URN" (upward, toward requirement definitions)
+* **`implementation`** — "this URN provides evidence for my requirements" (downward, toward code/tests)
+
+`CombinedRawDatasetsGenerator` traverses this graph in two phases:
+
+=== Phase 1 — import chain (recursive DFS, full insert)
+
+Follows `imports:` sections recursively, depth-first. For each node, all five data types are fully inserted into SQLite: requirements, SVCs, MVRs, annotations, and test results. Cycle detection raises `CircularImportError`.
+
+=== Phase 2 — implementation chain (recursive, metadata-only insert)
+
+Follows `implementations:` sections recursively. Think library-uses-library — lib-a can itself have implementations (lib-b → lib-c), all of which may contribute test evidence for the initial URN's requirements.
+
+For each implementation node, `requirements.yml` is parsed (validation runs) but only the URN metadata is inserted — the requirement rows are excluded. All other files (SVCs, MVRs, annotations, test results) are inserted normally; SQLite FK constraints automatically discard rows that reference requirements outside the current scope. Cycle detection raises `CircularImplementationError`.
+
+NOTE: `imports:` sections of implementation nodes are not followed — an implementation's own imports belong to a different scope.
+
+== The `variant` field
+
+`variant: system/microservice/external` in `requirements.yml` is optional advisory metadata. It is not a behavioral gate — parsing is entirely presence-based. If a file exists, it is read. If a section exists in YAML, it is parsed.
 
 == Overview of central components
-
-Below is a breakdown of the central components of reqstool:
 
 [plantuml,format=svg]
 ....
 @startuml
 !include <C4/C4_Component>
 
-Component(StatusCommand, "StatusCommand", "Processes status command")
-Component(GenerateJsonCommand, "GenerateJsonCommand", "Generates JSON from imported Models")
-Component(ReportCommand, "ReportCommand", "Generates reports")
-Component(SemanticValidator, "SemanticValidator", "Validates data read from source")
-Component(CombinedRawDatasetsGenerator, "CombinedRawDatasetsGenerator", "Generates imported models")
-Component(reqstoolConfig, "reqstoolConfig", "Resolves paths to yaml files")
-Component(CombinedIndexedDatasetGenerator, "CombinedIndexedDatasetGenerator", "Prepares data for rendering of Jinja2 templates")
-Component(Command, "Command", "Handles user commands")
+Component(Command, "Command", "Handles user commands (status, report, export)")
+Component(CombinedRawDatasetsGenerator, "CombinedRawDatasetsGenerator", "Two-phase graph traversal and SQLite population")
+Component(DatabaseFilterProcessor, "DatabaseFilterProcessor", "Post-parse requirement/SVC filtering")
+Component(RequirementsRepository, "RequirementsRepository", "Data access layer over SQLite")
+Component(StatisticsService, "StatisticsService", "Computes per-requirement status and totals")
+Component(SemanticValidator, "SemanticValidator", "Cross-reference validation")
+Component(SQLiteDB, "SQLite (in-memory)", "Single source of truth after parsing")
 
-Rel(Command, StatusCommand, "Uses")
-Rel(Command, GenerateJsonCommand, "Uses")
-Rel(Command, ReportCommand, "Uses")
-Rel(CombinedRawDatasetsGenerator, SemanticValidator, "Depends on")
-Rel_Right(CombinedRawDatasetsGenerator, reqstoolConfig, "Uses")
-Rel(StatusCommand, CombinedRawDatasetsGenerator, "Uses")
-Rel(GenerateJsonCommand, CombinedRawDatasetsGenerator, "Uses")
-Rel(ReportCommand, CombinedRawDatasetsGenerator, "Uses")
-Rel(ReportCommand, CombinedIndexedDatasetGenerator, "Uses")
-Rel(StatusCommand, CombinedIndexedDatasetGenerator, "Uses")
-
-Rel_Down(CombinedRawDatasetsGenerator, CombinedIndexedDatasetGenerator, "Provides data to")
+Rel(Command, CombinedRawDatasetsGenerator, "build_database()")
+Rel(CombinedRawDatasetsGenerator, SQLiteDB, "INSERT")
+Rel(CombinedRawDatasetsGenerator, SemanticValidator, "validate_post_parsing()")
+Rel(DatabaseFilterProcessor, SQLiteDB, "DELETE (filters)")
+Rel(RequirementsRepository, SQLiteDB, "SELECT")
+Rel(StatisticsService, RequirementsRepository, "queries")
+Rel(Command, StatisticsService, "Uses")
+Rel(Command, RequirementsRepository, "Uses")
 
 @enduml
 ....
 
-== Sequence diagram of the program execution
+== Sequence diagram
 
-Below is an example to illustrate how reqstool parses data from the initial source.
+Below illustrates how reqstool processes the `status` command against an initial source that imports a parent system.
 
 [plantuml,format=svg]
 ....
 @startuml
 !include <C4/C4_Sequence>
 
-Person(user, "User", "", "")
-
+Person(user, "User")
 Container(reqsTool, "reqstool")
 
-Container_Boundary(b, "Requirement files")
-  Container_Boundary(b1, "MS-001")
-    Component(reqs, "Requirements", "Requirements.yml")
-    Component(svcs, "SVCS", "software_verification_cases.yml")
-    Component(mvrs, "MVRS", "manual_verification_results.yml")
-    Component(annot_impls,"Implementations", "requirements_annotations.yml")
-    Component(annot_tests,"Automated tests", "svcs_annotations.yml")
-  Boundary_End()
-  Container_Boundary(b2, "Ext-001")
-    Component(reqs_ext, "Requirements", "Requirements.yml")
-  Boundary_End()
+Container_Boundary(phase1, "Phase 1 — import chain")
+  Component(initial_reqs, "initial/requirements.yml")
+  Component(initial_svcs, "initial/svcs.yml")
+  Component(parent_reqs, "parent/requirements.yml")
 Boundary_End()
 
-Rel(user, reqsTool, "Submit command", "bash")
-Rel(reqsTool, reqs, "Reads requirements")
-Rel(reqsTool, svcs, "Reads svcs")
-Rel(reqsTool, mvrs, "Reads mvrs")
-Rel(reqsTool, annot_impls, "Reads impls annotations")
-Rel(reqsTool, annot_tests, "Reads test annotations")
-Rel(reqsTool, reqsTool, "Create imported model")
-Rel(reqsTool, reqs_ext, "Reads imported requirements")
-Rel(reqsTool, reqsTool, "Create imported model")
-Rel(reqsTool, user, "Returns combined data based on imported")
+Container_Boundary(phase2, "Phase 2 — implementation chain")
+  Component(impl_reqs, "lib-a/requirements.yml")
+  Component(impl_svcs, "lib-a/svcs.yml")
+  Component(impl_tests, "lib-a/test results")
+Boundary_End()
+
+Rel(user, reqsTool, "reqstool status local -p ./initial")
+Rel(reqsTool, initial_reqs, "parse + full insert")
+Rel(reqsTool, initial_svcs, "parse + full insert")
+Rel(reqsTool, parent_reqs, "parse + full insert (recursive)")
+Rel(reqsTool, impl_reqs, "parse + metadata only")
+Rel(reqsTool, impl_svcs, "parse + FK-scoped insert")
+Rel(reqsTool, impl_tests, "parse + scoped insert")
+Rel(reqsTool, reqsTool, "post-parse: delete impl-child requirements")
+Rel(reqsTool, user, "status table (exit code = unmet requirements)")
 
 @enduml
 ....

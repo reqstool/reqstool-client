@@ -146,16 +146,22 @@ class RequirementsDatabase:
             (urn, fqn, status.value),
         )
 
-    def insert_parsing_graph_edge(self, parent_urn: str, child_urn: str) -> None:
+    def insert_parsing_graph_edge(self, parent_urn: str, child_urn: str, edge_type: str) -> None:
         self._conn.execute(
-            "INSERT OR IGNORE INTO parsing_graph (parent_urn, child_urn) VALUES (?, ?)",
-            (parent_urn, child_urn),
+            "INSERT OR IGNORE INTO parsing_graph (parent_urn, child_urn, edge_type) VALUES (?, ?, ?)",
+            (parent_urn, child_urn, edge_type),
         )
 
     def insert_urn_metadata(self, metadata: MetaData) -> None:
         self._conn.execute(
             "INSERT INTO urn_metadata (urn, variant, title, url, parse_position) VALUES (?, ?, ?, ?, ?)",
-            (metadata.urn, metadata.variant.value, metadata.title, metadata.url, self._next_parse_position),
+            (
+                metadata.urn,
+                metadata.variant.value if metadata.variant else None,
+                metadata.title,
+                metadata.url,
+                self._next_parse_position,
+            ),
         )
         self._next_parse_position += 1
 

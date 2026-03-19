@@ -33,7 +33,7 @@ class Metadata(BaseModel):
     """
     Unique resource name
     """
-    variant: Variant
+    variant: Variant | None = None
     """
     Enum of system, microservice, or external
     """
@@ -278,7 +278,7 @@ class Locations(BaseModel):
     """
 
 
-class Model1(BaseModel):
+class Model(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -299,7 +299,3 @@ class Model1(BaseModel):
     """
     Array of Requirements
     """
-
-
-class Model(RootModel[Model1]):
-    root: Model1

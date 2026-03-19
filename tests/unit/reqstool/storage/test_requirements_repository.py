@@ -99,7 +99,7 @@ def test_get_import_graph(db):
     _setup_metadata(db, "ms-001")
     m2 = MetaData(urn="sys-001", variant=VARIANTS.SYSTEM, title="System")
     db.insert_urn_metadata(m2)
-    db.insert_parsing_graph_edge("ms-001", "sys-001")
+    db.insert_parsing_graph_edge("ms-001", "sys-001", "import")
     db.commit()
 
     repo = RequirementsRepository(db)

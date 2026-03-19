@@ -92,30 +92,18 @@ class RequirementsModelGenerator:
 
         validated = RequirementsPydanticModel.model_validate(data)
 
-        r_metadata: MetaData = self.__parse_metadata(validated.root)
+        r_metadata: MetaData = self.__parse_metadata(validated)
 
         r_implementations: List[ImplementationDataInterface] = []
         r_imports: List[ImportDataInterface] = []
         r_requirements: Dict[str, RequirementData] = {}
         r_filters: Dict[str, RequirementFilter] = {}
 
-        match r_metadata.variant:
-            case VARIANTS.SYSTEM:
-                self.prefix_with_urn = False
-                r_imports = self.__parse_imports(validated.root)
-                r_filters = self.__parse_requirement_filters(data=data)
-                r_implementations = self.__parse_implementations(validated.root)
-                r_requirements = self.__parse_requirements(validated.root, data=data)
-            case VARIANTS.MICROSERVICE:
-                self.prefix_with_urn = False
-                r_imports = self.__parse_imports(validated.root)
-                r_filters = self.__parse_requirement_filters(data=data)
-                r_requirements = self.__parse_requirements(validated.root, data=data)
-            case VARIANTS.EXTERNAL:
-                self.prefix_with_urn = False
-                r_requirements = self.__parse_requirements(validated.root, data=data)
-            case _:
-                raise RuntimeError("Unsupported system type")
+        self.prefix_with_urn = False
+        r_imports = self.__parse_imports(validated)
+        r_filters = self.__parse_requirement_filters(data=data)
+        r_implementations = self.__parse_implementations(validated)
+        r_requirements = self.__parse_requirements(validated, data=data)
 
         return RequirementsData(
             metadata=r_metadata,
@@ -127,7 +115,7 @@ class RequirementsModelGenerator:
 
     def __parse_metadata(self, model):
         r_urn: str = model.metadata.urn
-        r_variant: VARIANTS = VARIANTS(model.metadata.variant.value)
+        r_variant = VARIANTS(model.metadata.variant.value) if model.metadata.variant else None
         r_title: str = model.metadata.title
         r_url: str = model.metadata.url
 

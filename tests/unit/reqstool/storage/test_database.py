@@ -254,8 +254,8 @@ def test_insert_test_result(db):
 
 
 def test_insert_parsing_graph_edge(db):
-    db.insert_parsing_graph_edge("sys-001", "ms-001")
-    db.insert_parsing_graph_edge("sys-001", "ms-002")
+    db.insert_parsing_graph_edge("sys-001", "ms-001", "implementation")
+    db.insert_parsing_graph_edge("sys-001", "ms-002", "implementation")
 
     rows = db.connection.execute("SELECT child_urn FROM parsing_graph WHERE parent_urn = 'sys-001'").fetchall()
     children = {row["child_urn"] for row in rows}
@@ -263,8 +263,8 @@ def test_insert_parsing_graph_edge(db):
 
 
 def test_insert_duplicate_parsing_graph_edge_ignored(db):
-    db.insert_parsing_graph_edge("sys-001", "ms-001")
-    db.insert_parsing_graph_edge("sys-001", "ms-001")
+    db.insert_parsing_graph_edge("sys-001", "ms-001", "implementation")
+    db.insert_parsing_graph_edge("sys-001", "ms-001", "implementation")
 
     count = db.connection.execute("SELECT COUNT(*) FROM parsing_graph").fetchone()[0]
     assert count == 1
