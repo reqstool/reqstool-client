@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.common.exceptions import CircularImportError, MissingRequirementsFileError
+from reqstool.common.exceptions import CircularImplementationError, CircularImportError, MissingRequirementsFileError
 from reqstool.common.utils import TempDirectoryUtil, Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.location_resolver.location_resolver import LocationResolver
@@ -193,7 +193,11 @@ class CombinedRawDatasetsGenerator:
         self,
         raw_datasets: Dict[str, RawDataset],
         implementations: List[ImplementationDataInterface],
+        visited: Optional[Set[str]] = None,
     ) -> List[str]:
+        if visited is None:
+            visited = set()
+
         parsed_urns: List[str] = []
 
         self.__level += 1
@@ -201,11 +205,24 @@ class CombinedRawDatasetsGenerator:
             parsed_model = self.__parse_source(current_location_handler=implementation)
             current_urn = parsed_model.requirements_data.metadata.urn
 
+            if current_urn in visited:
+                raise CircularImplementationError(current_urn, list(visited))
+
+            visited.add(current_urn)
+
             # add urn to parsing_order_list
             self._parsing_order.append(current_urn)
             parsed_urns.append(current_urn)
 
             raw_datasets[current_urn] = parsed_model
+
+            # recurse into this implementation's own implementations
+            sub_impls = parsed_model.requirements_data.implementations
+            if sub_impls:
+                sub_urns = self.__import_implementations(raw_datasets, sub_impls, visited)
+                self._parsing_graph[current_urn].extend([(u, "implementation") for u in sub_urns])
+                for sub_urn in sub_urns:
+                    self._parsing_graph[sub_urn].append((current_urn, "implementation"))
 
         self.__level -= 1
 

@@ -1,25 +1,26 @@
 # Open Questions: Remove `variant` as Behavioral Gate (#324)
 
-## Q1: Implementation import traversal
+## Q1: Implementation traversal depth
 
-When an implementation (microservice) is loaded, should its own `imports` section also be traversed?
+Should `implementations:` sections be traversed recursively, or are implementation nodes leaves?
 
-### Answer: No — implementations are leaf nodes (Option A)
+### Answer: Recursive (revised — library-uses-library model)
 
-The traversal is directional from the initial URN's perspective:
+Initial assumption was "leaf nodes" based on a system→microservice mental model. This was revised
+after removing `variant` as a behavioral gate.
 
-- **Imports = parents (upward)**: "whose requirements do I reference?" → follow recursively
-- **Implementations = children (downward)**: "who implements my requirements?" → load annotations/SVCs/tests only
+Think library-uses-library: lib-a can have its own implementations (lib-b → lib-c). All nodes in
+the implementation subtree can have annotations and test results pointing to in-scope requirements.
+Flat traversal silently misses their evidence.
 
-An implementation's own imports point to requirements *outside* the initial URN's parent chain.
-Those are a different scope — relevant only if that other system is parsed as its own initial source.
+The one constraint that remains: `imports:` sections of implementation nodes are NOT followed.
+An implementation's own imports point to a different requirement scope.
 
 ```
 initial-source (C1)
-  imports/ → recurse upward (parents: B1 → A1, A4)
-  implementations/ → load flat, no sub-traversal
-    D1 (leaf — provides annotations/SVCs/tests for C1's requirements)
-        D1's import of C2 is IRRELEVANT from C1's perspective
+  imports/ → recurse upward (parents: B1 → A1, A4) — full insert
+  implementations/ → recurse downward (lib-a → lib-b → lib-c) — metadata-only insert
+    lib-a's own imports: NOT followed (different scope)
 ```
 
 ---
@@ -139,12 +140,17 @@ Hypothetical: D1 has an import back to A1.
 
 ## Q2: Cycle detection scope
 
-Where should circular import detection trigger?
+Where should circular dependency detection trigger?
 
-### Answer: Import chain only (Option A)
+### Answer: Both import and implementation chains (revised)
 
-Cycles can only occur going up the import chain (A imports B imports A).
-Implementation edges point downward and are not recursed into, so they cannot form cycles.
+Originally: import chain only, since implementations were leaves.
+
+After revising Q1 to recursive implementations: implementation chains can also cycle
+(lib-a → lib-b → lib-a). Both chains need independent visited sets and raise distinct errors:
+
+- `CircularImportError` — detected in `__import_systems`
+- `CircularImplementationError` — detected in `__import_implementations`
 
 ---
 
@@ -152,6 +158,57 @@ Implementation edges point downward and are not recursed into, so they cannot fo
 
 **Answer: Yes — presence-based, regardless of role.**
 
-Current `main` already parses all auxiliary files unconditionally. If a URN provides `svcs.yml`,
-it gets parsed whether the URN is the initial source, an import parent, or an implementation child.
-The filter processor and reporting layer decide what's relevant for the initial URN's scope.
+All auxiliary files are parsed for every node based purely on file presence. The insertion rules
+differ by phase (see Q4), but parsing always runs — including validation.
+
+---
+
+## Q4: What data is inserted for implementation children?
+
+**Answer: Metadata only for requirements; all other files via FK-scoped insert.**
+
+| File | Import parent | Implementation child |
+|------|--------------|----------------------|
+| `requirements.yml` | full insert | metadata only (skip `insert_requirement`) |
+| `svcs.yml` | full insert | insert — FK rejects rows referencing out-of-scope requirements |
+| `mvrs.yml` | full insert | insert — FK rejects rows referencing out-of-scope SVCs |
+| `annotations.yml` | full insert | insert — FK rejects rows referencing out-of-scope requirements |
+| test results | full insert | insert with explicit scope check (no FK, keyed by FQN) |
+
+Validation still runs on `requirements.yml` for all nodes. Syntax errors in an implementation
+child's file still surface — only the DB insertion is skipped.
+
+---
+
+## Q5: How are implementation-child requirements excluded from the final scope?
+
+**Answer: Post-parse DELETE in `DatabaseFilterProcessor`.**
+
+`_remove_implementation_requirements()` runs at the start of `apply_filters()`:
+
+```sql
+DELETE FROM requirements WHERE urn IN (
+    SELECT DISTINCT child_urn FROM parsing_graph WHERE edge_type = 'implementation'
+    EXCEPT
+    SELECT DISTINCT child_urn FROM parsing_graph WHERE edge_type = 'import'
+    EXCEPT
+    SELECT value FROM metadata WHERE key = 'initial_urn'
+)
+```
+
+CASCADE handles SVCs/MVRs/annotations that only linked to those deleted requirements.
+Evidence rows linking to in-scope requirements (from Phase 1) survive.
+
+---
+
+## Q6: Why post-parse and not ingest-time?
+
+**Answer: ~30 lines vs ~150 lines; identical result for an ephemeral in-memory DB.**
+
+Ingest-time filtering would require restructuring `CombinedRawDatasetsGenerator` into two explicit
+phases with scope-aware population logic (~150 lines across 3–4 files). Post-parse is a single SQL
+DELETE in the filter processor (~30 lines). The filter processor already runs a post-parse cleanup
+pass for user-defined `filters:` blocks — adding structural cleanup there is consistent.
+
+Since the DB is in-memory and ephemeral (never persisted), the transient presence of
+implementation-child requirements has no observable effect beyond the filter step.

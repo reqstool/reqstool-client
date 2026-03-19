@@ -20,12 +20,35 @@ class DatabaseFilterProcessor:
         self._parsing_graph = self._load_parsing_graph()
 
     def apply_filters(self) -> None:
+        self._remove_implementation_requirements()
+
         initial_urn = self._db.get_metadata("initial_urn")
 
         self._apply_req_filters(initial_urn)
         self._apply_svc_filters(initial_urn)
 
         self._db.set_metadata("filtered", "true")
+
+    def _remove_implementation_requirements(self) -> None:
+        """Delete requirements from nodes only reachable via implementation edges.
+
+        Nodes reachable only via implementation edges are evidence contributors, not
+        requirement definers. Their requirements are out of scope from the initial URN's
+        perspective. CASCADE removes SVCs/MVRs/annotations that only linked to those
+        requirements; evidence rows linking to in-scope requirements survive.
+        """
+        self._db.connection.execute(
+            """
+            DELETE FROM requirements WHERE urn IN (
+                SELECT DISTINCT child_urn FROM parsing_graph WHERE edge_type = 'implementation'
+                EXCEPT
+                SELECT DISTINCT child_urn FROM parsing_graph WHERE edge_type = 'import'
+                EXCEPT
+                SELECT value FROM metadata WHERE key = 'initial_urn'
+            )
+            """
+        )
+        self._db.connection.commit()
 
     # -- Requirement filters --
 

@@ -1,0 +1,11 @@
+metadata:
+  urn: lib-c
+  title: Library C
+
+requirements:
+  - id: REQ_LC_001
+    title: Library C requirement
+    significance: shall
+    description: A requirement defined in lib-c
+    categories: [reliability]
+    revision: 0.0.1

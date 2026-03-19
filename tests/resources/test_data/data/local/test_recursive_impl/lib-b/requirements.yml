@@ -1,0 +1,15 @@
+metadata:
+  urn: lib-b
+  title: Library B
+
+requirements:
+  - id: REQ_LB_001
+    title: Library B requirement
+    significance: shall
+    description: A requirement defined in lib-b
+    categories: [reliability]
+    revision: 0.0.1
+
+implementations:
+  local:
+    - path: ../lib-c
