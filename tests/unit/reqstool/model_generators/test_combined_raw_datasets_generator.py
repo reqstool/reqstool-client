@@ -3,7 +3,7 @@
 import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
-from reqstool.common.exceptions import MissingRequirementsFileError
+from reqstool.common.exceptions import CircularImportError, MissingRequirementsFileError
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.local_location import LocalLocation
@@ -84,3 +84,15 @@ def test_missing_requirements_file(local_testdata_resources_rootdir_w_path):
             semantic_validator=semantic_validator,
         )
     assert "this/path/does/not/have/a/requirements/file" in str(excinfo.value)
+
+
+@SVCs("SVC_020")
+def test_circular_import_raises(local_testdata_resources_rootdir_w_path):
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    with pytest.raises(CircularImportError) as excinfo:
+        combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
+            initial_location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_circular_import/node-a")),
+            semantic_validator=semantic_validator,
+        )
+    assert "node-a" in str(excinfo.value)
+    assert "Circular import detected" in str(excinfo.value)

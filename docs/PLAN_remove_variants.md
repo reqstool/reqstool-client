@@ -145,3 +145,13 @@ Where should circular import detection trigger?
 
 Cycles can only occur going up the import chain (A imports B imports A).
 Implementation edges point downward and are not recursed into, so they cannot form cycles.
+
+---
+
+## Q3: Should reqs, SVCs, MVRs, annotations, and test results be parsed for ALL URNs?
+
+**Answer: Yes — presence-based, regardless of role.**
+
+Current `main` already parses all auxiliary files unconditionally. If a URN provides `svcs.yml`,
+it gets parsed whether the URN is the initial source, an import parent, or an implementation child.
+The filter processor and reporting layer decide what's relevant for the initial URN's scope.
