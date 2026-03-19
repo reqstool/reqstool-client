@@ -168,6 +168,11 @@ class ProjectState:
         svc_urn_id = UrnId.assure_urn_id(initial_urn, raw_id)
         return self._repo.get_test_results_for_svc(svc_urn_id)
 
+    def get_urn_location(self, urn: str) -> dict | None:
+        if not self._ready or self._repo is None:
+            return None
+        return self._repo.get_urn_location(urn)
+
     def get_yaml_path(self, urn: str, file_type: str) -> str | None:
         """Return the resolved file path for a given URN and file type (requirements, svcs, mvrs, annotations)."""
         urn_paths = self._urn_source_paths.get(urn)

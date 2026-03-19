@@ -1,0 +1,241 @@
+// Copyright © LFV
+= LSP Server
+:toc: left
+:toclevels: 3
+
+The reqstool LSP server implements the https://microsoft.github.io/language-server-protocol/[Language Server Protocol] for requirements, SVCs, and annotations
+across Python, Java, TypeScript, and JavaScript projects. Any LSP-compatible client can use it —
+IDEs, AI coding assistants (such as Claude Code or GitHub Copilot), and other tooling.
+
+== Starting the Server
+
+=== Installation
+
+The LSP server is included in the `reqstool` package:
+
+[source,bash]
+----
+pip install reqstool
+----
+
+=== stdio mode (recommended)
+
+[source,bash]
+----
+reqstool lsp
+----
+
+Most LSP clients launch the server automatically via stdio when the language-client configuration
+is set up.
+
+=== TCP mode (for debugging)
+
+[source,bash]
+----
+reqstool lsp --tcp --host 127.0.0.1 --port 2087
+----
+
+=== Log file
+
+[source,bash]
+----
+reqstool lsp --log-file /tmp/reqstool-lsp.log
+----
+
+== Capabilities
+
+=== Lifecycle
+
+==== Server Initialization
+
+_LSP method:_ `initialized`
+
+Discovers all reqstool projects under each workspace folder and builds in-memory SQLite databases for each on startup.
+
+==== Server Shutdown
+
+_LSP method:_ `shutdown`
+
+Closes all open project databases gracefully.
+
+=== Document Synchronisation
+
+==== Document Opened
+
+_LSP method:_ `textDocument/didOpen`
+
+Publishes diagnostics for the opened document immediately.
+
+==== Document Changed
+
+_LSP method:_ `textDocument/didChange`
+
+Re-runs diagnostics on every content change event.
+
+==== Document Saved
+
+_LSP method:_ `textDocument/didSave`
+
+On save of a reqstool YAML file (requirements.yml, svcs.yml, etc.), rebuilds the affected project
+database and republishes all diagnostics. For source files, re-runs diagnostics for that file only.
+
+==== Document Closed
+
+_LSP method:_ `textDocument/didClose`
+
+Clears diagnostics for the closed document.
+
+=== Workspace
+
+==== Workspace Folders Changed
+
+_LSP method:_ `workspace/didChangeWorkspaceFolders`
+
+Adds or removes project databases when workspace folders are added or removed in the client.
+
+==== Watched Files Changed
+
+_LSP method:_ `workspace/didChangeWatchedFiles`
+
+Triggers a full project rebuild when any reqstool YAML file is created, modified, or deleted on
+disk outside the client.
+
+=== Intelligence
+
+==== Hover
+
+_LSP method:_ `textDocument/hover`
+
+In source files: Markdown tooltip for @Requirements/@SVCs IDs — title, description, lifecycle,
+SVCs, implementation count, and an "Open Details" link.
+In reqstool YAML files: JSON Schema description for the hovered field.
+
+==== Completion
+
+_LSP method:_ `textDocument/completion`
+
+In source files: autocompletes requirement and SVC IDs inside @Requirements() and @SVCs()
+annotations. Trigger characters: `"`, `space`, `:`.
+In YAML files: completes enum values from the JSON Schema.
+
+==== Go to Definition
+
+_LSP method:_ `textDocument/definition`
+
+From a source annotation: jumps to the `id:` line in the YAML file.
+From svcs.yml (on a requirement reference): jumps to the defining entry in requirements.yml.
+From mvrs.yml (on an SVC reference): jumps to the defining entry in svcs.yml.
+
+==== Document Symbols
+
+_LSP method:_ `textDocument/documentSymbol`
+
+Outline view for reqstool YAML files. Requirements show linked SVCs as children; SVCs show
+requirements and MVRs as children.
+
+==== Code Lens
+
+_LSP method:_ `textDocument/codeLens`
+
+Inline summary above @Requirements/@SVCs annotations: SVC count and pass/fail verification
+results. Clicking opens the Details panel.
+
+==== Inlay Hints
+
+_LSP method:_ `textDocument/inlayHint`
+
+Appends the human-readable title of each requirement or SVC immediately after its ID in source
+annotations.
+
+==== Find References
+
+_LSP method:_ `textDocument/references`
+
+Finds all usages of a requirement or SVC ID across open source files and all reqstool YAML files
+in the project.
+
+==== Workspace Symbols
+
+_LSP method:_ `workspace/symbol`
+
+Global search across all loaded projects for requirements and SVCs matching the query string (by
+ID or title).
+
+==== Semantic Tokens
+
+_LSP method:_ `textDocument/semanticTokens/full`
+
+Colorizes requirement and SVC IDs in source annotations by lifecycle state. Four custom token
+types: `reqstoolDraft`, `reqstoolValid`, `reqstoolDeprecated`, `reqstoolObsolete`.
+
+==== Code Actions
+
+_LSP method:_ `textDocument/codeAction`
+
+QuickFix actions for unknown-ID and deprecated/obsolete diagnostics. Source action on any known
+annotation to open the Details panel.
+
+Code action kinds: `quickfix`, `source`.
+
+=== Custom Protocol
+
+_LSP method:_ `reqstool/details`
+
+NOTE: `reqstool/details` is *not* part of the standard LSP specification. It is a reqstool
+extension understood only by reqstool-aware clients. Generic LSP clients will ignore it.
+
+Custom LSP request. Fetches structured data for a single requirement, SVC, or MVR. Can drive
+e.g. a Details panel in an IDE. Searches all ready projects.
+
+The full protocol spec (OpenRPC) is at `docs/modules/ROOT/lsp/reqstool-lsp.openrpc.json`.
+
+== Commands
+
+=== Refresh Projects
+
+_Command ID:_ `reqstool.refresh`
+
+Manually rebuilds all project databases and republishes diagnostics. Useful after external
+changes to YAML files missed by the file watcher.
+
+Run `reqstool: Refresh projects` from the command palette.
+
+== Supported Annotation Languages
+
+The server recognises `@Requirements` and `@SVCs` annotations in the following languages:
+
+=== Python
+
+_Language IDs:_ `python`
+
+[source,python]
+----
+@Requirements("REQ_010", "REQ_011")
+@SVCs("SVC_010")
+----
+
+Uses the reqstool-python-decorators package. Multi-line annotations are supported.
+
+=== Java
+
+_Language IDs:_ `java`
+
+[source,java]
+----
+@Requirements("REQ_010", "REQ_011")
+@SVCs("SVC_010")
+----
+
+Same decorator syntax as Python. Multi-line annotations are supported.
+
+=== TypeScript / JavaScript
+
+_Language IDs:_ `typescript`, `javascript`, `typescriptreact`, `javascriptreact`
+
+[source,javascript]
+----
+/** @Requirements REQ_010, REQ_011 */
+/** @SVCs SVC_010 */
+----
+
+JSDoc-style tag inside a block comment. IDs are comma- or space-separated bare values (no quotes).

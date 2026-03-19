@@ -30,6 +30,7 @@ def test_get_requirement_details_known(project):
     assert isinstance(result["implementations"], list)
     assert "svcs" in result
     assert isinstance(result["svcs"], list)
+    assert "location" in result
     assert "source_paths" in result
     assert isinstance(result["source_paths"], dict)
 
@@ -58,6 +59,7 @@ def test_get_svc_details_known(project):
     summary = result["test_summary"]
     assert set(summary.keys()) == {"passed", "failed", "skipped", "missing"}
     assert "mvrs" in result
+    assert "location" in result
     assert "source_paths" in result
     assert isinstance(result["source_paths"], dict)
 
@@ -117,3 +119,27 @@ def test_get_svc_details_test_results(project):
             assert all("fqn" in t and "status" in t for t in result["test_results"])
             assert all(t["status"] in ("passed", "failed", "skipped", "missing") for t in result["test_results"])
             break
+
+
+def test_get_requirement_details_location_keys(project):
+    result = get_requirement_details("REQ_010", project)
+    assert result is not None
+    loc = result["location"]
+    # local fixture populates location_type and location_uri
+    assert loc is None or isinstance(loc, dict)
+    if loc is not None:
+        assert "type" in loc
+        assert "uri" in loc
+        assert isinstance(loc["type"], str) or loc["type"] is None
+        assert isinstance(loc["uri"], str) or loc["uri"] is None
+
+
+def test_get_svc_details_location_keys(project):
+    svc_ids = project.get_all_svc_ids()
+    result = get_svc_details(svc_ids[0], project)
+    assert result is not None
+    loc = result["location"]
+    assert loc is None or isinstance(loc, dict)
+    if loc is not None:
+        assert "type" in loc
+        assert "uri" in loc

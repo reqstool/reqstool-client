@@ -145,6 +145,13 @@ diff /tmp/baseline-report-demo.txt /tmp/feature-report-demo.txt
 
 If a diff is expected (e.g. the PR intentionally changes output), note it in the PR description.
 
+## LSP Documentation
+
+- `docs/modules/ROOT/pages/lsp.adoc` — hand-written human-readable doc page; edit directly.
+- `docs/modules/ROOT/lsp/reqstool-lsp.openrpc.json` — formal protocol spec (OpenRPC 1.2.6) for the custom `reqstool/details` method only. Standard LSP methods are defined by the LSP specification.
+
+When adding or removing an LSP feature in `server.py`, update **both** files manually.
+
 ## Key Conventions
 
 - **URN format**: `some:urn:string` — the separator is `:`. `UrnId` is the canonical composite key used throughout indexes.

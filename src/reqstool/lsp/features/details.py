@@ -15,7 +15,7 @@ def get_requirement_details(raw_id: str, project: ProjectState) -> dict | None:
     return {
         "type": "requirement",
         "id": req.id.id,
-        "urn": str(req.id),
+        "urn": req.id.urn,
         "title": req.title,
         "significance": req.significance.value,
         "description": req.description,
@@ -32,12 +32,13 @@ def get_requirement_details(raw_id: str, project: ProjectState) -> dict | None:
         "svcs": [
             {
                 "id": s.id.id,
-                "urn": str(s.id),
+                "urn": s.id.urn,
                 "title": s.title,
                 "verification": s.verification.value,
             }
             for s in svcs
         ],
+        "location": project.get_urn_location(req.id.urn),
         "source_paths": project.get_yaml_paths().get(req.id.urn, {}),
     }
 
@@ -52,7 +53,7 @@ def get_svc_details(raw_id: str, project: ProjectState) -> dict | None:
     return {
         "type": "svc",
         "id": svc.id.id,
-        "urn": str(svc.id),
+        "urn": svc.id.urn,
         "title": svc.title,
         "description": svc.description or "",
         "verification": svc.verification.value,
@@ -65,7 +66,7 @@ def get_svc_details(raw_id: str, project: ProjectState) -> dict | None:
         "requirement_ids": [
             {
                 "id": r.id,
-                "urn": str(r),
+                "urn": r.urn,
                 "title": req.title if (req := project.get_requirement(r.id)) else "",
                 "lifecycle_state": req.lifecycle.state.value if req else "",
             }
@@ -82,12 +83,13 @@ def get_svc_details(raw_id: str, project: ProjectState) -> dict | None:
         "mvrs": [
             {
                 "id": m.id.id,
-                "urn": str(m.id),
+                "urn": m.id.urn,
                 "passed": m.passed,
                 "comment": m.comment or "",
             }
             for m in mvrs
         ],
+        "location": project.get_urn_location(svc.id.urn),
         "source_paths": project.get_yaml_paths().get(svc.id.urn, {}),
     }
 
@@ -99,9 +101,10 @@ def get_mvr_details(raw_id: str, project: ProjectState) -> dict | None:
     return {
         "type": "mvr",
         "id": mvr.id.id,
-        "urn": str(mvr.id),
+        "urn": mvr.id.urn,
         "passed": mvr.passed,
         "comment": mvr.comment or "",
-        "svc_ids": [{"id": s.id, "urn": str(s)} for s in mvr.svc_ids],
+        "svc_ids": [{"id": s.id, "urn": s.urn} for s in mvr.svc_ids],
+        "location": project.get_urn_location(mvr.id.urn),
         "source_paths": project.get_yaml_paths().get(mvr.id.urn, {}),
     }

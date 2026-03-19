@@ -33,6 +33,15 @@ class RequirementsRepository:
         rows = self._db.connection.execute("SELECT urn FROM urn_metadata ORDER BY parse_position").fetchall()
         return [row["urn"] for row in rows]
 
+    def get_urn_location(self, urn: str) -> dict | None:
+        row = self._db.connection.execute(
+            "SELECT location_type, location_uri FROM urn_metadata WHERE urn = ?",
+            (urn,),
+        ).fetchone()
+        if row is None:
+            return None
+        return {"type": row["location_type"], "uri": row["location_uri"]}
+
     def get_import_graph(self) -> dict[str, list[str]]:
         graph: dict[str, list[str]] = {}
         all_urns = {row["urn"] for row in self._db.connection.execute("SELECT urn FROM urn_metadata").fetchall()}

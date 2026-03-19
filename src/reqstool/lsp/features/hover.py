@@ -60,19 +60,19 @@ def _hover_source(
         )
 
     if match.kind == "Requirements":
-        return _hover_requirement(match.raw_id, match, project, uri)
+        return _hover_requirement(match.raw_id, match, project)
     elif match.kind == "SVCs":
-        return _hover_svc(match.raw_id, match, project, uri)
+        return _hover_svc(match.raw_id, match, project)
 
     return None
 
 
-def _open_details_link(raw_id: str, uri: str, kind: str) -> str:
-    args = urllib.parse.quote(json.dumps({"id": raw_id, "uri": uri, "type": kind}))
+def _open_details_link(raw_id: str, kind: str) -> str:
+    args = urllib.parse.quote(json.dumps({"id": raw_id, "type": kind}))
     return f"[Open Details](command:reqstool.openDetails?{args})"
 
 
-def _hover_requirement(raw_id: str, match, project: ProjectState, uri: str) -> types.Hover | None:
+def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover | None:
     req = project.get_requirement(raw_id)
     if req is None:
         md = f"**Unknown requirement**: `{raw_id}`"
@@ -98,7 +98,7 @@ def _hover_requirement(raw_id: str, match, project: ProjectState, uri: str) -> t
                 f"**SVCs**: {svc_ids}",
                 f"**Implementations**: {impl_count}",
                 "---",
-                _open_details_link(raw_id, uri, "requirement"),
+                _open_details_link(raw_id, "requirement"),
             ]
         )
         md = "\n\n".join(parts)
@@ -112,7 +112,7 @@ def _hover_requirement(raw_id: str, match, project: ProjectState, uri: str) -> t
     )
 
 
-def _hover_svc(raw_id: str, match, project: ProjectState, uri: str) -> types.Hover | None:
+def _hover_svc(raw_id: str, match, project: ProjectState) -> types.Hover | None:
     svc = project.get_svc(raw_id)
     if svc is None:
         md = f"**Unknown SVC**: `{raw_id}`"
@@ -145,7 +145,7 @@ def _hover_svc(raw_id: str, match, project: ProjectState, uri: str) -> types.Hov
                 f"**Tests**: {test_passed} passed · {test_failed} failed · {test_missing} missing",
                 f"**MVRs**: {mvr_passed} passed · {mvr_failed} failed",
                 "---",
-                _open_details_link(raw_id, uri, "svc"),
+                _open_details_link(raw_id, "svc"),
             ]
         )
         md = "\n\n".join(parts)

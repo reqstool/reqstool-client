@@ -51,7 +51,7 @@ def handle_code_lens(
                 command=types.Command(
                     title=label,
                     command="reqstool.openDetails",
-                    arguments=[{"ids": ids, "uri": uri, "type": item_type}],
+                    arguments=[{"ids": ids, "type": item_type}],
                 ),
             )
         )

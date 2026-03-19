@@ -188,12 +188,6 @@ def _get(params, key: str, default=""):
     return params.get(key, default) if isinstance(params, dict) else getattr(params, key, default)
 
 
-def _first_project(ls: ReqstoolLanguageServer):
-    """Fallback: return first available ready project across all workspace folders."""
-    projects = ls.workspace_manager.all_projects()
-    return projects[0] if projects else None
-
-
 _DETAILS_DISPATCH = {
     "requirement": get_requirement_details,
     "svc": get_svc_details,
@@ -201,21 +195,27 @@ _DETAILS_DISPATCH = {
 }
 
 
+def _find_details(raw_id: str, fn, ls: ReqstoolLanguageServer) -> dict | None:
+    """Search all ready projects for raw_id; return first non-None result."""
+    for project in ls.workspace_manager.all_projects():
+        if project.ready:
+            result = fn(raw_id, project)
+            if result is not None:
+                return result
+    return None
+
+
 # -- New feature handlers --
 
 
 @server.feature("reqstool/details")
 def on_details(ls: ReqstoolLanguageServer, params) -> dict | None:
-    uri = _get(params, "uri")
     raw_id = _get(params, "id")
     kind = _get(params, "type")
     fn = _DETAILS_DISPATCH.get(kind)
     if not fn:
         return None
-    project = ls.workspace_manager.project_for_file(uri) or _first_project(ls)
-    if not project or not project.ready:
-        return None
-    return fn(raw_id, project)
+    return _find_details(raw_id, fn, ls)
 
 
 @server.feature(types.TEXT_DOCUMENT_CODE_LENS, types.CodeLensOptions(resolve_provider=False))
