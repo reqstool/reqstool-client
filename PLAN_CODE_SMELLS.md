@@ -20,10 +20,10 @@ Identified during the Pydantic v2 migration (PR #306). These are **not** related
 ### ~~Duplicated filter parsing logic~~ — FIXED in PR #332
 - Extracted `parse_filters()` into `common/filter_parser.py`; both generators reduced to 3-line calls; `# NOSONAR` removed
 
-### Monolithic `status.py` with manual table rendering (322 lines)
-- **Files:** `commands/status/status.py`
-- **Problem:** Still manually constructs Unicode box-drawing characters and ANSI color codes (`colorama`, `\033[38;5;208m`).
-- **Fix:** Replace manual table rendering with **Rich** library. Eliminates ~120 lines of string manipulation.
+### ~~Monolithic `status.py` with manual table rendering (322 lines)~~ — FIXED in PR #335
+- Replaced `colorama` + `tabulate` with Rich (`Panel`, `Table`, `Text`, `Console`) in `status.py` and `semantic_validator.py`
+- Removed `colorama` and `tabulate` dependencies; added `rich>=13.0`
+- Reduced from 323 → 255 lines
 
 ### ~~No unit tests for CLI entry point~~ — FIXED in PR #331
 - Added `tests/unit/reqstool/test_command.py` with 12 tests covering routing, deprecation warnings, error handling, argument parsing

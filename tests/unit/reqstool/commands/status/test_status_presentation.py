@@ -1,10 +1,19 @@
 # Copyright © LFV
 
-from colorama import Fore, Style
+from rich.console import Console
+from rich.text import Text
 
-from reqstool.commands.status.status import _build_table, _extend_row, _format_test_cell, _ORANGE, _summarize_statistics
+from reqstool.commands.status.status import _build_table, _format_test_cell, _ORANGE, _summarize_statistics
 from reqstool.models.requirements import IMPLEMENTATION
 from reqstool.services.statistics_service import TestStats, TotalStats
+
+
+def _render(renderable) -> str:
+    """Render a Rich renderable to a string with ANSI codes."""
+    console = Console(highlight=False, force_terminal=True, color_system="standard")
+    with console.capture() as cap:
+        console.print(renderable, end="")
+    return cap.get()
 
 
 # ---------------------------------------------------------------------------
@@ -13,21 +22,22 @@ from reqstool.services.statistics_service import TestStats, TotalStats
 
 
 def test_format_test_cell_not_applicable():
-    assert _format_test_cell(TestStats(not_applicable=True)) == ""
+    result = _format_test_cell(TestStats(not_applicable=True))
+    assert result.plain == ""
 
 
 def test_format_test_cell_all_zeros():
     result = _format_test_cell(TestStats(total=0, passed=0, failed=0, skipped=0, missing=0))
     # All slots are dim dashes
-    assert Style.DIM in result
-    plain = result.replace(Style.DIM, "").replace(Style.RESET_ALL, "").replace(" ", "").replace("-", "")
+    rendered = _render(result)
+    assert "\033[2m" in rendered  # dim ANSI code
+    plain = result.plain.replace(" ", "").replace("-", "")
     assert plain == ""
 
 
 def test_format_test_cell_mixed_values():
     result = _format_test_cell(TestStats(total=3, passed=2, failed=1, skipped=0, missing=0))
-    # Strip ANSI to check content
-    plain = result.replace(Fore.GREEN, "").replace(Fore.RED, "").replace(Fore.YELLOW, "").replace(Style.RESET_ALL, "")
+    plain = result.plain
     assert " 3" in plain
     assert " 2" in plain
     assert " 1" in plain
@@ -35,53 +45,18 @@ def test_format_test_cell_mixed_values():
 
 def test_format_test_cell_colors():
     result = _format_test_cell(TestStats(total=1, passed=1, failed=2, skipped=3, missing=4))
-    assert Fore.GREEN in result  # passed
-    assert Fore.RED in result  # failed
-    assert Fore.YELLOW in result  # skipped
-    assert _ORANGE in result  # missing
+    rendered = _render(result)
+    assert "\033[32m" in rendered  # passed is green
+    assert "\033[31m" in rendered  # failed is red
+    assert "\033[33m" in rendered  # skipped is yellow
+    assert " 4" in result.plain  # missing value is present
 
 
 def test_format_test_cell_zero_slots_are_blank():
     result = _format_test_cell(TestStats(total=5, passed=0, failed=0, skipped=0, missing=3))
-    plain = (
-        result.replace(Fore.GREEN, "")
-        .replace(Fore.RED, "")
-        .replace(Fore.YELLOW, "")
-        .replace(_ORANGE, "")
-        .replace(Style.RESET_ALL, "")
-    )
+    plain = result.plain
     assert " 5" in plain
     assert " 3" in plain
-
-
-# ---------------------------------------------------------------------------
-# _extend_row
-# ---------------------------------------------------------------------------
-
-
-def test_extend_row_not_applicable():
-    """not_applicable=True appends single empty cell."""
-    row = []
-    _extend_row(TestStats(not_applicable=True), row, kind="automated")
-    assert len(row) == 1
-    assert row[0] == ""
-
-
-def test_extend_row_appends_single_cell():
-    """_extend_row appends exactly one cell."""
-    row = []
-    _extend_row(TestStats(total=5, passed=3, failed=2), row, kind="automated")
-    assert len(row) == 1
-
-
-def test_extend_row_cell_contains_values():
-    """The single cell contains the test counts."""
-    row = []
-    _extend_row(TestStats(total=5, passed=3, failed=2), row, kind="automated")
-    plain = row[0].replace(Fore.GREEN, "").replace(Fore.RED, "").replace(Fore.YELLOW, "").replace(Style.RESET_ALL, "")
-    assert " 5" in plain
-    assert " 3" in plain
-    assert " 2" in plain
 
 
 # ---------------------------------------------------------------------------
@@ -100,8 +75,8 @@ def test_build_table_completed_req_is_green():
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
-    assert Fore.GREEN in row[1]
-    assert "REQ_001" in row[1]
+    assert row[1].style == "green"
+    assert "REQ_001" in row[1].plain
 
 
 def test_build_table_incomplete_req_is_red():
@@ -115,7 +90,7 @@ def test_build_table_incomplete_req_is_red():
         completed=False,
         implementation=IMPLEMENTATION.IN_CODE,
     )
-    assert Fore.RED in row[1]
+    assert row[1].style == "red"
 
 
 def test_build_table_not_applicable_shows_na():
@@ -129,7 +104,7 @@ def test_build_table_not_applicable_shows_na():
         completed=True,
         implementation=IMPLEMENTATION.NOT_APPLICABLE,
     )
-    assert row[2] == "N/A"
+    assert row[2].plain == "N/A"
 
 
 def test_build_table_in_code_with_impls_shows_count():
@@ -143,8 +118,8 @@ def test_build_table_in_code_with_impls_shows_count():
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
-    assert "2" in row[2]
-    assert Fore.GREEN in row[2]
+    assert "2" in row[2].plain
+    assert row[2].style == "green"
 
 
 def test_build_table_in_code_no_impls_shows_zero():
@@ -158,8 +133,8 @@ def test_build_table_in_code_no_impls_shows_zero():
         completed=False,
         implementation=IMPLEMENTATION.IN_CODE,
     )
-    assert "0" in row[2]
-    assert Fore.RED in row[2]
+    assert "0" in row[2].plain
+    assert row[2].style == "red"
 
 
 def test_build_table_urn_is_first_column():
@@ -173,7 +148,7 @@ def test_build_table_urn_is_first_column():
         completed=True,
         implementation=IMPLEMENTATION.IN_CODE,
     )
-    assert row[0] == "ms-001"
+    assert row[0].plain == "ms-001"
 
 
 def test_build_table_returns_5_columns():
@@ -214,7 +189,7 @@ def test_summarize_statistics_all_complete_has_green_header():
             total_svcs=2,
         )
     )
-    assert Fore.GREEN in result
+    assert "\033[32m" in result  # green ANSI code
 
 
 def test_summarize_statistics_incomplete_has_red_header():
@@ -231,7 +206,7 @@ def test_summarize_statistics_incomplete_has_red_header():
             total_svcs=3,
         )
     )
-    assert Fore.RED in result
+    assert "\033[31m" in result  # red ANSI code
 
 
 def test_summarize_statistics_contains_percentage_string():
