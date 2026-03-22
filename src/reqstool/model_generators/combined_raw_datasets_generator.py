@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.exceptions import CircularImplementationError, CircularImportError, MissingRequirementsFileError
-from reqstool.common.utils import TempDirectoryUtil, Utils
+from reqstool.common.utils import TempDirectoryManager, Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.location_resolver.location_resolver import LocationResolver
 from reqstool.locations.location import LocationInterface
@@ -34,6 +34,7 @@ class CombinedRawDatasetsGenerator:
         initial_location: LocationInterface,
         semantic_validator: SemanticValidator,
         database: Optional[RequirementsDatabase] = None,
+        tmpdir_manager: Optional[TempDirectoryManager] = None,
     ):
         self.__level: int = 0
         self.__initial_location_handler: LocationResolver = LocationResolver(
@@ -43,11 +44,12 @@ class CombinedRawDatasetsGenerator:
         self._parsing_order: List[str] = []
         self._parsing_graph: Dict[str, List[Tuple[str, str]]] = defaultdict(list)
         self._database = database
+        self._tmpdir_manager = tmpdir_manager if tmpdir_manager is not None else TempDirectoryManager()
         self.combined_raw_datasets = self.__generate()
 
     def __generate(self) -> CombinedRawDataset:
         # handle initial source
-        logging.debug(f"Using temporary path: {TempDirectoryUtil.get_path()}\n")
+        logging.debug(f"Using temporary path: {self._tmpdir_manager.get_path()}\n")
 
         raw_datasets: Dict[str, RawDataset] = {}
 
@@ -235,7 +237,7 @@ class CombinedRawDatasetsGenerator:
         mvrs_data = None
         automated_tests = None
 
-        tmp_path = TempDirectoryUtil.get_suffix_path("can_we_use_urn_here").absolute()
+        tmp_path = self._tmpdir_manager.get_suffix_path("can_we_use_urn_here").absolute()
 
         actual_tmp_path = current_location_handler.make_available_on_localdisk(dst_path=tmp_path)
 
