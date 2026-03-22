@@ -12,6 +12,7 @@ from reqstool.lsp.features.codelens import handle_code_lens
 from reqstool.lsp.features.completion import handle_completion
 from reqstool.lsp.features.definition import handle_definition
 from reqstool.lsp.features.details import get_mvr_details, get_requirement_details, get_svc_details
+from reqstool.lsp.features.list import get_list
 from reqstool.lsp.features.diagnostics import compute_diagnostics
 from reqstool.lsp.features.document_symbols import handle_document_symbols
 from reqstool.lsp.features.hover import handle_hover
@@ -217,6 +218,14 @@ def on_details(ls: ReqstoolLanguageServer, params) -> dict | None:
     if not fn:
         return None
     return _find_details(raw_id, fn, ls)
+
+
+@server.feature("reqstool/list")
+def on_list(ls: ReqstoolLanguageServer, params) -> dict | None:
+    for project in ls.workspace_manager.all_projects():
+        if project.ready:
+            return get_list(project)
+    return None
 
 
 @server.feature(types.TEXT_DOCUMENT_CODE_LENS, types.CodeLensOptions(resolve_provider=False))
