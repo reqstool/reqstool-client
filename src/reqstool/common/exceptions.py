@@ -23,3 +23,17 @@ class CircularImplementationError(Exception):
     def __init__(self, urn: str, chain: list[str]):
         self.urn = urn
         super().__init__(f"Circular implementation detected: {' -> '.join(chain)} -> {urn}")
+
+
+class ArtifactDownloadError(Exception):
+    """Raised when a remote artifact cannot be downloaded."""
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
+class ArtifactExtractionError(Exception):
+    """Raised when a downloaded artifact cannot be extracted."""
+
+    def __init__(self, message: str):
+        super().__init__(message)
