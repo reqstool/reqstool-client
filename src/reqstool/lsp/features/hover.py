@@ -83,6 +83,7 @@ def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover
         impl_count = len(project.get_impl_annotations_for_req(raw_id))
 
         parts = [
+            _open_details_link(raw_id, "requirement"),
             f"### {req.title}",
             f"`{req.id.id}` `{req.significance.value}` `{req.revision}`",
             "---",
@@ -97,8 +98,6 @@ def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover
                 f"**Lifecycle**: {req.lifecycle.state.value}",
                 f"**SVCs**: {svc_ids}",
                 f"**Implementations**: {impl_count}",
-                "---",
-                _open_details_link(raw_id, "requirement"),
             ]
         )
         md = "\n\n".join(parts)
@@ -128,6 +127,7 @@ def _hover_svc(raw_id: str, match, project: ProjectState) -> types.Hover | None:
         mvr_failed = sum(1 for m in mvrs if not m.passed)
 
         parts = [
+            _open_details_link(raw_id, "svc"),
             f"### {svc.title}",
             f"`{svc.id.id}` `{svc.verification.value}` `{svc.revision}`",
             "---",
@@ -144,8 +144,6 @@ def _hover_svc(raw_id: str, match, project: ProjectState) -> types.Hover | None:
                 f"**Requirements**: {req_ids}",
                 f"**Tests**: {test_passed} passed · {test_failed} failed · {test_missing} missing",
                 f"**MVRs**: {mvr_passed} passed · {mvr_failed} failed",
-                "---",
-                _open_details_link(raw_id, "svc"),
             ]
         )
         md = "\n\n".join(parts)

@@ -5,6 +5,16 @@ from __future__ import annotations
 from reqstool.lsp.project_state import ProjectState
 
 
+def _svc_test_summary(svc_id: str, project: ProjectState) -> dict:
+    test_results = project.get_test_results_for_svc(svc_id)
+    return {
+        "passed": sum(1 for t in test_results if t.status.value == "passed"),
+        "failed": sum(1 for t in test_results if t.status.value == "failed"),
+        "skipped": sum(1 for t in test_results if t.status.value == "skipped"),
+        "missing": sum(1 for t in test_results if t.status.value == "missing"),
+    }
+
+
 def get_requirement_details(raw_id: str, project: ProjectState) -> dict | None:
     req = project.get_requirement(raw_id)
     if req is None:
@@ -35,6 +45,8 @@ def get_requirement_details(raw_id: str, project: ProjectState) -> dict | None:
                 "urn": s.id.urn,
                 "title": s.title,
                 "verification": s.verification.value,
+                "lifecycle_state": s.lifecycle.state.value,
+                "test_summary": _svc_test_summary(s.id.id, project),
             }
             for s in svcs
         ],

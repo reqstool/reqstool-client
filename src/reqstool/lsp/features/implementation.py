@@ -9,7 +9,6 @@ import re
 from lsprotocol import types
 
 from reqstool.lsp.annotation_parser import annotation_at_position, find_all_annotations
-from reqstool.lsp.features.definition import find_id_in_yaml
 from reqstool.lsp.project_state import ProjectState
 
 logger = logging.getLogger(__name__)
@@ -36,14 +35,10 @@ def handle_implementation(
     if project is None or not project.ready:
         return []
 
-    initial_urn = project.get_initial_urn()
-    if not initial_urn:
-        return []
-
     basename = os.path.basename(uri)
 
     if basename == "requirements.yml":
-        return _from_yaml_req(text, position, initial_urn, project)
+        return _from_yaml_req(text, position, workspace_text_documents)
 
     if basename == "software_verification_cases.yml":
         return _from_yaml_svc(text, position, workspace_text_documents)
@@ -60,26 +55,37 @@ def handle_implementation(
 def _from_yaml_req(
     text: str,
     position: types.Position,
-    initial_urn: str,
-    project: ProjectState,
+    workspace_text_documents: dict,
 ) -> list[types.Location]:
-    """YAML requirements.yml id: REQ → SVC id: lines in svcs.yml."""
+    """YAML requirements.yml id: REQ → source @Requirements annotations."""
     lines = text.splitlines()
     if position.line >= len(lines):
         return []
     m = _ID_LINE_RE.match(lines[position.line])
     if not m:
         return []
-    raw_id = m.group(1)
+    bare_id = m.group(1).split(":")[-1]
+    return _req_annotations_in_source(bare_id, workspace_text_documents)
 
-    svcs_path = project.get_yaml_path(initial_urn, "svcs")
-    if not svcs_path:
-        return []
 
-    svcs = project.get_svcs_for_req(raw_id)
+def _req_annotations_in_source(bare_req_id: str, workspace_text_documents: dict) -> list[types.Location]:
+    """Find @Requirements("REQ-001") annotations in open source documents."""
     locations: list[types.Location] = []
-    for svc in svcs:
-        locations.extend(find_id_in_yaml(svcs_path, svc.id.id))
+    for doc_uri, doc in workspace_text_documents.items():
+        if os.path.basename(doc_uri) in REQSTOOL_YAML_FILES:
+            continue
+        lang = getattr(doc, "language_id", None) or ""
+        for ann in find_all_annotations(doc.source, lang):
+            if ann.kind == "Requirements" and ann.raw_id.split(":")[-1] == bare_req_id:
+                locations.append(
+                    types.Location(
+                        uri=doc_uri,
+                        range=types.Range(
+                            start=types.Position(line=ann.line, character=ann.start_col),
+                            end=types.Position(line=ann.line, character=ann.end_col),
+                        ),
+                    )
+                )
     return locations
 
 
