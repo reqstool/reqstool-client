@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table, box
 from rich.text import Text
 from reqstool_python_decorators.decorators.decorators import Requirements
@@ -133,10 +132,25 @@ def _get_row_with_totals(stats_service: StatisticsService) -> list:
 
 
 def _status_table(stats_service: StatisticsService) -> str:
-    table_data = []
+    ts = stats_service.total_statistics
+
+    table = Table(
+        box=box.HEAVY_HEAD,
+        show_header=True,
+        header_style="bold",
+        title=f"REQUIREMENTS: {ts.total_requirements}",
+        title_style="bold",
+        title_justify="center",
+    )
+    table.add_column("URN", justify="center")
+    table.add_column("ID", justify="left")
+    table.add_column("Implementation", justify="center")
+    table.add_column("Automated Tests", justify="center")
+    table.add_column("Manual Tests", justify="center")
+
     for req, stats in stats_service.requirement_statistics.items():
-        table_data.append(
-            _build_table(
+        table.add_row(
+            *_build_table(
                 req_id=req.id,
                 urn=req.urn,
                 impls=stats.implementations,
@@ -146,16 +160,9 @@ def _status_table(stats_service: StatisticsService) -> str:
                 implementation=stats.implementation_type,
             )
         )
-    table_data.append(_get_row_with_totals(stats_service))
 
-    table = Table(box=box.HEAVY_HEAD, show_header=True, header_style="bold")
-    for col in ["URN", "ID", "Implementation", "Automated Tests", "Manual Tests"]:
-        table.add_column(col, justify="center")
-    for row in table_data:
-        table.add_row(*row)
-
-    ts = stats_service.total_statistics
-    panel = Panel(f"REQUIREMENTS: {ts.total_requirements}", expand=True)
+    table.add_section()
+    table.add_row(*_get_row_with_totals(stats_service))
 
     legend = Text("T = Total, ")
     legend.append("P = Passed", style="green")
@@ -170,7 +177,6 @@ def _status_table(stats_service: StatisticsService) -> str:
 
     console = Console(highlight=False, force_terminal=True, color_system="standard")
     with console.capture() as cap:
-        console.print(panel)
         console.print(table)
         console.print(legend)
     return cap.get() + statistics
@@ -225,12 +231,7 @@ def _summarize_statistics(ts: TotalStats) -> str:
         + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
     ]
 
-    code_na_header = Text()
-    code_na_header.append_text(CODE)
-    code_na_header.append("  |  ")
-    code_na_header.append_text(NA)
-
-    impl_table = Table(box=box.HEAVY_HEAD, show_header=True)
+    impl_table = Table(box=box.HEAVY_HEAD, show_header=True, title=IMPLEMENTATIONS, title_justify="center")
     impl_table.add_column("Total", justify="center")
     impl_table.add_column("Implemented", justify="center")
     impl_table.add_column("Verified", justify="center")
@@ -238,12 +239,16 @@ def _summarize_statistics(ts: TotalStats) -> str:
     impl_table.add_column("Total", justify="center")
     impl_table.add_column("Verified", justify="center")
     impl_table.add_column("Not Verified", justify="center")
+    # Code / N/A subgroup row inside the table, separated from data by a section line
+    impl_table.add_row(CODE, Text(""), Text(""), Text(""), NA, Text(""), Text(""))
+    impl_table.add_section()
     impl_table.add_row(*implementation_data)
 
     svc_table = Table(
         box=box.HEAVY_HEAD,
         show_header=True,
         title=f"Total Tests: {ts.total_tests}  |  Total SVCs: {ts.total_svcs}",
+        title_justify="center",
     )
     svc_table.add_column("Passed tests", justify="center")
     svc_table.add_column("Failed tests", justify="center")
@@ -254,8 +259,6 @@ def _summarize_statistics(ts: TotalStats) -> str:
 
     console = Console(highlight=False, force_terminal=True, color_system="standard")
     with console.capture() as cap:
-        console.print(Panel(IMPLEMENTATIONS, expand=True))
-        console.print(code_na_header)
         console.print(impl_table)
         console.print(svc_table)
     return cap.get()
