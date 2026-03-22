@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from rich.console import Console
 from rich.table import Table, box
@@ -20,6 +21,55 @@ from reqstool.storage.requirements_repository import RequirementsRepository
 
 _ORANGE = "dark_orange"
 _DIM = "dim"
+_ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+
+def _make_console() -> Console:
+    return Console(highlight=False, force_terminal=True, color_system="standard", width=200)
+
+
+def _render(*renderables) -> str:
+    console = _make_console()
+    with console.capture() as cap:
+        for r in renderables:
+            console.print(r)
+    return cap.get()
+
+
+def _visual_width(rendered: str) -> int:
+    """Visual width of rendered output after stripping ANSI codes."""
+    return max((len(_ANSI_ESCAPE.sub("", line)) for line in rendered.split("\n") if line.strip()), default=0)
+
+
+def _single_header_box(content, outer_width: int) -> Table:
+    """Single-cell bordered box sized to match outer_width.
+
+    For box.DOUBLE_EDGE with default padding (0,1):
+      outer_width = 1(border) + 1(pad) + content_width + 1(pad) + 1(border)
+      => content_min_width = outer_width - 4
+    """
+    t = Table(box=box.DOUBLE_EDGE, show_header=False)
+    t.add_column("", justify="center", min_width=max(1, outer_width - 4))
+    t.add_row(content)
+    return t
+
+
+def _two_cell_header_box(left, right, outer_width: int, split: tuple[int, int] = (1, 1)) -> Table:
+    """Two-cell bordered box sized to match outer_width with given column split ratio.
+
+    For box.DOUBLE_EDGE with default padding (0,1) and 2 columns:
+      outer_width = 1(left border) + 1(pad) + col1 + 1(pad) + 1(sep) + 1(pad) + col2 + 1(pad) + 1(right border)
+      => col1 + col2 = outer_width - 7
+    """
+    inner = max(2, outer_width - 7)
+    total_parts = split[0] + split[1]
+    col1_w = max(1, inner * split[0] // total_parts)
+    col2_w = max(1, inner - col1_w)
+    t = Table(box=box.DOUBLE_EDGE, show_header=False)
+    t.add_column("", justify="center", min_width=col1_w)
+    t.add_column("", justify="center", min_width=col2_w)
+    t.add_row(left, right)
+    return t
 
 
 @Requirements("REQ_027")
@@ -134,14 +184,7 @@ def _get_row_with_totals(stats_service: StatisticsService) -> list:
 def _status_table(stats_service: StatisticsService) -> str:
     ts = stats_service.total_statistics
 
-    table = Table(
-        box=box.HEAVY_HEAD,
-        show_header=True,
-        header_style="bold",
-        title=f"REQUIREMENTS: {ts.total_requirements}",
-        title_style="bold",
-        title_justify="center",
-    )
+    table = Table(box=box.DOUBLE_EDGE, show_header=True, header_style="bold", show_lines=True)
     table.add_column("URN", justify="center")
     table.add_column("ID", justify="left")
     table.add_column("Implementation", justify="center")
@@ -164,6 +207,11 @@ def _status_table(stats_service: StatisticsService) -> str:
     table.add_section()
     table.add_row(*_get_row_with_totals(stats_service))
 
+    rendered_table = _render(table)
+    table_w = _visual_width(rendered_table)
+
+    req_box = _single_header_box(f"REQUIREMENTS: {ts.total_requirements}", table_w)
+
     legend = Text("T = Total, ")
     legend.append("P = Passed", style="green")
     legend.append(", ")
@@ -175,11 +223,7 @@ def _status_table(stats_service: StatisticsService) -> str:
 
     statistics = _summarize_statistics(ts)
 
-    console = Console(highlight=False, force_terminal=True, color_system="standard")
-    with console.capture() as cap:
-        console.print(table)
-        console.print(legend)
-    return cap.get() + statistics
+    return _render(req_box) + rendered_table + _render(legend) + statistics
 
 
 def _summarize_statistics(ts: TotalStats) -> str:
@@ -231,7 +275,7 @@ def _summarize_statistics(ts: TotalStats) -> str:
         + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
     ]
 
-    impl_table = Table(box=box.HEAVY_HEAD, show_header=True, title=IMPLEMENTATIONS, title_justify="center")
+    impl_table = Table(box=box.DOUBLE_EDGE, show_header=True)
     impl_table.add_column("Total", justify="center")
     impl_table.add_column("Implemented", justify="center")
     impl_table.add_column("Verified", justify="center")
@@ -239,17 +283,9 @@ def _summarize_statistics(ts: TotalStats) -> str:
     impl_table.add_column("Total", justify="center")
     impl_table.add_column("Verified", justify="center")
     impl_table.add_column("Not Verified", justify="center")
-    # Code / N/A subgroup row inside the table, separated from data by a section line
-    impl_table.add_row(CODE, Text(""), Text(""), Text(""), NA, Text(""), Text(""))
-    impl_table.add_section()
     impl_table.add_row(*implementation_data)
 
-    svc_table = Table(
-        box=box.HEAVY_HEAD,
-        show_header=True,
-        title=f"Total Tests: {ts.total_tests}  |  Total SVCs: {ts.total_svcs}",
-        title_justify="center",
-    )
+    svc_table = Table(box=box.DOUBLE_EDGE, show_header=True)
     svc_table.add_column("Passed tests", justify="center")
     svc_table.add_column("Failed tests", justify="center")
     svc_table.add_column("Skipped tests", justify="center")
@@ -257,11 +293,21 @@ def _summarize_statistics(ts: TotalStats) -> str:
     svc_table.add_column("SVCs missing MVRs", justify="center")
     svc_table.add_row(*svc_data)
 
-    console = Console(highlight=False, force_terminal=True, color_system="standard")
-    with console.capture() as cap:
-        console.print(impl_table)
-        console.print(svc_table)
-    return cap.get()
+    rendered_impl = _render(impl_table)
+    impl_w = _visual_width(rendered_impl)
+
+    rendered_svc = _render(svc_table)
+    svc_w = _visual_width(rendered_svc)
+
+    impl_box = _single_header_box(IMPLEMENTATIONS, impl_w)
+    code_na_box = _two_cell_header_box(CODE, NA, impl_w, split=(4, 3))
+    totals_box = _two_cell_header_box(
+        f"Total Tests: {ts.total_tests}",
+        f"Total SVCs: {ts.total_svcs}",
+        svc_w,
+    )
+
+    return _render(impl_box) + _render(code_na_box) + rendered_impl + _render(totals_box) + rendered_svc
 
 
 def __numbers_as_percentage(numerator: int, denominator: int) -> str:
