@@ -360,3 +360,35 @@ def test_get_automated_test_results_class_no_results(db):
     results = repo.get_automated_test_results()
     key = UrnId(urn=URN, id="com.example.FooTest")
     assert results[key][0].status == TEST_RUN_STATUS.MISSING
+
+
+# -- URN location queries --
+
+
+def test_get_urn_location_with_values(db):
+    metadata = MetaData(urn="ms-001", variant=VARIANTS.MICROSERVICE, title="Test")
+    db.insert_urn_metadata(metadata, location_type="local", location_uri="file:///home/user/project/docs/reqstool")
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    loc = repo.get_urn_location("ms-001")
+    assert loc is not None
+    assert loc["type"] == "local"
+    assert loc["uri"] == "file:///home/user/project/docs/reqstool"
+
+
+def test_get_urn_location_no_values(db):
+    metadata = MetaData(urn="ms-001", variant=VARIANTS.MICROSERVICE, title="Test")
+    db.insert_urn_metadata(metadata)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    loc = repo.get_urn_location("ms-001")
+    assert loc is not None
+    assert loc["type"] is None
+    assert loc["uri"] is None
+
+
+def test_get_urn_location_unknown_urn(db):
+    repo = RequirementsRepository(db)
+    assert repo.get_urn_location("nonexistent") is None

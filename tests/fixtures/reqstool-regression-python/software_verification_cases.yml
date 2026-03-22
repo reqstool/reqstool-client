@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/software_verification_cases.schema.json
+
+cases:
+  - id: SVC_010
+    requirement_ids: ["REQ_PASS"]
+    title: "Verify greeting message displayed"
+    description: "Automated test verifying greeting output"
+    verification: automated-test
+    revision: "1.0.0"
+
+  - id: SVC_020
+    requirement_ids: ["REQ_MANUAL_FAIL"]
+    title: "Verify total calculation"
+    description: "Automated test verifying calculation accuracy"
+    verification: automated-test
+    revision: "1.0.0"
+
+  - id: SVC_021
+    requirement_ids: ["REQ_PASS"]
+    title: "Manual verify greeting display"
+    description: "Manual inspection of greeting message rendering"
+    verification: manual-test
+    instructions: "Open the application and verify the greeting message is displayed correctly"
+    revision: "1.0.0"
+
+  - id: SVC_022
+    requirement_ids: ["REQ_MANUAL_FAIL"]
+    title: "Manual verify total calculation"
+    description: "Manual inspection of calculation results"
+    verification: manual-test
+    instructions: "Calculate expected total and compare with displayed value"
+    revision: "1.0.0"
+
+  - id: SVC_030
+    requirement_ids: ["REQ_NOT_IMPLEMENTED"]
+    title: "Review export report design"
+    description: "Design review of export functionality"
+    verification: review
+    revision: "1.0.0"
+
+  - id: SVC_040
+    requirement_ids: ["REQ_FAILING_TEST"]
+    title: "Verify email validation"
+    description: "Automated test verifying email format checking"
+    verification: automated-test
+    revision: "1.0.0"
+
+  - id: SVC_050
+    requirement_ids: ["REQ_SKIPPED_TEST"]
+    title: "Verify SMS notification delivery"
+    description: "Platform-level verification of SMS gateway"
+    verification: platform
+    revision: "1.0.0"
+    lifecycle:
+      state: deprecated
+      reason: "SMS no longer supported"
+
+  - id: SVC_060
+    requirement_ids: ["REQ_MISSING_TEST"]
+    title: "Verify audit logging"
+    description: "Automated test verifying audit log entries"
+    verification: automated-test
+    revision: "1.0.0"
+
+  - id: SVC_070
+    requirement_ids: ["REQ_OBSOLETE"]
+    title: "Verify legacy greeting format"
+    description: "Other verification of legacy greeting"
+    verification: other
+    revision: "0.1.0"
+    lifecycle:
+      state: obsolete
+      reason: "Superseded by SVC_010"
