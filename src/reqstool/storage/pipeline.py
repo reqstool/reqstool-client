@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Generator
 
+from reqstool.common.utils import TempDirectoryManager
 from reqstool.common.validators.lifecycle_validator import LifecycleValidator
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
@@ -20,13 +21,18 @@ def build_database(
     location: LocationInterface,
     semantic_validator: SemanticValidator,
     filter_data: bool = True,
+    tmpdir_manager: TempDirectoryManager = None,
 ) -> Generator[tuple[RequirementsDatabase, CombinedRawDataset], None, None]:
+    _owns_tmpdir = tmpdir_manager is None
+    if _owns_tmpdir:
+        tmpdir_manager = TempDirectoryManager()
     db = RequirementsDatabase()
     try:
         crdg = CombinedRawDatasetsGenerator(
             initial_location=location,
             semantic_validator=semantic_validator,
             database=db,
+            tmpdir_manager=tmpdir_manager,
         )
         crd = crdg.combined_raw_datasets
 
@@ -38,3 +44,5 @@ def build_database(
         yield db, crd
     finally:
         db.close()
+        if _owns_tmpdir:
+            tmpdir_manager.cleanup()

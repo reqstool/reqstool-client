@@ -2,12 +2,12 @@
 
 import logging
 import os
-import sys
 from typing import Optional
 
 from maven_artifact import Artifact, Downloader, RequestException
 from reqstool_python_decorators.decorators.decorators import Requirements
 
+from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.common.utils import Utils
 from reqstool.locations.location import LocationInterface
 
@@ -41,13 +41,11 @@ class MavenLocation(LocationInterface):
             if not downloader.download(artifact, filename=dst_path):
                 raise RequestException(f"Error downloading artifact {artifact} from: {self.url}")
         except RequestException as e:
-            logging.fatal(e.msg)
-            sys.exit(1)
+            raise ArtifactDownloadError(f"Error downloading artifact {artifact} from {self.url}: {e.msg}") from e
 
         logging.debug(f"Unzipping {artifact.get_filename(dst_path)} to {dst_path}\n")
 
         try:
             return Utils.extract_zip(artifact.get_filename(dst_path), dst_path)
         except ValueError as e:
-            logging.fatal(f"Maven artifact {artifact} from {self.url}: {e}")
-            sys.exit(1)
+            raise ArtifactExtractionError(f"Maven artifact {artifact} from {self.url}: {e}") from e
