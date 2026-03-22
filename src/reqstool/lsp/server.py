@@ -16,6 +16,7 @@ from reqstool.lsp.features.diagnostics import compute_diagnostics
 from reqstool.lsp.features.document_symbols import handle_document_symbols
 from reqstool.lsp.features.hover import handle_hover
 from reqstool.lsp.features.inlay_hints import handle_inlay_hints
+from reqstool.lsp.features.implementation import handle_implementation
 from reqstool.lsp.features.references import handle_references
 from reqstool.lsp.features.semantic_tokens import SEMANTIC_TOKEN_LEGEND, handle_semantic_tokens
 from reqstool.lsp.features.workspace_symbols import handle_workspace_symbols
@@ -240,6 +241,20 @@ def on_inlay_hint(ls: ReqstoolLanguageServer, params: types.InlayHintParams) -> 
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+    )
+
+
+@server.feature(types.TEXT_DOCUMENT_IMPLEMENTATION)
+def on_implementation(ls: ReqstoolLanguageServer, params: types.ImplementationParams) -> list[types.Location]:
+    document = ls.workspace.get_text_document(params.text_document.uri)
+    project = ls.workspace_manager.project_for_file(params.text_document.uri)
+    return handle_implementation(
+        uri=params.text_document.uri,
+        position=params.position,
+        text=document.source,
+        language_id=document.language_id or "",
+        project=project,
+        workspace_text_documents=ls.workspace.text_documents,
     )
 
 

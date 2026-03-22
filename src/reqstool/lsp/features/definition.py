@@ -63,7 +63,7 @@ def _definition_from_source(
     if yaml_file is None:
         return []
 
-    return _find_id_in_yaml(yaml_file, match.raw_id)
+    return find_id_in_yaml(yaml_file, match.raw_id)
 
 
 def _definition_from_yaml(
@@ -84,7 +84,16 @@ def _definition_from_yaml(
     if not initial_urn:
         return []
 
-    # Determine what kind of ID this is based on the YAML file
+    # If cursor is on a bare reference item (not an id: declaration), navigate to that ID's declaration.
+    lines = text.splitlines()
+    line = lines[position.line] if position.line < len(lines) else ""
+    if not re.match(r"^\s*(?:-\s+)?id\s*:", line):
+        target_path = _yaml_path_for_id(raw_id, initial_urn, project)
+        if target_path:
+            return find_id_in_yaml(target_path, raw_id)
+        return []
+
+    # id: declaration line: chain navigation to the next verification layer
     file_kind = YAML_ID_FILES.get(filename)
 
     if file_kind == "requirements":
@@ -103,7 +112,19 @@ def _definition_from_yaml(
     return []
 
 
-def _find_id_in_yaml(yaml_file: str, raw_id: str) -> list[types.Location]:
+def _yaml_path_for_id(raw_id: str, initial_urn: str, project: ProjectState) -> str | None:
+    """Resolve which YAML file owns this ID based on its prefix."""
+    bare = raw_id.split(":")[-1].upper()
+    if bare.startswith("REQ"):
+        return project.get_yaml_path(initial_urn, "requirements")
+    if bare.startswith("SVC"):
+        return project.get_yaml_path(initial_urn, "svcs")
+    if bare.startswith("MVR"):
+        return project.get_yaml_path(initial_urn, "mvrs")
+    return None
+
+
+def find_id_in_yaml(yaml_file: str, raw_id: str) -> list[types.Location]:
     """Search a YAML file for a line containing `id: <raw_id>` and return its location."""
     if not os.path.isfile(yaml_file):
         return []
