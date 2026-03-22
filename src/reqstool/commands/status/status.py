@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 
+from rich.columns import Columns
 from rich.console import Console
 from rich.table import Table, box
 from rich.text import Text
@@ -25,7 +27,8 @@ _ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
 def _make_console() -> Console:
-    return Console(highlight=False, force_terminal=True, color_system="standard", width=200)
+    width = max(80, shutil.get_terminal_size((120, 24)).columns)
+    return Console(highlight=False, force_terminal=True, color_system="standard", width=width)
 
 
 def _render(*renderables) -> str:
@@ -34,42 +37,6 @@ def _render(*renderables) -> str:
         for r in renderables:
             console.print(r)
     return cap.get()
-
-
-def _visual_width(rendered: str) -> int:
-    """Visual width of rendered output after stripping ANSI codes."""
-    return max((len(_ANSI_ESCAPE.sub("", line)) for line in rendered.split("\n") if line.strip()), default=0)
-
-
-def _single_header_box(content, outer_width: int) -> Table:
-    """Single-cell bordered box sized to match outer_width.
-
-    For box.DOUBLE_EDGE with default padding (0,1):
-      outer_width = 1(border) + 1(pad) + content_width + 1(pad) + 1(border)
-      => content_min_width = outer_width - 4
-    """
-    t = Table(box=box.DOUBLE_EDGE, show_header=False)
-    t.add_column("", justify="center", min_width=max(1, outer_width - 4))
-    t.add_row(content)
-    return t
-
-
-def _two_cell_header_box(left, right, outer_width: int, split: tuple[int, int] = (1, 1)) -> Table:
-    """Two-cell bordered box sized to match outer_width with given column split ratio.
-
-    For box.DOUBLE_EDGE with default padding (0,1) and 2 columns:
-      outer_width = 1(left border) + 1(pad) + col1 + 1(pad) + 1(sep) + 1(pad) + col2 + 1(pad) + 1(right border)
-      => col1 + col2 = outer_width - 7
-    """
-    inner = max(2, outer_width - 7)
-    total_parts = split[0] + split[1]
-    col1_w = max(1, inner * split[0] // total_parts)
-    col2_w = max(1, inner - col1_w)
-    t = Table(box=box.DOUBLE_EDGE, show_header=False)
-    t.add_column("", justify="center", min_width=col1_w)
-    t.add_column("", justify="center", min_width=col2_w)
-    t.add_row(left, right)
-    return t
 
 
 @Requirements("REQ_027")
@@ -184,7 +151,24 @@ def _get_row_with_totals(stats_service: StatisticsService) -> list:
 def _status_table(stats_service: StatisticsService) -> str:
     ts = stats_service.total_statistics
 
-    table = Table(box=box.DOUBLE_EDGE, show_header=True, header_style="bold", show_lines=True)
+    legend = Text("T = Total, ")
+    legend.append("P = Passed", style="green")
+    legend.append(", ")
+    legend.append("F = Failed", style="red")
+    legend.append(", ")
+    legend.append("S = Skipped", style="yellow")
+    legend.append(", ")
+    legend.append("M = Missing", style=_ORANGE)
+
+    table = Table(
+        box=box.DOUBLE_EDGE,
+        show_header=True,
+        header_style="bold",
+        show_lines=True,
+        title=f"REQUIREMENTS: {ts.total_requirements}",
+        title_style="bold",
+        caption=legend,
+    )
     table.add_column("URN", justify="center")
     table.add_column("ID", justify="left")
     table.add_column("Implementation", justify="center")
@@ -207,23 +191,9 @@ def _status_table(stats_service: StatisticsService) -> str:
     table.add_section()
     table.add_row(*_get_row_with_totals(stats_service))
 
-    rendered_table = _render(table)
-    table_w = _visual_width(rendered_table)
-
-    req_box = _single_header_box(f"REQUIREMENTS: {ts.total_requirements}", table_w)
-
-    legend = Text("T = Total, ")
-    legend.append("P = Passed", style="green")
-    legend.append(", ")
-    legend.append("F = Failed", style="red")
-    legend.append(", ")
-    legend.append("S = Skipped", style="yellow")
-    legend.append(", ")
-    legend.append("M = Missing", style=_ORANGE)
-
     statistics = _summarize_statistics(ts)
 
-    return _render(req_box) + rendered_table + _render(legend) + statistics
+    return _render(table) + statistics
 
 
 def _summarize_statistics(ts: TotalStats) -> str:
@@ -232,22 +202,32 @@ def _summarize_statistics(ts: TotalStats) -> str:
     code_reqs = ts.total_requirements - nr_of_reqs_without_implementation
     code_completed = ts.completed_requirements - nr_of_completed_reqs_without_implementation
 
-    CODE, NA, IMPLEMENTATIONS = __colorize_headers(
-        total=ts.total_requirements,
-        total_completed=ts.completed_requirements,
-        total_reqs_no_impl=nr_of_reqs_without_implementation,
-        completed_reqs_no_impl=nr_of_completed_reqs_without_implementation,
-    )
+    CODE, NA, IMPLEMENTATIONS = __colorize_headers()
 
-    implementation_data = [
+    # Code group: 4 stats (total, implemented, verified, not verified)
+    code_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=CODE, title_justify="center")
+    code_table.add_column("Total", justify="center")
+    code_table.add_column("Implemented", justify="center")
+    code_table.add_column("Verified", justify="center")
+    code_table.add_column("Not Verified", justify="center")
+    code_table.add_row(
         str(code_reqs) + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
-        str(ts.with_implementation) + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
+        str(ts.with_implementation)
+        + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
         str(code_completed) + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
         str(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed))
         + __numbers_as_percentage(
             numerator=(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed)),
             denominator=code_reqs,
         ),
+    )
+
+    # N/A group: 3 stats (total, verified, not verified)
+    na_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=NA, title_justify="center")
+    na_table.add_column("Total", justify="center")
+    na_table.add_column("Verified", justify="center")
+    na_table.add_column("Not Verified", justify="center")
+    na_table.add_row(
         str(nr_of_reqs_without_implementation)
         + __numbers_as_percentage(
             numerator=nr_of_reqs_without_implementation,
@@ -263,51 +243,39 @@ def _summarize_statistics(ts: TotalStats) -> str:
             numerator=(nr_of_reqs_without_implementation - nr_of_completed_reqs_without_implementation),
             denominator=nr_of_reqs_without_implementation,
         ),
-    ]
+    )
 
-    svc_data = [
+    tests_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=f"Total Tests: {ts.total_tests}", title_style="white")
+    tests_table.add_column("Passed tests", justify="center")
+    tests_table.add_column("Failed tests", justify="center")
+    tests_table.add_column("Skipped tests", justify="center")
+    tests_table.add_row(
         str(ts.passed_tests) + __numbers_as_percentage(numerator=ts.passed_tests, denominator=ts.total_tests),
         str(ts.failed_tests) + __numbers_as_percentage(numerator=ts.failed_tests, denominator=ts.total_tests),
         str(ts.skipped_tests) + __numbers_as_percentage(numerator=ts.skipped_tests, denominator=ts.total_tests),
+    )
+
+    svcs_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=f"Total SVCs: {ts.total_svcs}", title_style="white")
+    svcs_table.add_column("SVCs missing tests", justify="center")
+    svcs_table.add_column("SVCs missing MVRs", justify="center")
+    svcs_table.add_row(
         str(ts.missing_automated_tests)
         + __numbers_as_percentage(numerator=ts.missing_automated_tests, denominator=ts.total_svcs),
         str(ts.missing_manual_tests)
         + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
-    ]
-
-    impl_table = Table(box=box.DOUBLE_EDGE, show_header=True)
-    impl_table.add_column("Total", justify="center")
-    impl_table.add_column("Implemented", justify="center")
-    impl_table.add_column("Verified", justify="center")
-    impl_table.add_column("Not Verified", justify="center")
-    impl_table.add_column("Total", justify="center")
-    impl_table.add_column("Verified", justify="center")
-    impl_table.add_column("Not Verified", justify="center")
-    impl_table.add_row(*implementation_data)
-
-    svc_table = Table(box=box.DOUBLE_EDGE, show_header=True)
-    svc_table.add_column("Passed tests", justify="center")
-    svc_table.add_column("Failed tests", justify="center")
-    svc_table.add_column("Skipped tests", justify="center")
-    svc_table.add_column("SVCs missing tests", justify="center")
-    svc_table.add_column("SVCs missing MVRs", justify="center")
-    svc_table.add_row(*svc_data)
-
-    rendered_impl = _render(impl_table)
-    impl_w = _visual_width(rendered_impl)
-
-    rendered_svc = _render(svc_table)
-    svc_w = _visual_width(rendered_svc)
-
-    impl_box = _single_header_box(IMPLEMENTATIONS, impl_w)
-    code_na_box = _two_cell_header_box(CODE, NA, impl_w, split=(4, 3))
-    totals_box = _two_cell_header_box(
-        f"Total Tests: {ts.total_tests}",
-        f"Total SVCs: {ts.total_svcs}",
-        svc_w,
     )
 
-    return _render(impl_box) + _render(code_na_box) + rendered_impl + _render(totals_box) + rendered_svc
+    cols_rendered = _render(Columns([code_table, na_table]))
+    cols_width = max(
+        (len(_ANSI_ESCAPE.sub("", line)) for line in cols_rendered.split("\n") if line.strip()),
+        default=80,
+    )
+    impl_console = Console(highlight=False, force_terminal=True, color_system="standard", width=cols_width)
+    with impl_console.capture() as cap:
+        impl_console.print(IMPLEMENTATIONS, justify="center")
+    impl_header = cap.get()
+
+    return "\n" + impl_header + cols_rendered + _render(Columns([tests_table, svcs_table]))
 
 
 def __numbers_as_percentage(numerator: int, denominator: int) -> str:
@@ -318,15 +286,5 @@ def __numbers_as_percentage(numerator: int, denominator: int) -> str:
     return percentage_as_string
 
 
-def __colorize_headers(
-    total: int, total_completed: int, total_reqs_no_impl: int, completed_reqs_no_impl: int
-) -> tuple[Text, Text, Text]:
-    total_code = total - total_reqs_no_impl
-    total_code_completed = total_code == (total_completed - completed_reqs_no_impl)
-    total_no_impl_completed = total_reqs_no_impl - completed_reqs_no_impl == 0
-
-    CODE = Text("Code", style="green" if total_code_completed else "red")
-    NA = Text("N/A", style="green" if total_no_impl_completed else "red")
-    IMPLEMENTATIONS = Text("IMPLEMENTATIONS", style="green" if total == total_completed else "red")
-
-    return CODE, NA, IMPLEMENTATIONS
+def __colorize_headers() -> tuple[Text, Text, Text]:
+    return Text("In Code", style="white"), Text("Not in Code", style="white"), Text("IMPLEMENTATIONS", style="bold white")

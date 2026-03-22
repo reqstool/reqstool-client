@@ -177,8 +177,8 @@ def test_summarize_statistics_zero_counts_no_crash():
     assert "IMPLEMENTATIONS" in result
 
 
-def test_summarize_statistics_all_complete_has_green_header():
-    """All requirements complete: IMPLEMENTATIONS header is green."""
+def test_summarize_statistics_all_complete_has_white_header():
+    """IMPLEMENTATIONS header is always white regardless of completion."""
     result = _summarize_statistics(
         TotalStats(
             total_requirements=2,
@@ -189,11 +189,12 @@ def test_summarize_statistics_all_complete_has_green_header():
             total_svcs=2,
         )
     )
-    assert "\033[32m" in result  # green ANSI code
+    assert "\033[37m" in result  # white ANSI code
+    assert "IMPLEMENTATIONS" in result
 
 
-def test_summarize_statistics_incomplete_has_red_header():
-    """Incomplete requirements: at least one header is red."""
+def test_summarize_statistics_incomplete_has_white_header():
+    """IMPLEMENTATIONS header is always white regardless of completion."""
     result = _summarize_statistics(
         TotalStats(
             total_requirements=3,
@@ -206,7 +207,8 @@ def test_summarize_statistics_incomplete_has_red_header():
             total_svcs=3,
         )
     )
-    assert "\033[31m" in result  # red ANSI code
+    assert "\033[37m" in result  # white ANSI code
+    assert "IMPLEMENTATIONS" in result
 
 
 def test_summarize_statistics_contains_percentage_string():
