@@ -1,9 +1,8 @@
 # Copyright © LFV
 
 from rich.console import Console
-from rich.text import Text
 
-from reqstool.commands.status.status import _build_table, _format_test_cell, _ORANGE, _summarize_statistics
+from reqstool.commands.status.status import _build_table, _format_test_cell, _summarize_statistics
 from reqstool.models.requirements import IMPLEMENTATION
 from reqstool.services.statistics_service import TestStats, TotalStats
 

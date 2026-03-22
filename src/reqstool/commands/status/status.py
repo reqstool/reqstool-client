@@ -212,8 +212,7 @@ def _summarize_statistics(ts: TotalStats) -> str:
     code_table.add_column("Not Verified", justify="center")
     code_table.add_row(
         str(code_reqs) + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
-        str(ts.with_implementation)
-        + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
+        str(ts.with_implementation) + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
         str(code_completed) + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
         str(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed))
         + __numbers_as_percentage(
@@ -245,7 +244,9 @@ def _summarize_statistics(ts: TotalStats) -> str:
         ),
     )
 
-    tests_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=f"Total Tests: {ts.total_tests}", title_style="white")
+    tests_table = Table(
+        box=box.DOUBLE_EDGE, show_header=True, title=f"Total Tests: {ts.total_tests}", title_style="white"
+    )
     tests_table.add_column("Passed tests", justify="center")
     tests_table.add_column("Failed tests", justify="center")
     tests_table.add_column("Skipped tests", justify="center")
@@ -287,4 +288,8 @@ def __numbers_as_percentage(numerator: int, denominator: int) -> str:
 
 
 def __colorize_headers() -> tuple[Text, Text, Text]:
-    return Text("In Code", style="white"), Text("Not in Code", style="white"), Text("IMPLEMENTATIONS", style="bold white")
+    return (
+        Text("In Code", style="white"),
+        Text("Not in Code", style="white"),
+        Text("IMPLEMENTATIONS", style="bold white"),
+    )
