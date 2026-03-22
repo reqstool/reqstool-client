@@ -3,12 +3,13 @@
 import re
 import sys
 from enum import Enum, unique
-from typing import Dict, List, Optional, Set
+from typing import Dict, List
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 from ruamel.yaml import YAML
 
 from reqstool.commands.exit_codes import EXIT_CODE_SYNTAX_VALIDATION_ERROR
+from reqstool.common.filter_parser import parse_filters
 from reqstool.common.models.lifecycle import LifecycleData
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
@@ -233,56 +234,13 @@ class RequirementsModelGenerator:
 
                 locations.append(git_location)
 
-    def __parse_requirement_filters(self, data) -> Dict[str, RequirementFilter]:  # NOSONAR
-        r_filters = {}
-
-        self.semantic_validator._validate_req_imports_filter_has_excludes_xor_includes(data)
-
-        if "filters" in data:
-            for urn in data["filters"].keys():
-                urn_filter = data["filters"][urn]
-
-                req_urn_ids_imports: Optional[Set[UrnId]] = None
-                req_urn_ids_excludes: Optional[Set[UrnId]] = None
-                custom_includes = None
-                custom_exclude = None
-
-                if "requirement_ids" in urn_filter:
-                    if "includes" in urn_filter["requirement_ids"]:
-                        filtered_ids = Utils.check_ids_to_filter(
-                            current_urn=urn, ids=urn_filter["requirement_ids"]["includes"]
-                        )
-                        req_ids_includes = set(filtered_ids)
-                        req_urn_ids_imports: Set[UrnId] = set(
-                            Utils.convert_ids_to_urn_id(urn=urn, ids=req_ids_includes)
-                        )
-
-                    if "excludes" in urn_filter["requirement_ids"]:
-                        filtered_ids = Utils.check_ids_to_filter(
-                            current_urn=urn, ids=urn_filter["requirement_ids"]["excludes"]
-                        )
-                        req_ids_excludes = set(filtered_ids)
-                        req_urn_ids_excludes: Set[UrnId] = set(
-                            Utils.convert_ids_to_urn_id(urn=urn, ids=req_ids_excludes)
-                        )
-
-                if "custom" in urn_filter:
-                    if "includes" in urn_filter["custom"]:
-                        custom_includes = urn_filter["custom"]["includes"]
-
-                    if "excludes" in urn_filter["custom"]:
-                        custom_exclude = urn_filter["custom"]["excludes"]
-
-                req_filter = RequirementFilter(
-                    urn_ids_imports=req_urn_ids_imports,
-                    urn_ids_excludes=req_urn_ids_excludes,
-                    custom_imports=custom_includes,
-                    custom_exclude=custom_exclude,
-                )
-
-                r_filters[urn] = req_filter
-
-        return r_filters
+    def __parse_requirement_filters(self, data) -> Dict[str, RequirementFilter]:
+        return parse_filters(
+            data=data,
+            ids_key="requirement_ids",
+            filter_cls=RequirementFilter,
+            validate_fn=self.semantic_validator._validate_req_imports_filter_has_excludes_xor_includes,
+        )
 
     @Requirements("REQ_004", "REQ_036")
     def __parse_requirements(self, model, data):  # NOSONAR
