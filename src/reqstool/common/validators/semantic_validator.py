@@ -4,9 +4,10 @@ import logging
 import re
 from typing import List
 
-from colorama import Fore, Style
+from rich.console import Console
+from rich.table import Table, box
+from rich.text import Text
 from reqstool_python_decorators.decorators.decorators import Requirements
-from tabulate import tabulate
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
@@ -55,21 +56,27 @@ class SemanticValidator:
 
     def _log_all_errors(self):
         errors = self._validation_error_holder.get_errors()
-        validation_result = ""
-        table_data = []
 
         if len(errors) > 0:
-            validation_result = f"{Fore.RED}FAIL{Style.RESET_ALL}"
+            result_text = Text("FAIL", style="red")
+            error_table = Table(box=box.HEAVY_HEAD, show_header=False)
+            error_table.add_column("Message")
             for error in errors:
-                table_data.append([re.sub(r"\s+", " ", error.msg.strip("\n"))])
+                error_table.add_row(re.sub(r"\s+", " ", error.msg.strip("\n")))
         else:
-            validation_result = f"{Fore.GREEN}PASS{Style.RESET_ALL}"
+            result_text = Text("PASS", style="green")
+            error_table = None
 
-        title = f"\n\nVALIDATION: {validation_result}"
-        table = tabulate(tablefmt="fancy_grid", tabular_data=table_data)
-        table_with_title = f"{title}\n{table}\n"
+        title = Text("\n\nVALIDATION: ")
+        title.append_text(result_text)
 
-        logging.info(table_with_title)
+        console = Console(highlight=False, force_terminal=True, color_system="standard")
+        with console.capture() as cap:
+            console.print(title)
+            if error_table is not None:
+                console.print(error_table)
+
+        logging.info(cap.get())
 
     @Requirements("REQ_022")
     def _validate_no_duplicate_requirement_ids(self, data: RequirementData) -> bool:
