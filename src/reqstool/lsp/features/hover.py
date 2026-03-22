@@ -68,7 +68,7 @@ def _hover_source(
 
 
 def _open_details_link(raw_id: str, kind: str) -> str:
-    args = urllib.parse.quote(json.dumps({"id": raw_id, "type": kind}))
+    args = urllib.parse.quote(json.dumps([{"id": raw_id, "type": kind}]))
     return f"[Open Details](command:reqstool.openDetails?{args})"
 
 
