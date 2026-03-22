@@ -1,11 +1,12 @@
 # Copyright © LFV
 
 import sys
-from typing import Dict, Optional, Set
+from typing import Dict
 
 from ruamel.yaml import YAML
 
 from reqstool.commands.exit_codes import EXIT_CODE_SYNTAX_VALIDATION_ERROR
+from reqstool.common.filter_parser import parse_filters
 from reqstool.common.models.lifecycle import LifecycleData
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
@@ -71,47 +72,10 @@ class SVCsModelGenerator:
 
         return r_result
 
-    def __parse_svc_filters(self, data) -> Dict[str, SVCFilter]:  # NOSONAR
-        r_filters = {}
-
-        self.semantic_validator._validate_svc_imports_filter_has_excludes_xor_includes(data)
-
-        if "filters" in data:
-            for urn in data["filters"].keys():
-                urn_filter = data["filters"][urn]
-
-                svc_urn_ids_includes: Optional[Set[UrnId]] = None
-                svc_urn_ids_excludes: Optional[Set[UrnId]] = None
-                custom_includes = None
-                custom_exclude = None
-
-                if "svc_ids" in urn_filter:
-                    if "includes" in urn_filter["svc_ids"]:
-                        svc_ids_includes = set(
-                            Utils.check_ids_to_filter(current_urn=urn, ids=urn_filter["svc_ids"]["includes"])
-                        )
-                        svc_urn_ids_includes = set(Utils.convert_ids_to_urn_id(urn=urn, ids=svc_ids_includes))
-
-                    if "excludes" in urn_filter["svc_ids"]:
-                        svc_ids_excludes = set(
-                            Utils.check_ids_to_filter(current_urn=urn, ids=urn_filter["svc_ids"]["excludes"])
-                        )
-                        svc_urn_ids_excludes = set(Utils.convert_ids_to_urn_id(urn=urn, ids=svc_ids_excludes))
-
-                if "custom" in urn_filter:
-                    if "includes" in urn_filter["custom"]:
-                        custom_includes = urn_filter["custom"]["includes"]
-
-                    if "excludes" in urn_filter["custom"]:
-                        custom_exclude = urn_filter["custom"]["excludes"]
-
-                svc_filter = SVCFilter(
-                    urn_ids_imports=svc_urn_ids_includes,
-                    urn_ids_excludes=svc_urn_ids_excludes,
-                    custom_imports=custom_includes,
-                    custom_exclude=custom_exclude,
-                )
-
-                r_filters[urn] = svc_filter
-
-        return r_filters
+    def __parse_svc_filters(self, data) -> Dict[str, SVCFilter]:
+        return parse_filters(
+            data=data,
+            ids_key="svc_ids",
+            filter_cls=SVCFilter,
+            validate_fn=self.semantic_validator._validate_svc_imports_filter_has_excludes_xor_includes,
+        )
