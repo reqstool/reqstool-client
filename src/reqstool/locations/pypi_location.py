@@ -1,13 +1,13 @@
 import logging
 import os
 import re
-import sys
 import tarfile
 from typing import Optional
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.common.utils import Utils
 from reqstool.locations.location import LocationInterface
 
@@ -47,15 +47,12 @@ class PypiLocation(LocationInterface):
             logging.debug(f"Extracting {downloaded_file} to {dst_path}\n")
             return Utils.extract_targz(downloaded_file, dst_path)
         except (ValueError, tarfile.TarError) as e:
-            logging.fatal(str(e))
-            sys.exit(1)
+            raise ArtifactExtractionError(str(e)) from e
         except Exception as e:
-            logging.fatal(
+            raise ArtifactDownloadError(
                 f"Error when downloading etc sdist pypi package for {self.package}=={self.version}"
-                f" in repo {self.url} {'with token' if token else ''}",
-                e,
-            )
-            sys.exit(1)
+                f" in repo {self.url} {'with token' if token else ''}: {e}"
+            ) from e
 
     @staticmethod
     def get_package_url(package, version, base_url, token) -> str:
