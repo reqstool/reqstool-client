@@ -201,30 +201,27 @@ class Utils:
             raise TypeError(f"Invalid version: {e} for: {urn_id}")
 
 
-class TempDirectoryUtil:
-    tmpdir: tempfile.TemporaryDirectory = None
-    count: int = 0
+class TempDirectoryManager:
+    """Instance-based temporary directory manager with guaranteed cleanup."""
 
-    @staticmethod
-    def _get_tmpdir() -> tempfile.TemporaryDirectory:
-        if TempDirectoryUtil.tmpdir is None:
-            TempDirectoryUtil.tmpdir = tempfile.TemporaryDirectory()
-        return TempDirectoryUtil.tmpdir
+    def __init__(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self._count = 0
 
-    @staticmethod
-    def get_path() -> Path:
-        return Path(TempDirectoryUtil._get_tmpdir().name)
+    def get_path(self) -> Path:
+        return Path(self._tmpdir.name)
 
-    @staticmethod
-    def get_suffix_path(suffix: str) -> Path:
-        new_path = Path(
-            os.path.join(
-                TempDirectoryUtil._get_tmpdir().name,
-                str(TempDirectoryUtil.count),
-                suffix,
-            )
-        )
+    def get_suffix_path(self, suffix: str) -> Path:
+        new_path = Path(self._tmpdir.name) / str(self._count) / suffix
         new_path.mkdir(parents=True, exist_ok=True)
-        TempDirectoryUtil.count += 1
-
+        self._count += 1
         return new_path
+
+    def cleanup(self):
+        self._tmpdir.cleanup()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.cleanup()

@@ -17,8 +17,12 @@ if __package__ is None or len(__package__) == 0:
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.commands.exit_codes import EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED, EXIT_CODE_MISSING_REQUIREMENTS_FILE
-from reqstool.common.exceptions import MissingRequirementsFileError
+from reqstool.commands.exit_codes import (
+    EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED,
+    EXIT_CODE_ARTIFACT_ERROR,
+    EXIT_CODE_MISSING_REQUIREMENTS_FILE,
+)
+from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError, MissingRequirementsFileError
 from reqstool.commands.generate_json.generate_json import GenerateJsonCommand
 from reqstool.commands.report import report
 from reqstool.commands.report.criterias.group_by import GroupbyOptions
@@ -33,6 +37,55 @@ from reqstool.locations.local_pypi_location import LocalPypiLocation
 from reqstool.locations.location import LocationInterface
 from reqstool.locations.maven_location import MavenLocation
 from reqstool.locations.pypi_location import PypiLocation
+
+
+_LOCATION_DEFS = [
+    {
+        "name": "local",
+        "help": "local source",
+        "exclusive_group": True,
+        "args": [
+            {"flags": ["-p", "--path"], "kwargs": {"help": "path to a local directory"}},
+            {"flags": ["--maven"], "kwargs": {"metavar": "PATH", "help": "path to a local Maven ZIP artifact (.zip)"}},
+            {
+                "flags": ["--pypi"],
+                "kwargs": {"metavar": "PATH", "help": "path to a local PyPI sdist tarball (.tar.gz)"},
+            },
+        ],
+    },
+    {
+        "name": "git",
+        "help": "git source",
+        "args": [
+            {"flags": ["-u", "--url"], "kwargs": {"help": "url description", "required": True}},
+            {"flags": ["-p", "--path"], "kwargs": {"help": "path description", "required": True}},
+            {"flags": ["-b", "--branch"], "kwargs": {"help": "branch description"}},
+            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env_token description"}},
+        ],
+    },
+    {
+        "name": "maven",
+        "help": "maven source",
+        "args": [
+            {"flags": ["-u", "--url"], "kwargs": {"help": "url description", "required": False}},
+            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env_token description"}},
+            {"flags": ["--group_id"], "kwargs": {"help": "group_id description", "required": True}},
+            {"flags": ["--artifact_id"], "kwargs": {"help": "artifact_id description", "required": True}},
+            {"flags": ["--version"], "kwargs": {"help": "version description", "required": True}},
+            {"flags": ["--classifier"], "kwargs": {"help": "classifier description"}},
+        ],
+    },
+    {
+        "name": "pypi",
+        "help": "pypi source",
+        "args": [
+            {"flags": ["-u", "--url"], "kwargs": {"help": "url description", "required": False}},
+            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env_token description"}},
+            {"flags": ["--package"], "kwargs": {"help": "package", "required": True}},
+            {"flags": ["--version"], "kwargs": {"help": "version description", "required": True}},
+        ],
+    },
+]
 
 
 class Command:
@@ -111,59 +164,21 @@ class Command:
         )
 
     def _add_subparsers_source(self, parser, include_report_options=True, include_filter_options=False):
-        # Subparser for local report
-        local_report_parser = parser.add_parser("local", help="local source")
-        local_group = local_report_parser.add_mutually_exclusive_group(required=True)
-        local_group.add_argument("-p", "--path", help="path to a local directory")
-        local_group.add_argument("--maven", metavar="PATH", help="path to a local Maven ZIP artifact (.zip)")
-        local_group.add_argument("--pypi", metavar="PATH", help="path to a local PyPI sdist tarball (.tar.gz)")
-        self._add_argument_output(local_report_parser)
-        if include_report_options:
-            self._add_group_by(local_report_parser)
-            self._add_sort_by(local_report_parser)
-        if include_filter_options:
-            self._add_filter_options(local_report_parser)
-
-        # Subparser for git report
-        git_report_parser = parser.add_parser("git", help="git source")
-        git_report_parser.add_argument("-u", "--url", help="url description", required=True)
-        git_report_parser.add_argument("-p", "--path", help="path description", required=True)
-        git_report_parser.add_argument("-b", "--branch", help="branch description")
-        git_report_parser.add_argument("-t", "--env_token", help="env_token description")
-        self._add_argument_output(git_report_parser)
-        if include_report_options:
-            self._add_group_by(git_report_parser)
-            self._add_sort_by(git_report_parser)
-        if include_filter_options:
-            self._add_filter_options(git_report_parser)
-
-        # Subparser for maven report
-        maven_report_parser = parser.add_parser("maven", help="maven source")
-        maven_report_parser.add_argument("-u", "--url", help="url description", required=False)
-        maven_report_parser.add_argument("-t", "--env_token", help="env_token description")
-        maven_report_parser.add_argument("--group_id", help="group_id description", required=True)
-        maven_report_parser.add_argument("--artifact_id", help="artifact_id description", required=True)
-        maven_report_parser.add_argument("--version", help="version description", required=True)
-        maven_report_parser.add_argument("--classifier", help="classifier description")
-        self._add_argument_output(maven_report_parser)
-        if include_report_options:
-            self._add_group_by(maven_report_parser)
-            self._add_sort_by(maven_report_parser)
-        if include_filter_options:
-            self._add_filter_options(maven_report_parser)
-
-        # Subparser for pypi report
-        pypi_report_parser = parser.add_parser("pypi", help="pypi source")
-        pypi_report_parser.add_argument("-u", "--url", help="url description", required=False)
-        pypi_report_parser.add_argument("-t", "--env_token", help="env_token description")
-        pypi_report_parser.add_argument("--package", help="package", required=True)
-        pypi_report_parser.add_argument("--version", help="version description", required=True)
-        self._add_argument_output(pypi_report_parser)
-        if include_report_options:
-            self._add_group_by(pypi_report_parser)
-            self._add_sort_by(pypi_report_parser)
-        if include_filter_options:
-            self._add_filter_options(pypi_report_parser)
+        for loc in _LOCATION_DEFS:
+            sub = parser.add_parser(loc["name"], help=loc["help"])
+            if loc.get("exclusive_group"):
+                grp = sub.add_mutually_exclusive_group(required=True)
+                for arg in loc["args"]:
+                    grp.add_argument(*arg["flags"], **arg["kwargs"])
+            else:
+                for arg in loc["args"]:
+                    sub.add_argument(*arg["flags"], **arg["kwargs"])
+            self._add_argument_output(sub)
+            if include_report_options:
+                self._add_group_by(sub)
+                self._add_sort_by(sub)
+            if include_filter_options:
+                self._add_filter_options(sub)
 
     def _add_argument_version(self, argument_parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         ver = Utils.get_version()
@@ -456,6 +471,9 @@ def main():
     except MissingRequirementsFileError as exc:
         logging.fatal(str(exc))
         sys.exit(EXIT_CODE_MISSING_REQUIREMENTS_FILE)
+    except (ArtifactDownloadError, ArtifactExtractionError) as exc:
+        logging.fatal(str(exc))
+        sys.exit(EXIT_CODE_ARTIFACT_ERROR)
 
     sys.exit(exit_code)
 

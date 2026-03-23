@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import json
+import re
+import shutil
 
-from colorama import Fore, Style
+from rich.columns import Columns
+from rich.console import Console
+from rich.table import Table, box
+from rich.text import Text
 from reqstool_python_decorators.decorators.decorators import Requirements
-from tabulate import tabulate
 
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
@@ -15,6 +19,24 @@ from reqstool.models.requirements import IMPLEMENTATION
 from reqstool.services.statistics_service import StatisticsService, TestStats, TotalStats
 from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
+
+
+_ORANGE = "dark_orange"
+_DIM = "dim"
+_ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+
+def _make_console() -> Console:
+    width = max(80, shutil.get_terminal_size((120, 24)).columns)
+    return Console(highlight=False, force_terminal=True, color_system="standard", width=width)
+
+
+def _render(*renderables) -> str:
+    console = _make_console()
+    with console.capture() as cap:
+        for r in renderables:
+            console.print(r)
+    return cap.get()
 
 
 @Requirements("REQ_027")
@@ -44,6 +66,32 @@ class StatusCommand:
             )
 
 
+def _format_test_cell(stats: TestStats) -> Text:
+    """Format a TestStats into a Rich Text object with colored counts."""
+    if stats.not_applicable:
+        return Text()
+
+    def _slot(value: int, style: str) -> Text:
+        t = Text()
+        if value == 0:
+            t.append(" -", style=_DIM)
+        else:
+            t.append(f"{value:>2}", style=style)
+        return t
+
+    cell = Text()
+    cell.append_text(_slot(stats.total, "default"))
+    cell.append(" ")
+    cell.append_text(_slot(stats.passed, "green"))
+    cell.append(" ")
+    cell.append_text(_slot(stats.failed, "red"))
+    cell.append(" ")
+    cell.append_text(_slot(stats.skipped, "yellow"))
+    cell.append(" ")
+    cell.append_text(_slot(stats.missing, _ORANGE))
+    return cell
+
+
 def _build_table(
     req_id: str,
     urn: str,
@@ -52,24 +100,23 @@ def _build_table(
     mvrs: TestStats,
     completed: bool,
     implementation: IMPLEMENTATION,
-) -> list[str]:
-    row = [urn]
-    # add color to requirement if it's completed or not
-    req_id_color = f"{Fore.GREEN}" if completed else f"{Fore.RED}"
-    row.append(f"{req_id_color}{req_id}{Style.RESET_ALL}")
-
-    # Perform check for implementations
+) -> list:
+    id_style = "green" if completed else "red"
+    row = [
+        Text(urn),
+        Text(req_id, style=id_style),
+    ]
     if implementation == IMPLEMENTATION.NOT_APPLICABLE:
-        row.extend(["N/A"])
+        row.append(Text("N/A", style="dim"))
     else:
-        color = Fore.GREEN if impls > 0 else Fore.RED
-        row.extend([f"{color}{impls}{Style.RESET_ALL}"])
-    _extend_row(tests, row, kind="automated")
-    _extend_row(mvrs, row, kind="manual")
+        impl_style = "green" if impls > 0 else "red"
+        row.append(Text(str(impls), style=impl_style))
+    row.append(_format_test_cell(tests))
+    row.append(_format_test_cell(mvrs))
     return row
 
 
-def _get_row_with_totals(stats_service: StatisticsService) -> list[str]:
+def _get_row_with_totals(stats_service: StatisticsService) -> list:
     ts = stats_service.total_statistics
     total_automatic = ts.passed_automatic_tests + ts.failed_automatic_tests
     total_manual = ts.passed_manual_tests + ts.failed_manual_tests
@@ -93,22 +140,44 @@ def _get_row_with_totals(stats_service: StatisticsService) -> list[str]:
         missing=ts.missing_manual_tests,
     )
     return [
-        "Total",
-        "",
-        str(total_implementations),
+        Text("Total"),
+        Text(""),
+        Text(str(total_implementations)),
         _format_test_cell(auto_stats),
         _format_test_cell(manual_stats),
     ]
 
 
-# builds the status table
 def _status_table(stats_service: StatisticsService) -> str:
-    table_data = []
-    headers = ["URN", "ID", "Implementation", "Automated Tests", "Manual Tests"]
+    ts = stats_service.total_statistics
+
+    legend = Text("T = Total, ")
+    legend.append("P = Passed", style="green")
+    legend.append(", ")
+    legend.append("F = Failed", style="red")
+    legend.append(", ")
+    legend.append("S = Skipped", style="yellow")
+    legend.append(", ")
+    legend.append("M = Missing", style=_ORANGE)
+
+    table = Table(
+        box=box.DOUBLE_EDGE,
+        show_header=True,
+        header_style="bold",
+        show_lines=True,
+        title=f"REQUIREMENTS: {ts.total_requirements}",
+        title_style="bold",
+        caption=legend,
+    )
+    table.add_column("URN", justify="center")
+    table.add_column("ID", justify="left")
+    table.add_column("Implementation", justify="center")
+    table.add_column("Automated Tests", justify="center")
+    table.add_column("Manual Tests", justify="center")
 
     for req, stats in stats_service.requirement_statistics.items():
-        table_data.append(
-            _build_table(
+        table.add_row(
+            *_build_table(
                 req_id=req.id,
                 urn=req.urn,
                 impls=stats.implementations,
@@ -119,41 +188,12 @@ def _status_table(stats_service: StatisticsService) -> str:
             )
         )
 
-    table_data.append(_get_row_with_totals(stats_service))
-
-    col_align = ["center"] * len(headers) if table_data else []
-    table = tabulate(tablefmt="fancy_grid", tabular_data=table_data, headers=headers, colalign=col_align)
-
-    lines = table.split("\n")
-
-    # Find a line without ANSI codes to measure visible width
-    visible_table_width = 75
-    for line in lines:
-        if "╞" in line or "╘" in line:
-            visible_table_width = len(line)
-            break
-
-    ts = stats_service.total_statistics
-    header_req_data = ("\b" * len(str(ts.total_requirements))) + f"REQUIREMENTS: {str(ts.total_requirements)}"
-    inner_width = visible_table_width - 2  # subtract ╒ and ╕
-    title = (
-        "╒" + "═" * inner_width + "╕" + f"\n│{header_req_data.center(inner_width)}│" + "\n╘" + "═" * inner_width + "╛"
-    )
-
-    table_with_title = f"{title}\n{table}\n"
-
-    legend_line = (
-        f"T = Total, {Fore.GREEN}P = Passed{Style.RESET_ALL}, "
-        f"{Fore.RED}F = Failed{Style.RESET_ALL}, "
-        f"{Fore.YELLOW}S = Skipped{Style.RESET_ALL}, "
-        f"{_ORANGE}M = Missing{Style.RESET_ALL}"
-    )
+    table.add_section()
+    table.add_row(*_get_row_with_totals(stats_service))
 
     statistics = _summarize_statistics(ts)
 
-    status = table_with_title + legend_line + statistics
-
-    return status
+    return _render(table) + statistics
 
 
 def _summarize_statistics(ts: TotalStats) -> str:
@@ -162,104 +202,81 @@ def _summarize_statistics(ts: TotalStats) -> str:
     code_reqs = ts.total_requirements - nr_of_reqs_without_implementation
     code_completed = ts.completed_requirements - nr_of_completed_reqs_without_implementation
 
-    header_test_data = ("\b" * len(str(ts.total_tests))) + f"Total Tests: {str(ts.total_tests)}"
-    header_svcs_data = ("\b" * len(str(ts.total_svcs))) + f"Total SVCs: {str(ts.total_svcs)}"
-    CODE, NA, IMPLEMENTATIONS = __colorize_headers(
-        total=ts.total_requirements,
-        total_completed=ts.completed_requirements,
-        total_reqs_no_impl=nr_of_reqs_without_implementation,
-        completed_reqs_no_impl=nr_of_completed_reqs_without_implementation,
+    CODE, NA, IMPLEMENTATIONS = __colorize_headers()
+
+    # Code group: 4 stats (total, implemented, verified, not verified)
+    code_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=CODE, title_justify="center")
+    code_table.add_column("Total", justify="center")
+    code_table.add_column("Implemented", justify="center")
+    code_table.add_column("Verified", justify="center")
+    code_table.add_column("Not Verified", justify="center")
+    code_table.add_row(
+        str(code_reqs) + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
+        str(ts.with_implementation) + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
+        str(code_completed) + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
+        str(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed))
+        + __numbers_as_percentage(
+            numerator=(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed)),
+            denominator=code_reqs,
+        ),
     )
 
-    implementation_data = [
-        [
-            str(code_reqs) + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
-            str(ts.with_implementation)
-            + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
-            str(code_completed) + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
-            str(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed))
-            + __numbers_as_percentage(
-                numerator=(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed)),
-                denominator=code_reqs,
-            ),
-            str(nr_of_reqs_without_implementation)
-            + __numbers_as_percentage(
-                numerator=nr_of_reqs_without_implementation,
-                denominator=nr_of_reqs_without_implementation,
-            ),
-            str(nr_of_completed_reqs_without_implementation)
-            + __numbers_as_percentage(
-                numerator=nr_of_completed_reqs_without_implementation,
-                denominator=nr_of_reqs_without_implementation,
-            ),
-            str(nr_of_reqs_without_implementation - nr_of_completed_reqs_without_implementation)
-            + __numbers_as_percentage(
-                numerator=(nr_of_reqs_without_implementation - nr_of_completed_reqs_without_implementation),
-                denominator=nr_of_reqs_without_implementation,
-            ),
-        ]
-    ]
-
-    table_svc_data = [
-        [
-            str(ts.passed_tests) + __numbers_as_percentage(numerator=ts.passed_tests, denominator=ts.total_tests),
-            str(ts.failed_tests) + __numbers_as_percentage(numerator=ts.failed_tests, denominator=ts.total_tests),
-            str(ts.skipped_tests) + __numbers_as_percentage(numerator=ts.skipped_tests, denominator=ts.total_tests),
-            str(ts.missing_automated_tests)
-            + __numbers_as_percentage(numerator=ts.missing_automated_tests, denominator=ts.total_svcs),
-            str(ts.missing_manual_tests)
-            + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
-        ]
-    ]
-
-    implementation_headers = ["Total", "Implemented", "Verified", "Not Verified", "Total", "Verified", "Not Verified"]
-
-    svc_headers = [
-        "Passed tests",
-        "Failed tests",
-        "Skipped tests",
-        "SVCs missing tests",
-        "SVCs missing MVRs",
-    ]
-
-    svc_table = tabulate(
-        tablefmt="fancy_grid",
-        tabular_data=table_svc_data,
-        headers=svc_headers,
-        colalign=["center"] * len(table_svc_data[0]),
+    # N/A group: 3 stats (total, verified, not verified)
+    na_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=NA, title_justify="center")
+    na_table.add_column("Total", justify="center")
+    na_table.add_column("Verified", justify="center")
+    na_table.add_column("Not Verified", justify="center")
+    na_table.add_row(
+        str(nr_of_reqs_without_implementation)
+        + __numbers_as_percentage(
+            numerator=nr_of_reqs_without_implementation,
+            denominator=nr_of_reqs_without_implementation,
+        ),
+        str(nr_of_completed_reqs_without_implementation)
+        + __numbers_as_percentage(
+            numerator=nr_of_completed_reqs_without_implementation,
+            denominator=nr_of_reqs_without_implementation,
+        ),
+        str(nr_of_reqs_without_implementation - nr_of_completed_reqs_without_implementation)
+        + __numbers_as_percentage(
+            numerator=(nr_of_reqs_without_implementation - nr_of_completed_reqs_without_implementation),
+            denominator=nr_of_reqs_without_implementation,
+        ),
     )
 
-    implementation_table = tabulate(
-        tablefmt="fancy_grid",
-        tabular_data=implementation_data,
-        headers=implementation_headers,
-        colalign=["center"] * len(implementation_data[0]),
+    tests_table = Table(
+        box=box.DOUBLE_EDGE, show_header=True, title=f"Total Tests: {ts.total_tests}", title_style="white"
+    )
+    tests_table.add_column("Passed tests", justify="center")
+    tests_table.add_column("Failed tests", justify="center")
+    tests_table.add_column("Skipped tests", justify="center")
+    tests_table.add_row(
+        str(ts.passed_tests) + __numbers_as_percentage(numerator=ts.passed_tests, denominator=ts.total_tests),
+        str(ts.failed_tests) + __numbers_as_percentage(numerator=ts.failed_tests, denominator=ts.total_tests),
+        str(ts.skipped_tests) + __numbers_as_percentage(numerator=ts.skipped_tests, denominator=ts.total_tests),
     )
 
-    total_tests_svcs_header = (
-        "╒═══════════════════════════════════════════════════╤════════════════════════════════════════════╕"
-        f"\n│                   {header_test_data}                   │"
-        f"                {header_svcs_data}                │"
-        "\n╘═══════════════════════════════════════════════════╧════════════════════════════════════════════╛"
+    svcs_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=f"Total SVCs: {ts.total_svcs}", title_style="white")
+    svcs_table.add_column("SVCs missing tests", justify="center")
+    svcs_table.add_column("SVCs missing MVRs", justify="center")
+    svcs_table.add_row(
+        str(ts.missing_automated_tests)
+        + __numbers_as_percentage(numerator=ts.missing_automated_tests, denominator=ts.total_svcs),
+        str(ts.missing_manual_tests)
+        + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
     )
 
-    test_header = (
-        "╒═══════════════════════════════════════════════════════════╤═══════════════════════════════════════════╕"
-        f"\n|                             {CODE}                          │                     {NA}                   │"
-        "\n╘═══════════════════════════════════════════════════════════╧═══════════════════════════════════════════╛"
+    cols_rendered = _render(Columns([code_table, na_table]))
+    cols_width = max(
+        (len(_ANSI_ESCAPE.sub("", line)) for line in cols_rendered.split("\n") if line.strip()),
+        default=80,
     )
+    impl_console = Console(highlight=False, force_terminal=True, color_system="standard", width=cols_width)
+    with impl_console.capture() as cap:
+        impl_console.print(IMPLEMENTATIONS, justify="center")
+    impl_header = cap.get()
 
-    impl_header = (
-        "╒═══════════════════════════════════════════════════════════════════════════════════════════════════════╕"
-        f"\n|                                              {IMPLEMENTATIONS}                                          │"
-        "\n╘═══════════════════════════════════════════════════════════════════════════════════════════════════════╛"
-    )
-
-    table_with_title = (
-        f"\n{impl_header}\n{test_header}\n" f"{implementation_table}\n{total_tests_svcs_header}\n{svc_table}"
-    )
-
-    return table_with_title
+    return "\n" + impl_header + cols_rendered + _render(Columns([tests_table, svcs_table]))
 
 
 def __numbers_as_percentage(numerator: int, denominator: int) -> str:
@@ -270,53 +287,9 @@ def __numbers_as_percentage(numerator: int, denominator: int) -> str:
     return percentage_as_string
 
 
-def __colorize_headers(
-    total: int, total_completed: int, total_reqs_no_impl: int, completed_reqs_no_impl: int
-) -> tuple[str, str, str]:
-    total_code = total - total_reqs_no_impl
-    total_code_completed = total_code == (total_completed - completed_reqs_no_impl)
-    total_no_impl_completed = total_reqs_no_impl - completed_reqs_no_impl == 0
-
-    CODE = f"{Fore.GREEN}{'Code'}{Style.RESET_ALL}" if total_code_completed else f"{Fore.RED}{'Code'}{Style.RESET_ALL}"
-    NA = f"{Fore.GREEN}{'N/A'}{Style.RESET_ALL}" if total_no_impl_completed else f"{Fore.RED}{'N/A'}{Style.RESET_ALL}"
-    IMPLEMENTATIONS = (
-        f"{Fore.GREEN}{'IMPLEMENTATIONS'}{Style.RESET_ALL}"
-        if total == total_completed
-        else f"{Fore.RED}{'IMPLEMENTATIONS'}{Style.RESET_ALL}"
+def __colorize_headers() -> tuple[Text, Text, Text]:
+    return (
+        Text("In Code", style="white"),
+        Text("Not in Code", style="white"),
+        Text("IMPLEMENTATIONS", style="bold white"),
     )
-
-    return CODE, NA, IMPLEMENTATIONS
-
-
-_ORANGE = "\033[38;5;208m"
-_DIM = Style.DIM
-
-
-def _format_test_cell(stats: TestStats) -> str:
-    """Format a TestStats into a single fixed-width string with colored counts."""
-    if stats.not_applicable:
-        return ""
-
-    slots = [
-        (stats.total, ""),
-        (stats.passed, Fore.GREEN),
-        (stats.failed, Fore.RED),
-        (stats.skipped, Fore.YELLOW),
-        (stats.missing, _ORANGE),
-    ]
-
-    parts = []
-    for value, color in slots:
-        if value == 0:
-            parts.append(f"{_DIM} -{Style.RESET_ALL}")
-        else:
-            text = f"{value:>2}"
-            if color:
-                text = f"{color}{text}{Style.RESET_ALL}"
-            parts.append(text)
-
-    return " ".join(parts)
-
-
-def _extend_row(result: TestStats, row: list[str], kind: str) -> None:
-    row.append(_format_test_cell(result))
