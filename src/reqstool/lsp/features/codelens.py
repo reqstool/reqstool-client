@@ -82,7 +82,11 @@ def _req_label(ids: list[str], project: ProjectState) -> str:
                 fail_count += 1
 
     svc_count = len(all_svcs)
-    counts = f"{svc_count} SVCs" if pass_count == 0 and fail_count == 0 else f"{svc_count} SVCs · {pass_count}✓ {fail_count}✗"
+    counts = (
+        f"{svc_count} SVCs"
+        if pass_count == 0 and fail_count == 0
+        else f"{svc_count} SVCs · {pass_count}✓ {fail_count}✗"
+    )
 
     if len(ids) == 1:
         req = project.get_requirement(ids[0])
