@@ -123,7 +123,9 @@ CREATE TABLE IF NOT EXISTS urn_metadata (
     variant TEXT CHECK (variant IN ('system', 'microservice', 'external')),
     title TEXT NOT NULL,
     url TEXT,
-    parse_position INTEGER NOT NULL UNIQUE
+    parse_position INTEGER NOT NULL UNIQUE,
+    location_type TEXT,
+    location_uri TEXT
 );
 
 CREATE TABLE IF NOT EXISTS metadata (

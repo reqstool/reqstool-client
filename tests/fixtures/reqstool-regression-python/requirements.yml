@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
+
+metadata:
+  urn: regression-python
+  variant: microservice
+  title: Python Regression Test Requirements
+  url: https://github.com/reqstool/reqstool-client
+
+requirements:
+  - id: REQ_PASS
+    title: Greeting message
+    significance: shall
+    description: The system shall display a greeting message to the user
+    rationale: Users need visual confirmation that the system is running
+    categories: ["functional-suitability"]
+    revision: 1.0.0
+
+  - id: REQ_MANUAL_FAIL
+    title: Calculate total
+    significance: should
+    description: The system should calculate the total amount correctly
+    rationale: Financial accuracy is critical for user trust
+    categories: ["performance-efficiency", "reliability"]
+    revision: 1.0.0
+
+  - id: REQ_NOT_IMPLEMENTED
+    title: Export report
+    significance: may
+    description: The system may export reports in various formats
+    rationale: Reporting aids operational oversight
+    categories: ["compatibility", "interaction-capability"]
+    implementation: "N/A"
+    revision: 0.1.0
+    lifecycle:
+      state: draft
+
+  - id: REQ_FAILING_TEST
+    title: Email validation
+    significance: shall
+    description: The system shall validate email addresses before sending
+    rationale: Invalid emails cause delivery failures and waste resources
+    categories: ["security"]
+    revision: 1.0.0
+
+  - id: REQ_SKIPPED_TEST
+    title: SMS notification
+    significance: may
+    description: The system may send SMS notifications for critical alerts
+    rationale: SMS provides an alternative notification channel
+    categories: ["maintainability"]
+    revision: 1.0.0
+    lifecycle:
+      state: deprecated
+      reason: "Replaced by push notifications"
+
+  - id: REQ_MISSING_TEST
+    title: Audit logging
+    significance: shall
+    description: The system shall log all user actions for audit purposes
+    rationale: Audit trails are required for compliance
+    categories: ["safety", "flexibility"]
+    revision: 1.0.0
+
+  - id: REQ_OBSOLETE
+    title: Legacy greeting
+    significance: should
+    description: The system should display a legacy greeting format
+    rationale: Originally required for backward compatibility
+    categories: ["interaction-capability"]
+    revision: 0.1.0
+    lifecycle:
+      state: obsolete
+      reason: "Superseded by REQ_PASS"

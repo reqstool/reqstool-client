@@ -33,6 +33,15 @@ class RequirementsRepository:
         rows = self._db.connection.execute("SELECT urn FROM urn_metadata ORDER BY parse_position").fetchall()
         return [row["urn"] for row in rows]
 
+    def get_urn_location(self, urn: str) -> dict | None:
+        row = self._db.connection.execute(
+            "SELECT location_type, location_uri FROM urn_metadata WHERE urn = ?",
+            (urn,),
+        ).fetchone()
+        if row is None:
+            return None
+        return {"type": row["location_type"], "uri": row["location_uri"]}
+
     def get_import_graph(self) -> dict[str, list[str]]:
         graph: dict[str, list[str]] = {}
         all_urns = {row["urn"] for row in self._db.connection.execute("SELECT urn FROM urn_metadata").fetchall()}
@@ -123,6 +132,26 @@ class RequirementsRepository:
             (svc_urn_id.urn, svc_urn_id.id),
         ).fetchall()
         return [AnnotationData(element_kind=row["element_kind"], fully_qualified_name=row["fqn"]) for row in rows]
+
+    def get_test_results_for_svc(self, svc_urn_id: UrnId) -> list[TestData]:
+        """Return test results for each annotation attached to the given SVC."""
+        annotations = self.get_annotations_tests_for_svc(svc_urn_id)
+        results = []
+        for ann in annotations:
+            if ann.element_kind == "CLASS":
+                results.append(self._process_class_annotated_test_results(svc_urn_id.urn, ann.fully_qualified_name))
+            else:
+                row = self._db.connection.execute(
+                    "SELECT fqn, status FROM test_results WHERE fqn = ?",
+                    (ann.fully_qualified_name,),
+                ).fetchone()
+                if row is not None:
+                    results.append(TestData(fully_qualified_name=row["fqn"], status=TEST_RUN_STATUS(row["status"])))
+                else:
+                    results.append(
+                        TestData(fully_qualified_name=ann.fully_qualified_name, status=TEST_RUN_STATUS.MISSING)
+                    )
+        return results
 
     # -- Test result resolution --
 
