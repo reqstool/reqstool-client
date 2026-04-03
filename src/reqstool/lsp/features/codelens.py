@@ -88,11 +88,13 @@ def _req_label(ids: list[str], project: ProjectState) -> str:
         else f"{svc_count} SVCs · {pass_count}✓ {fail_count}✗"
     )
 
-    if len(ids) == 1:
-        req = project.get_requirement(ids[0])
+    badges = []
+    for raw_id in ids:
+        req = project.get_requirement(raw_id)
         badge = _lifecycle_badge(req.lifecycle.state) if req else ""
-        return f"{badge}{ids[0]}: {counts}"
-    return f"{len(ids)} requirements · {counts}"
+        badges.append(f"{badge}{raw_id}")
+    id_str = ", ".join(badges)
+    return f"{id_str}: {counts}"
 
 
 def _svc_label(ids: list[str], project: ProjectState) -> str:
