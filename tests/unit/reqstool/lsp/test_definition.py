@@ -6,7 +6,7 @@ from lsprotocol import types
 
 from reqstool.lsp.features.definition import (
     handle_definition,
-    _find_id_in_yaml,
+    find_id_in_yaml as _find_id_in_yaml,
     _id_at_yaml_position,
     _path_to_uri,
 )
