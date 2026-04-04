@@ -1,0 +1,3 @@
+# Skip all subdirectories — fixture projects must not be discovered by the
+# LSP workspace scanner when the reqstool-client project itself is opened.
+**

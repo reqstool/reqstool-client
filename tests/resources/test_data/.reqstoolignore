@@ -1,0 +1,3 @@
+# Skip all subdirectories — test fixture requirements.yml files must not be
+# discovered by the LSP workspace scanner.
+**

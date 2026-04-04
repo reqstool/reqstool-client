@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fnmatch
 import logging
 import os
 from dataclasses import dataclass, field
@@ -55,11 +56,31 @@ def _find_requirements_files(workspace_folder: str) -> list[str]:
     return results
 
 
+def _read_ignore_patterns(dirpath: str) -> list[str] | None:
+    """Read .reqstoolignore from dirpath.
+
+    Returns:
+        None            — no .reqstoolignore file present
+        []  (empty)     — file exists but is empty; caller should skip dirpath entirely
+        [pattern, ...]  — glob patterns; caller should skip child dirs whose names match
+    """
+    ignore_file = os.path.join(dirpath, ".reqstoolignore")
+    if not os.path.exists(ignore_file):
+        return None
+    try:
+        with open(ignore_file) as f:
+            patterns = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+    except OSError:
+        return None
+    return patterns
+
+
 def _walk_dir(dirpath: str, depth: int, results: list[str]) -> None:
     if depth > MAX_DEPTH:
         return
-    if os.path.exists(os.path.join(dirpath, ".reqstoolignore")):
-        return
+
+    patterns = _read_ignore_patterns(dirpath)  # None → no file; [] → no effective patterns
+
     try:
         entries = os.scandir(dirpath)
     except PermissionError:
@@ -70,7 +91,8 @@ def _walk_dir(dirpath: str, depth: int, results: list[str]) -> None:
         if entry.is_file() and entry.name == "requirements.yml":
             results.append(dirpath)
         elif entry.is_dir() and not entry.name.startswith(".") and entry.name not in SKIP_DIRS:
-            subdirs.append(entry.path)
+            if not patterns or not any(fnmatch.fnmatch(entry.name, p) for p in patterns):
+                subdirs.append(entry.path)
 
     for subdir in subdirs:
         _walk_dir(subdir, depth + 1, results)
