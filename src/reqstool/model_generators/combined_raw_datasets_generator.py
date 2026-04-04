@@ -1,6 +1,7 @@
 # Copyright © LFV
 
 import logging
+import os
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -10,6 +11,7 @@ from reqstool.common.exceptions import CircularImplementationError, CircularImpo
 from reqstool.common.utils import TempDirectoryManager, Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.location_resolver.location_resolver import LocationResolver
+from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.location import LocationInterface
 from reqstool.model_generators.annotations_model_generator import AnnotationsModelGenerator
 from reqstool.model_generators.mvrs_model_generator import MVRsModelGenerator
@@ -65,11 +67,18 @@ class CombinedRawDatasetsGenerator:
         # handle imported sources
         self.__handle_initial_imports(raw_datasets=raw_datasets, rd=initial_imported_model.requirements_data)
 
+        # Aggregate resolved file paths from each RawDataset
+        urn_source_paths = {}
+        for urn, rd in raw_datasets.items():
+            if rd.source_paths:
+                urn_source_paths[urn] = rd.source_paths
+
         combined_raw_datasets = CombinedRawDataset(
             initial_model_urn=initial_urn,
             raw_datasets=raw_datasets,
             urn_parsing_order=self._parsing_order,
             parsing_graph=self._parsing_graph,
+            urn_source_paths=urn_source_paths,
         )
 
         self.semantic_validator.validate_post_parsing(combined_raw_dataset=combined_raw_datasets)
@@ -98,7 +107,11 @@ class CombinedRawDatasetsGenerator:
     def __populate_requirements(self, crd: CombinedRawDataset) -> None:
         for urn in crd.urn_parsing_order:
             rd = crd.raw_datasets[urn]
-            self._database.insert_urn_metadata(rd.requirements_data.metadata)
+            self._database.insert_urn_metadata(
+                rd.requirements_data.metadata,
+                location_type=rd.location_type,
+                location_uri=rd.location_uri,
+            )
             for req_data in rd.requirements_data.requirements.values():
                 self._database.insert_requirement(urn, req_data)
 
@@ -263,15 +276,59 @@ class CombinedRawDatasetsGenerator:
             actual_tmp_path, requirements_indata, rmg
         )
 
+        # Capture location provenance
+        location_type, location_uri = self.__extract_location_provenance(current_location_handler.current)
+
+        # Capture resolved file paths for LocalLocation only
+        source_paths = self.__extract_source_paths(current_location_handler.current, requirements_indata)
+
         raw_dataset = RawDataset(
             requirements_data=rmg.requirements_data,
             annotations_data=annotations_data,
             svcs_data=svcs_data,
             mvrs_data=mvrs_data,
             automated_tests=automated_tests,
+            location_type=location_type,
+            location_uri=location_uri,
+            source_paths=source_paths,
         )
 
         return raw_dataset
+
+    @staticmethod
+    def __extract_location_provenance(location: LocationInterface) -> tuple:
+        """Extract location_type and location_uri from a resolved location."""
+        from reqstool.locations.git_location import GitLocation
+        from reqstool.locations.maven_location import MavenLocation
+        from reqstool.locations.pypi_location import PypiLocation
+
+        if isinstance(location, LocalLocation):
+            return "local", f"file://{os.path.abspath(location.path)}"
+        elif isinstance(location, GitLocation):
+            return "git", location.url
+        elif isinstance(location, MavenLocation):
+            return "maven", f"{location.group_id}:{location.artifact_id}:{location.version}"
+        elif isinstance(location, PypiLocation):
+            return "pypi", f"{location.package}=={location.version}"
+        return None, None
+
+    @staticmethod
+    def __extract_source_paths(location: LocationInterface, requirements_indata: RequirementsIndata) -> Dict[str, str]:
+        """Extract resolved file paths for LocalLocation only."""
+        if not isinstance(location, LocalLocation):
+            return {}
+
+        source_paths: Dict[str, str] = {}
+        paths = requirements_indata.requirements_indata_paths
+        if paths.requirements_yml.exists:
+            source_paths["requirements"] = paths.requirements_yml.path
+        if paths.svcs_yml.exists:
+            source_paths["svcs"] = paths.svcs_yml.path
+        if paths.mvrs_yml.exists:
+            source_paths["mvrs"] = paths.mvrs_yml.path
+        if paths.annotations_yml.exists:
+            source_paths["annotations"] = paths.annotations_yml.path
+        return source_paths
 
     @Requirements("REQ_009", "REQ_010", "REQ_013")
     def __parse_source_other(

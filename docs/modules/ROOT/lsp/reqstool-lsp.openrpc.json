@@ -1,0 +1,260 @@
+{
+  "openrpc": "1.2.6",
+  "info": {
+    "title": "reqstool Custom LSP Protocol",
+    "version": "0.1.0",
+    "description": "Custom JSON-RPC methods that extend the Language Server Protocol for reqstool. These methods are understood only by reqstool-aware clients; generic LSP clients will ignore them. Standard LSP methods are documented in lsp.adoc and defined by the LSP specification."
+  },
+  "methods": [
+    {
+      "name": "reqstool/details",
+      "summary": "Fetch structured data for a requirement, SVC, or MVR",
+      "description": "Returns structured data for a single requirement, SVC, or MVR. Searches all ready projects. Clients can use the response to display detailed requirement information (e.g. in a Details panel).",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "type": "object",
+            "required": ["id", "type"],
+            "properties": {
+              "id":   { "type": "string", "description": "Local identifier, e.g. \"REQ_010\"" },
+              "type": { "type": "string", "enum": ["requirement", "svc", "mvr"], "description": "The kind of item to fetch" }
+            }
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "description": "One of RequirementDetails, SVCDetails, or MVRDetails depending on the requested type. null if the item is not found.",
+        "schema": {
+          "oneOf": [
+            { "$ref": "#/components/schemas/RequirementDetails" },
+            { "$ref": "#/components/schemas/SVCDetails" },
+            { "$ref": "#/components/schemas/MVRDetails" }
+          ]
+        }
+      },
+      "examples": [
+        {
+          "name": "Fetch a requirement",
+          "params": [
+            { "name": "params", "value": { "id": "REQ_010", "type": "requirement" } }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "type": "requirement",
+              "id": "REQ_010",
+              "urn": "ms-001",
+              "title": "Payment must succeed",
+              "significance": "shall",
+              "description": "The system shall process payments.",
+              "rationale": "",
+              "revision": "1",
+              "lifecycle": { "state": "effective", "reason": "" },
+              "categories": ["functional-suitability"],
+              "implementation": "in_code",
+              "references": [],
+              "implementations": [{ "element_kind": "METHOD", "fqn": "com.example.PaymentService.pay" }],
+              "svcs": [{ "id": "SVC_010", "urn": "ms-001", "title": "Payment test", "verification": "automated_test" }],
+              "location": { "type": "local", "uri": "file:///home/user/project/docs/reqstool" },
+              "source_paths": {
+                "requirements": "/home/user/project/docs/reqstool/requirements.yml",
+                "svcs": "/home/user/project/docs/reqstool/software_verification_cases.yml",
+                "mvrs": "/home/user/project/docs/reqstool/manual_verification_results.yml"
+              }
+            }
+          }
+        },
+        {
+          "name": "Fetch an SVC",
+          "params": [
+            { "name": "params", "value": { "id": "SVC_010", "type": "svc" } }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "type": "svc",
+              "id": "SVC_010",
+              "urn": "ms-001",
+              "title": "Payment test",
+              "description": "",
+              "verification": "automated_test",
+              "instructions": "",
+              "revision": "1",
+              "lifecycle": { "state": "effective", "reason": "" },
+              "requirement_ids": [{ "id": "REQ_010", "urn": "ms-001", "title": "Payment must succeed", "lifecycle_state": "effective" }],
+              "test_annotations": [{ "element_kind": "METHOD", "fqn": "com.example.PaymentServiceTest.testPay" }],
+              "test_results": [{ "fqn": "com.example.PaymentServiceTest.testPay", "status": "passed" }],
+              "test_summary": { "passed": 1, "failed": 0, "skipped": 0, "missing": 0 },
+              "mvrs": [],
+              "location": { "type": "local", "uri": "file:///home/user/project/docs/reqstool" },
+              "source_paths": {
+                "requirements": "/home/user/project/docs/reqstool/requirements.yml",
+                "svcs": "/home/user/project/docs/reqstool/software_verification_cases.yml",
+                "mvrs": "/home/user/project/docs/reqstool/manual_verification_results.yml"
+              }
+            }
+          }
+        },
+        {
+          "name": "Fetch an MVR",
+          "params": [
+            { "name": "params", "value": { "id": "MVR_001", "type": "mvr" } }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "type": "mvr",
+              "id": "MVR_001",
+              "urn": "ms-001",
+              "passed": true,
+              "comment": "Verified manually on 2024-01-15",
+              "svc_ids": [{ "id": "SVC_010", "urn": "ms-001" }],
+              "location": { "type": "local", "uri": "file:///home/user/project/docs/reqstool" },
+              "source_paths": {
+                "requirements": "/home/user/project/docs/reqstool/requirements.yml",
+                "svcs": "/home/user/project/docs/reqstool/software_verification_cases.yml",
+                "mvrs": "/home/user/project/docs/reqstool/manual_verification_results.yml"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "components": {
+    "schemas": {
+      "LifecycleInfo": {
+        "type": "object",
+        "properties": {
+          "state":  { "type": "string", "description": "Lifecycle state: draft, effective, deprecated, or obsolete" },
+          "reason": { "type": "string", "description": "Optional reason for the current lifecycle state" }
+        }
+      },
+      "LocationInfo": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "description": "Location kind: local, git, maven, or pypi" },
+          "uri":  { "type": "string", "description": "URI of the reqstool project root" }
+        }
+      },
+      "AnnotationRef": {
+        "type": "object",
+        "properties": {
+          "element_kind": { "type": "string", "description": "Code element kind, e.g. METHOD or CLASS" },
+          "fqn":          { "type": "string", "description": "Fully-qualified name of the annotated element" }
+        }
+      },
+      "TestResult": {
+        "type": "object",
+        "properties": {
+          "fqn":    { "type": "string", "description": "Fully-qualified name of the test" },
+          "status": { "type": "string", "description": "Test status: passed, failed, skipped, or missing" }
+        }
+      },
+      "TestSummary": {
+        "type": "object",
+        "properties": {
+          "passed":  { "type": "integer" },
+          "failed":  { "type": "integer" },
+          "skipped": { "type": "integer" },
+          "missing": { "type": "integer" }
+        }
+      },
+      "SVCRef": {
+        "type": "object",
+        "properties": {
+          "id":           { "type": "string", "description": "Local SVC identifier" },
+          "urn":          { "type": "string", "description": "Project URN" },
+          "title":        { "type": "string" },
+          "verification": { "type": "string", "description": "Verification method" }
+        }
+      },
+      "RequirementRef": {
+        "type": "object",
+        "properties": {
+          "id":              { "type": "string", "description": "Local requirement identifier" },
+          "urn":             { "type": "string", "description": "Project URN" },
+          "title":           { "type": "string" },
+          "lifecycle_state": { "type": "string" }
+        }
+      },
+      "MVRRef": {
+        "type": "object",
+        "properties": {
+          "id":      { "type": "string", "description": "Local MVR identifier" },
+          "urn":     { "type": "string", "description": "Project URN" },
+          "passed":  { "type": "boolean" },
+          "comment": { "type": "string" }
+        }
+      },
+      "IDRef": {
+        "type": "object",
+        "properties": {
+          "id":  { "type": "string", "description": "Local identifier" },
+          "urn": { "type": "string", "description": "Project URN" }
+        }
+      },
+      "RequirementDetails": {
+        "type": "object",
+        "description": "Returned when type is \"requirement\".",
+        "properties": {
+          "type":            { "type": "string", "enum": ["requirement"] },
+          "id":              { "type": "string", "description": "Local requirement identifier, e.g. REQ_010" },
+          "urn":             { "type": "string", "description": "Project URN, e.g. ms-001" },
+          "title":           { "type": "string" },
+          "significance":    { "type": "string", "description": "shall, should, or may" },
+          "description":     { "type": "string" },
+          "rationale":       { "type": "string" },
+          "revision":        { "type": "string" },
+          "lifecycle":       { "$ref": "#/components/schemas/LifecycleInfo" },
+          "categories":      { "type": "array", "items": { "type": "string" } },
+          "implementation":  { "type": "string", "description": "in_code or none" },
+          "references":      { "type": "array", "items": { "type": "string" }, "description": "IDs of referenced requirements" },
+          "implementations": { "type": "array", "items": { "$ref": "#/components/schemas/AnnotationRef" } },
+          "svcs":            { "type": "array", "items": { "$ref": "#/components/schemas/SVCRef" } },
+          "location":        { "$ref": "#/components/schemas/LocationInfo" },
+          "source_paths":    { "type": "object", "additionalProperties": { "type": "string" }, "description": "Map of file type to absolute path, e.g. {\"requirements\": \"/path/to/requirements.yml\"}" }
+        }
+      },
+      "SVCDetails": {
+        "type": "object",
+        "description": "Returned when type is \"svc\".",
+        "properties": {
+          "type":             { "type": "string", "enum": ["svc"] },
+          "id":               { "type": "string", "description": "Local SVC identifier, e.g. SVC_010" },
+          "urn":              { "type": "string", "description": "Project URN, e.g. ms-001" },
+          "title":            { "type": "string" },
+          "description":      { "type": "string" },
+          "verification":     { "type": "string", "description": "automated_test or manual_inspection" },
+          "instructions":     { "type": "string" },
+          "revision":         { "type": "string" },
+          "lifecycle":        { "$ref": "#/components/schemas/LifecycleInfo" },
+          "requirement_ids":  { "type": "array", "items": { "$ref": "#/components/schemas/RequirementRef" } },
+          "test_annotations": { "type": "array", "items": { "$ref": "#/components/schemas/AnnotationRef" } },
+          "test_results":     { "type": "array", "items": { "$ref": "#/components/schemas/TestResult" } },
+          "test_summary":     { "$ref": "#/components/schemas/TestSummary" },
+          "mvrs":             { "type": "array", "items": { "$ref": "#/components/schemas/MVRRef" } },
+          "location":         { "$ref": "#/components/schemas/LocationInfo" },
+          "source_paths":     { "type": "object", "additionalProperties": { "type": "string" }, "description": "Map of file type to absolute path" }
+        }
+      },
+      "MVRDetails": {
+        "type": "object",
+        "description": "Returned when type is \"mvr\".",
+        "properties": {
+          "type":         { "type": "string", "enum": ["mvr"] },
+          "id":           { "type": "string", "description": "Local MVR identifier, e.g. MVR_001" },
+          "urn":          { "type": "string", "description": "Project URN, e.g. ms-001" },
+          "passed":       { "type": "boolean", "description": "Whether the manual verification passed" },
+          "comment":      { "type": "string" },
+          "svc_ids":      { "type": "array", "items": { "$ref": "#/components/schemas/IDRef" } },
+          "location":     { "$ref": "#/components/schemas/LocationInfo" },
+          "source_paths": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Map of file type to absolute path" }
+        }
+      }
+    }
+  }
+}

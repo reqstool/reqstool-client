@@ -18,6 +18,9 @@ addopts = [
 ]
 pythonpath = [".", "src", "tests"]
 testpaths = ["tests"]
+norecursedirs = ["tests/fixtures"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "module"
 markers = [
     "integration: tests that require external resources",
     "e2e: end-to-end tests that run the full pipeline locally",
@@ -50,6 +53,8 @@ dependencies = [
     "packaging==26.0",
     "requests==2.33.1",
     "beautifulsoup4==4.14.3",
+    "pygls>=2.0,<3.0",
+    "lsprotocol>=2024.0.0",
 ]
 
 [project.urls]
@@ -82,6 +87,7 @@ dependencies = [
     "flake8==7.2.0",
     "flake8-pyproject==1.2.3",
     "datamodel-code-generator==0.54.1",
+    "pytest-asyncio>=0.25,<1.0",
 ]
 
 [tool.hatch.envs.dev.scripts]
