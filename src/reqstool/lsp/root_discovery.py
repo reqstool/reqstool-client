@@ -58,6 +58,8 @@ def _find_requirements_files(workspace_folder: str) -> list[str]:
 def _walk_dir(dirpath: str, depth: int, results: list[str]) -> None:
     if depth > MAX_DEPTH:
         return
+    if os.path.exists(os.path.join(dirpath, ".reqstoolignore")):
+        return
     try:
         entries = os.scandir(dirpath)
     except PermissionError:
