@@ -13,7 +13,6 @@ jobs:
             exit 1
           fi
       - name: Check branch
-        if: github.event_name != 'workflow_dispatch'
         run: |
           branch="${{ github.event.release.target_commitish }}"
           if [[ "$branch" != "main" && "$branch" != hotfix/* && "$branch" != release/* ]]; then
