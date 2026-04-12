@@ -40,6 +40,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           sign-artifacts: true
+          skip-existing: true
 
   publish-image-to-ghcr:
     if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
@@ -71,15 +72,15 @@ jobs:
         run: |
           VERSION="${{ steps.meta.outputs.version }}"
           echo "Waiting for reqstool==${VERSION} to become available on PyPI..."
-          for i in $(seq 1 30); do
-            if pip install --dry-run "reqstool==${VERSION}" 2>&1 | grep -q "Would install"; then
+          for i in $(seq 1 90); do
+            if pip install --dry-run --no-cache-dir "reqstool==${VERSION}" &>/dev/null; then
               echo "reqstool==${VERSION} is available on PyPI"
               exit 0
             fi
-            echo "Attempt ${i}/30 - not yet available, waiting 10s..."
+            echo "Attempt ${i}/90 - not yet available, waiting 10s..."
             sleep 10
           done
-          echo "::error::reqstool==${VERSION} not found on PyPI after 5 minutes"
+          echo "::error::reqstool==${VERSION} not found on PyPI after 15 minutes"
           exit 1
 
       - name: Set up Docker Buildx
