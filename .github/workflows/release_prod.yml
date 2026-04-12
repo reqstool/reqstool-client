@@ -72,7 +72,7 @@ jobs:
           VERSION="${{ steps.meta.outputs.version }}"
           echo "Waiting for reqstool==${VERSION} to become available on PyPI..."
           for i in $(seq 1 90); do
-            if curl -sf "https://pypi.org/pypi/reqstool/${VERSION}/json" -o /dev/null; then
+            if pip install --dry-run --no-cache-dir "reqstool==${VERSION}" 2>&1 | grep -q "Would install"; then
               echo "reqstool==${VERSION} is available on PyPI"
               exit 0
             fi
