@@ -1,6 +1,5 @@
 # Copyright © LFV
 
-from __future__ import annotations
 
 from reqstool.common.queries.details import get_mvr_details as _get_mvr_details
 from reqstool.common.queries.details import get_requirement_details as _get_requirement_details

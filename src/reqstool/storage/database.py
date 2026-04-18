@@ -1,6 +1,5 @@
 # Copyright © LFV
 
-from __future__ import annotations
 
 import logging
 import sqlite3

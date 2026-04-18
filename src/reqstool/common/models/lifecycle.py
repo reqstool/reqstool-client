@@ -1,9 +1,8 @@
 # Copyright © LFV
 
-from __future__ import annotations
 
 from enum import Enum, unique
-from typing import Optional
+from typing import Optional, Self
 
 from pydantic import BaseModel, ConfigDict
 
@@ -31,7 +30,7 @@ class LifecycleData(BaseModel):
     state: LIFECYCLESTATE = LIFECYCLESTATE.EFFECTIVE
 
     @classmethod
-    def from_dict(cls, data: Optional[dict]) -> LifecycleData:
+    def from_dict(cls, data: Optional[dict]) -> Self:
         if data is None:
             return cls(state=LIFECYCLESTATE.EFFECTIVE, reason=None)
         return cls(

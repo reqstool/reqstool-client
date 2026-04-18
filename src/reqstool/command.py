@@ -456,7 +456,7 @@ class Command:
         self.__parser.print_help(sys.stderr)
 
 
-def main():
+def main():  # noqa: C901
     command = Command()
     args = command.get_arguments()
 

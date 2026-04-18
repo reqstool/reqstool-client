@@ -1,6 +1,5 @@
 # Copyright © LFV
 
-from __future__ import annotations
 
 from reqstool.common.queries.list import get_list as _get_list
 from reqstool.lsp.project_state import ProjectState
