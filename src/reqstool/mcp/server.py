@@ -17,7 +17,7 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     try:
         from mcp.server.fastmcp import FastMCP
     except ImportError as exc:
-        raise ImportError("MCP server requires extra dependencies: pip install 'mcp[cli]>=1.0'") from exc
+        raise ImportError("MCP server requires extra dependencies: pip install 'mcp>=1.0'") from exc
 
     session = ProjectSession(location)
     session.build()
@@ -25,7 +25,8 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     if not session.ready:
         raise RuntimeError(f"Failed to load reqstool project: {session.error}")
 
-    assert session.repo is not None
+    if session.repo is None:
+        raise RuntimeError("Project session repo is None after successful build")
     repo: RequirementsRepository = session.repo
     urn_source_paths = session.urn_source_paths
 
@@ -85,6 +86,8 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         for svc in result.get("svcs", []):
             for key in test_summary:
                 test_summary[key] += svc.get("test_summary", {}).get(key, 0)
+        # skipped tests are not counted as failures; a requirement only "meets" if
+        # it has at least one implementation and no failed or missing test results
         all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
         return {
             "id": result["id"],

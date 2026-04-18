@@ -55,7 +55,7 @@ dependencies = [
     "beautifulsoup4==4.14.3",
     "pygls>=2.0,<3.0",
     "lsprotocol>=2024.0.0",
-    "mcp[cli]>=1.0",
+    "mcp>=1.0",
 ]
 
 [project.urls]
