@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-pytestmark = [pytest.mark.integration, pytest.mark.asyncio(loop_scope="module")]
+pytestmark = [pytest.mark.integration, pytest.mark.asyncio(loop_scope="session")]
 
 # IDs present in the reqstool-regression-python fixture
 KNOWN_REQ_ID = "REQ_PASS"
