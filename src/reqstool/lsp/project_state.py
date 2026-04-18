@@ -5,87 +5,25 @@ from __future__ import annotations
 import logging
 
 from reqstool.common.models.urn_id import UrnId
-from reqstool.common.validators.lifecycle_validator import LifecycleValidator
-from reqstool.common.validators.semantic_validator import SemanticValidator
-from reqstool.common.validator_error_holder import ValidationErrorHolder
+from reqstool.common.project_session import ProjectSession
 from reqstool.locations.local_location import LocalLocation
-from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
 from reqstool.models.annotations import AnnotationData
 from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import RequirementData
 from reqstool.models.svcs import SVCData
 from reqstool.models.test_data import TestData
-from reqstool.storage.database import RequirementsDatabase
-from reqstool.storage.database_filter_processor import DatabaseFilterProcessor
-from reqstool.storage.requirements_repository import RequirementsRepository
 
 logger = logging.getLogger(__name__)
 
 
-class ProjectState:
+class ProjectState(ProjectSession):
     def __init__(self, reqstool_path: str):
+        super().__init__(LocalLocation(path=reqstool_path))
         self._reqstool_path = reqstool_path
-        self._db: RequirementsDatabase | None = None
-        self._repo: RequirementsRepository | None = None
-        self._ready: bool = False
-        self._error: str | None = None
-        self._urn_source_paths: dict[str, dict[str, str]] = {}
-
-    @property
-    def ready(self) -> bool:
-        return self._ready
-
-    @property
-    def error(self) -> str | None:
-        return self._error
 
     @property
     def reqstool_path(self) -> str:
         return self._reqstool_path
-
-    def build(self) -> None:
-        self.close()
-        self._error = None
-        db = RequirementsDatabase()
-        try:
-            location = LocalLocation(path=self._reqstool_path)
-            holder = ValidationErrorHolder()
-            semantic_validator = SemanticValidator(validation_error_holder=holder)
-
-            crdg = CombinedRawDatasetsGenerator(
-                initial_location=location,
-                semantic_validator=semantic_validator,
-                database=db,
-            )
-            crd = crdg.combined_raw_datasets
-
-            DatabaseFilterProcessor(db, crd.raw_datasets).apply_filters()
-            LifecycleValidator(RequirementsRepository(db))
-
-            self._db = db
-            self._repo = RequirementsRepository(db)
-            self._urn_source_paths = dict(crd.urn_source_paths)
-            self._ready = True
-            logger.info("Built project state for %s", self._reqstool_path)
-        except SystemExit as e:
-            logger.warning("build_database() called sys.exit(%s) for %s", e.code, self._reqstool_path)
-            self._error = f"Pipeline error (exit code {e.code})"
-            db.close()
-        except Exception as e:
-            logger.error("Failed to build project state for %s: %s", self._reqstool_path, e)
-            self._error = str(e)
-            db.close()
-
-    def rebuild(self) -> None:
-        self.build()
-
-    def close(self) -> None:
-        if self._db is not None:
-            self._db.close()
-            self._db = None
-        self._repo = None
-        self._urn_source_paths = {}
-        self._ready = False
 
     def get_initial_urn(self) -> str | None:
         if not self._ready or self._repo is None:
