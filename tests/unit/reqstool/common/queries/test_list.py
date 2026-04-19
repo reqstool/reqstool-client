@@ -3,7 +3,7 @@
 import pytest
 
 from reqstool.common.project_session import ProjectSession
-from reqstool.common.queries.list import get_list
+from reqstool.common.queries.list import get_list, get_mvrs_list, get_requirements_list, get_svcs_list
 from reqstool.locations.local_location import LocalLocation
 
 
@@ -54,3 +54,30 @@ def test_get_list_mvrs(repo):
         assert "id" in mvr
         assert "passed" in mvr
         assert isinstance(mvr["passed"], bool)
+
+
+def test_get_requirements_list(repo):
+    reqs = get_requirements_list(repo)
+    assert isinstance(reqs, list)
+    assert len(reqs) > 0
+    for req in reqs:
+        assert "id" in req
+        assert "title" in req
+        assert "lifecycle_state" in req
+
+
+def test_get_svcs_list(repo):
+    svcs = get_svcs_list(repo)
+    assert isinstance(svcs, list)
+    assert len(svcs) > 0
+    for svc in svcs:
+        assert "id" in svc
+        assert "verification" in svc
+
+
+def test_get_mvrs_list(repo):
+    mvrs = get_mvrs_list(repo)
+    assert isinstance(mvrs, list)
+    for mvr in mvrs:
+        assert "id" in mvr
+        assert "passed" in mvr

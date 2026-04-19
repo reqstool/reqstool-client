@@ -4,8 +4,13 @@
 import logging
 
 from reqstool.common.project_session import ProjectSession
-from reqstool.common.queries.details import get_mvr_details, get_requirement_details, get_svc_details
-from reqstool.common.queries.list import get_list
+from reqstool.common.queries.details import (
+    get_mvr_details,
+    get_requirement_details,
+    get_requirement_status as _get_requirement_status,
+    get_svc_details,
+)
+from reqstool.common.queries.list import get_mvrs_list, get_requirements_list, get_svcs_list
 from reqstool.locations.location import LocationInterface
 from reqstool.services.statistics_service import StatisticsService
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -35,7 +40,7 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     @mcp.tool()
     def list_requirements() -> list[dict]:
         """List all requirements with id, title, and lifecycle state."""
-        return get_list(repo)["requirements"]
+        return get_requirements_list(repo)
 
     @mcp.tool()
     def get_requirement(id: str) -> dict:
@@ -48,7 +53,7 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     @mcp.tool()
     def list_svcs() -> list[dict]:
         """List all SVCs with id, title, lifecycle state, and verification type."""
-        return get_list(repo)["svcs"]
+        return get_svcs_list(repo)
 
     @mcp.tool()
     def get_svc(id: str) -> dict:
@@ -61,7 +66,7 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     @mcp.tool()
     def list_mvrs() -> list[dict]:
         """List all MVRs with id and passed status."""
-        return get_list(repo)["mvrs"]
+        return get_mvrs_list(repo)
 
     @mcp.tool()
     def get_mvr(id: str) -> dict:
@@ -79,23 +84,10 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     @mcp.tool()
     def get_requirement_status(id: str) -> dict:
         """Quick status check for one requirement: lifecycle state, implementation status, test summary."""
-        result = get_requirement_details(id, repo, urn_source_paths)
+        result = _get_requirement_status(id, repo)
         if result is None:
             raise ValueError(f"Requirement {id!r} not found")
-        test_summary = {"passed": 0, "failed": 0, "skipped": 0, "missing": 0}
-        for svc in result.get("svcs", []):
-            for key in test_summary:
-                test_summary[key] += svc.get("test_summary", {}).get(key, 0)
-        # skipped tests are not counted as failures; a requirement only "meets" if
-        # it has at least one implementation and no failed or missing test results
-        all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
-        return {
-            "id": result["id"],
-            "lifecycle_state": result["lifecycle"]["state"],
-            "implementation": result["implementation"],
-            "test_summary": test_summary,
-            "meets_requirements": result["implementation"] != "not_implemented" and all_passing,
-        }
+        return result
 
     @mcp.tool()
     def list_annotations() -> list[dict]:

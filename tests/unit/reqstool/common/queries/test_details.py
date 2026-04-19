@@ -3,7 +3,12 @@
 import pytest
 
 from reqstool.common.project_session import ProjectSession
-from reqstool.common.queries.details import get_mvr_details, get_requirement_details, get_svc_details
+from reqstool.common.queries.details import (
+    get_mvr_details,
+    get_requirement_details,
+    get_requirement_status,
+    get_svc_details,
+)
 from reqstool.locations.local_location import LocalLocation
 
 
@@ -86,3 +91,19 @@ def test_get_svc_details_requirement_ids_enriched(session):
 
 def test_get_mvr_details_unknown(session):
     assert get_mvr_details("MVR_NONEXISTENT", session.repo) is None
+
+
+def test_get_requirement_status_known(session):
+    result = get_requirement_status("REQ_010", session.repo)
+    assert result is not None
+    assert result["id"] == "REQ_010"
+    assert "lifecycle_state" in result
+    assert "implementation" in result
+    assert "test_summary" in result
+    assert set(result["test_summary"].keys()) == {"passed", "failed", "skipped", "missing"}
+    assert "meets_requirements" in result
+    assert isinstance(result["meets_requirements"], bool)
+
+
+def test_get_requirement_status_unknown(session):
+    assert get_requirement_status("REQ_NONEXISTENT", session.repo) is None

@@ -157,3 +157,31 @@ def get_mvr_details(
         "location": repo.get_urn_location(mvr.id.urn),
         "source_paths": paths.get(mvr.id.urn, {}),
     }
+
+
+def get_requirement_status(raw_id: str, repo: RequirementsRepository) -> dict | None:
+    """Lightweight status check — avoids the full detail lookup."""
+    initial_urn = repo.get_initial_urn()
+    urn_id = UrnId.assure_urn_id(initial_urn, raw_id)
+    req = repo.get_all_requirements().get(urn_id)
+    if req is None:
+        return None
+
+    svc_urn_ids = repo.get_svcs_for_req(req.id)
+    test_summary = {"passed": 0, "failed": 0, "skipped": 0, "missing": 0}
+    for svc_uid in svc_urn_ids:
+        for t in repo.get_test_results_for_svc(svc_uid):
+            key = t.status.value
+            if key in test_summary:
+                test_summary[key] += 1
+
+    # skipped tests are not counted as failures; a requirement only "meets" if
+    # it has at least one implementation and no failed or missing test results
+    all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
+    return {
+        "id": req.id.id,
+        "lifecycle_state": req.lifecycle.state.value,
+        "implementation": req.implementation.value,
+        "test_summary": test_summary,
+        "meets_requirements": req.implementation.value != "not_implemented" and all_passing,
+    }

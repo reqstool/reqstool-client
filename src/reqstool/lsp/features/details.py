@@ -8,12 +8,12 @@ from reqstool.lsp.project_state import ProjectState
 
 
 def get_requirement_details(raw_id: str, project: ProjectState) -> dict | None:
-    return _get_requirement_details(raw_id, project._repo, project.urn_source_paths)
+    return _get_requirement_details(raw_id, project.repo, project.urn_source_paths)
 
 
 def get_svc_details(raw_id: str, project: ProjectState) -> dict | None:
-    return _get_svc_details(raw_id, project._repo, project.urn_source_paths)
+    return _get_svc_details(raw_id, project.repo, project.urn_source_paths)
 
 
 def get_mvr_details(raw_id: str, project: ProjectState) -> dict | None:
-    return _get_mvr_details(raw_id, project._repo, project.urn_source_paths)
+    return _get_mvr_details(raw_id, project.repo, project.urn_source_paths)
