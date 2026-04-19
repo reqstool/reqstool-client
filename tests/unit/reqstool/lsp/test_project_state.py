@@ -11,6 +11,7 @@ def test_build_standard_ms001(local_testdata_resources_rootdir_w_path):
         assert state.ready
         assert state.error is None
         assert state.get_initial_urn() == "ms-001"
+        assert len(state.urn_source_paths) > 0, "urn_source_paths should be populated after build"
     finally:
         state.close()
 

@@ -1,6 +1,5 @@
 # Copyright © LFV
 
-from __future__ import annotations
 
 import os
 import re
@@ -15,6 +14,32 @@ REQSTOOL_YAML_FILES = {
     "software_verification_cases.yml",
     "manual_verification_results.yml",
 }
+
+
+class _YamlItem:
+    """A parsed YAML list item with its fields and line range."""
+
+    __slots__ = ("fields", "start_line", "end_line", "id_line")
+
+    def __init__(self, start_line: int):
+        self.fields: dict[str, str] = {}
+        self.start_line = start_line
+        self.end_line = start_line
+        self.id_line = start_line
+
+    @property
+    def range(self) -> types.Range:
+        return types.Range(
+            start=types.Position(line=self.start_line, character=0),
+            end=types.Position(line=self.end_line, character=0),
+        )
+
+    @property
+    def selection_range(self) -> types.Range:
+        return types.Range(
+            start=types.Position(line=self.id_line, character=0),
+            end=types.Position(line=self.id_line, character=0),
+        )
 
 
 def handle_document_symbols(
@@ -161,32 +186,6 @@ def _symbols_for_mvrs(
         )
 
     return symbols
-
-
-class _YamlItem:
-    """A parsed YAML list item with its fields and line range."""
-
-    __slots__ = ("fields", "start_line", "end_line", "id_line")
-
-    def __init__(self, start_line: int):
-        self.fields: dict[str, str] = {}
-        self.start_line = start_line
-        self.end_line = start_line
-        self.id_line = start_line
-
-    @property
-    def range(self) -> types.Range:
-        return types.Range(
-            start=types.Position(line=self.start_line, character=0),
-            end=types.Position(line=self.end_line, character=0),
-        )
-
-    @property
-    def selection_range(self) -> types.Range:
-        return types.Range(
-            start=types.Position(line=self.id_line, character=0),
-            end=types.Position(line=self.id_line, character=0),
-        )
 
 
 def _parse_yaml_items(text: str) -> list[_YamlItem]:

@@ -322,6 +322,11 @@ class Command:
             help="Write server logs to a file (in addition to stderr)",
         )
 
+        # command: mcp
+        mcp_parser = subparsers.add_parser("mcp", help="Start the Model Context Protocol server (stdio)")
+        mcp_source_subparsers = mcp_parser.add_subparsers(dest="source", required=True)
+        self._add_subparsers_source(mcp_source_subparsers, include_report_options=False, include_filter_options=False)
+
         args = self.__parser.parse_args()
 
         return args
@@ -432,11 +437,26 @@ class Command:
             logging.fatal("reqstool LSP server crashed: %s", exc)
             sys.exit(1)
 
+    def command_mcp(self, mcp_args: argparse.Namespace):
+        try:
+            from reqstool.mcp.server import start_server
+        except ImportError:
+            print(
+                "MCP server requires extra dependencies: pip install 'mcp>=1.0'",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        try:
+            start_server(location=self._get_initial_source(mcp_args))
+        except Exception as exc:
+            logging.fatal("reqstool MCP server crashed: %s", exc)
+            sys.exit(1)
+
     def print_help(self):
         self.__parser.print_help(sys.stderr)
 
 
-def main():
+def main():  # noqa: C901
     command = Command()
     args = command.get_arguments()
 
@@ -466,6 +486,8 @@ def main():
             exit_code = command.command_status(status_args=args)
         elif args.command == "lsp":
             command.command_lsp(lsp_args=args)
+        elif args.command == "mcp":
+            command.command_mcp(mcp_args=args)
         else:
             command.print_help()
     except MissingRequirementsFileError as exc:

@@ -1,6 +1,5 @@
 # Copyright © LFV
 
-from __future__ import annotations
 
 from packaging.version import Version
 
