@@ -27,7 +27,7 @@ class PypiLocation(LocationInterface):
         Download the PyPI package and extract it to the local disk.
         """
         # Retrieve token from environment variable
-        token = os.getenv(self.env_token)
+        token = os.getenv(self.env_token) if self.env_token else None
 
         if token:
             logging.debug("Using OAuth Bearer token for authentication")

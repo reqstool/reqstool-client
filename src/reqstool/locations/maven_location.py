@@ -22,7 +22,7 @@ class MavenLocation(LocationInterface):
     env_token: Optional[str] = None
 
     def _make_available_on_localdisk(self, dst_path: str):
-        token = os.getenv(self.env_token)
+        token = os.getenv(self.env_token) if self.env_token else None
 
         # assume OAuth Bearer, see: https://georgearisty.dev/posts/oauth2-token-bearer-usage/
         downloader = Downloader(base=self.url, token=token)
