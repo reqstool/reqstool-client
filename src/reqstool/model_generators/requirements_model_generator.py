@@ -228,7 +228,7 @@ class RequirementsModelGenerator:
                         env_token=git.env_token,
                         url=git.url,
                         branch=git.branch,
-                        path=git.path,
+                        path=git.path or "",
                     ),
                 )
 
