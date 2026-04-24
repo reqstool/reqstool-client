@@ -121,8 +121,7 @@
             },
             "required": [
                 "branch",
-                "url",
-                "path"
+                "url"
             ]
         },
         "maven": {

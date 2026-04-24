@@ -29,3 +29,20 @@ def test_git_location(resource_funcname_rootdir_w_path):
     assert git_location.url == "https://git.example.com/repo.git"
     assert git_location.branch == "test"
     assert git_location.path == PATH
+
+
+def test_git_location_path_defaults_to_empty_string():
+    git_location = GitLocation(
+        url="https://git.example.com/repo.git",
+        branch="main",
+    )
+    assert git_location.path == ""
+
+
+def test_git_location_explicit_path_still_works():
+    git_location = GitLocation(
+        url="https://git.example.com/repo.git",
+        branch="main",
+        path="docs/reqstool",
+    )
+    assert git_location.path == "docs/reqstool"

@@ -63,7 +63,7 @@ class Git(BaseModel):
     """
     URL to repository host
     """
-    path: str
+    path: str | None = None
     """
     Path to a directory with reqstool files (requirements.yml (required), software_verification_cases.yml and/or manual_verification_results.yml)
     """

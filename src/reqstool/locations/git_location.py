@@ -15,7 +15,7 @@ class GitLocation(LocationInterface):
     url: str
     branch: str
     env_token: Optional[str] = None
-    path: str
+    path: str = ""
 
     def _make_available_on_localdisk(self, dst_path: str) -> str:
         api_token = os.getenv(self.env_token)
