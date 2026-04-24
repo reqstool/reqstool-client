@@ -15,6 +15,13 @@ REQSTOOL_YAML_FILES = {
     "manual_verification_results.yml",
 }
 
+# Top-level YAML key that holds the list of items in each file type
+_COLLECTION_KEYS = {
+    "requirements.yml": "requirements",
+    "software_verification_cases.yml": "cases",
+    "manual_verification_results.yml": "results",
+}
+
 
 class _YamlItem:
     """A parsed YAML list item with its fields and line range."""
@@ -51,7 +58,8 @@ def handle_document_symbols(
     if basename not in REQSTOOL_YAML_FILES:
         return []
 
-    items = _parse_yaml_items(text)
+    collection_key = _COLLECTION_KEYS[basename]
+    items = _parse_yaml_items(text, collection_key)
     if not items:
         return []
 
@@ -73,6 +81,9 @@ def _symbols_for_requirements(
     symbols: list[types.DocumentSymbol] = []
     for item in items:
         req_id = item.fields.get("id", "")
+        if not req_id:
+            continue
+
         title = item.fields.get("title", "")
         significance = item.fields.get("significance", "")
 
@@ -115,6 +126,9 @@ def _symbols_for_svcs(
     symbols: list[types.DocumentSymbol] = []
     for item in items:
         svc_id = item.fields.get("id", "")
+        if not svc_id:
+            continue
+
         title = item.fields.get("title", "")
         verification = item.fields.get("verification", "")
 
@@ -170,6 +184,9 @@ def _symbols_for_mvrs(
     symbols: list[types.DocumentSymbol] = []
     for item in items:
         svc_id = item.fields.get("id", "")
+        if not svc_id:
+            continue
+
         passed = item.fields.get("passed", "")
 
         result = "pass" if passed.lower() == "true" else "fail" if passed else ""
@@ -188,20 +205,39 @@ def _symbols_for_mvrs(
     return symbols
 
 
-def _parse_yaml_items(text: str) -> list[_YamlItem]:
-    """Parse YAML text to extract list items under the main collection key.
+def _parse_yaml_items(text: str, collection_key: str) -> list[_YamlItem]:
+    """Parse YAML text to extract list items under the named top-level collection key.
 
-    Looks for the first top-level array (e.g., requirements:, svcs:, results:)
-    and extracts each `- key: value` block.
+    Only items directly under `collection_key:` are returned; list items in other
+    top-level sections (e.g. `imports:`, `filters:`) are ignored.
     """
     lines = text.splitlines()
     items: list[_YamlItem] = []
     current_item: _YamlItem | None = None
     list_indent = -1
+    in_collection = False
 
     for i, line in enumerate(lines):
         stripped = line.rstrip()
         if not stripped or stripped.startswith("#"):
+            continue
+
+        # Detect top-level keys: no leading whitespace, `word:` pattern
+        if not line[0].isspace():
+            top_level = re.match(r'^(\w[\w-]*):', line)
+            if top_level:
+                new_key = top_level.group(1)
+                if in_collection and new_key != collection_key:
+                    # Leaving the target section — flush any in-progress item
+                    if current_item is not None:
+                        current_item.end_line = i - 1
+                        items.append(current_item)
+                        current_item = None
+                    list_indent = -1
+                in_collection = (new_key == collection_key)
+                continue
+
+        if not in_collection:
             continue
 
         current_item, list_indent = _process_yaml_line(line, i, items, current_item, list_indent)
