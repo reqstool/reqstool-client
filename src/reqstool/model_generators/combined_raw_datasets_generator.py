@@ -15,6 +15,7 @@ from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.location import LocationInterface
 from reqstool.model_generators.annotations_model_generator import AnnotationsModelGenerator
 from reqstool.model_generators.mvrs_model_generator import MVRsModelGenerator
+from reqstool.model_generators.parsing_config import ParsingConfig
 from reqstool.model_generators.requirements_model_generator import RequirementsModelGenerator
 from reqstool.model_generators.svcs_model_generator import SVCsModelGenerator
 from reqstool.model_generators.testdata_model_generator import TestDataModelGenerator
@@ -37,6 +38,7 @@ class CombinedRawDatasetsGenerator:
         semantic_validator: SemanticValidator,
         database: Optional[RequirementsDatabase] = None,
         tmpdir_manager: Optional[TempDirectoryManager] = None,
+        parsing_config: ParsingConfig = ParsingConfig(),
     ):
         self.__level: int = 0
         self.__initial_location_handler: LocationResolver = LocationResolver(
@@ -47,6 +49,7 @@ class CombinedRawDatasetsGenerator:
         self._parsing_graph: Dict[str, List[Tuple[str, str]]] = defaultdict(list)
         self._database = database
         self._tmpdir_manager = tmpdir_manager if tmpdir_manager is not None else TempDirectoryManager()
+        self._parsing_config = parsing_config
         self.combined_raw_datasets = self.__generate()
 
     def __generate(self) -> CombinedRawDataset:
@@ -264,6 +267,7 @@ class CombinedRawDatasetsGenerator:
             filename=requirements_indata.requirements_indata_paths.requirements_yml.path,
             prefix_with_urn=False,
             semantic_validator=self.semantic_validator,
+            parsing_config=self._parsing_config,
         )
 
         if self.__level > 0:
@@ -347,6 +351,7 @@ class CombinedRawDatasetsGenerator:
                 uri=requirements_indata.requirements_indata_paths.svcs_yml.path,
                 semantic_validator=self.semantic_validator,
                 urn=current_urn,
+                parsing_config=self._parsing_config,
             ).model
 
         # handle automated test results
@@ -365,7 +370,9 @@ class CombinedRawDatasetsGenerator:
 
         if requirements_indata.requirements_indata_paths.mvrs_yml.exists:
             mvrs_data = MVRsModelGenerator(
-                uri=requirements_indata.requirements_indata_paths.mvrs_yml.path, urn=current_urn
+                uri=requirements_indata.requirements_indata_paths.mvrs_yml.path,
+                urn=current_urn,
+                parsing_config=self._parsing_config,
             ).model
 
         # handle annotations

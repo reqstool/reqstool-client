@@ -2,10 +2,12 @@
 
 
 import logging
+import os
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.project_session import ProjectSession
 from reqstool.locations.local_location import LocalLocation
+from reqstool.model_generators.parsing_config import ParsingConfig
 from reqstool.models.annotations import AnnotationData
 from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import RequirementData
@@ -17,7 +19,10 @@ logger = logging.getLogger(__name__)
 
 class ProjectState(ProjectSession):
     def __init__(self, reqstool_path: str):
-        super().__init__(LocalLocation(path=reqstool_path))
+        super().__init__(
+            LocalLocation(path=reqstool_path),
+            parsing_config=ParsingConfig(include_line_numbers=True),
+        )
         self._reqstool_path = reqstool_path
 
     @property
@@ -116,3 +121,35 @@ class ProjectState(ProjectSession):
         if urn_paths is None:
             return None
         return urn_paths.get(file_type)
+
+    def _urn_for_yaml_path(self, file_path: str, file_type: str) -> str | None:
+        norm_target = os.path.normpath(file_path)
+        for urn, paths in self._urn_source_paths.items():
+            stored = paths.get(file_type)
+            if stored is not None and os.path.normpath(stored) == norm_target:
+                return urn
+        return None
+
+    def get_requirements_for_yaml(self, file_path: str) -> list[RequirementData]:
+        if not self._ready or self._repo is None:
+            return []
+        urn = self._urn_for_yaml_path(file_path, "requirements")
+        if urn is None:
+            return []
+        return [r for r in self._repo.get_all_requirements().values() if r.id.urn == urn]
+
+    def get_svcs_for_yaml(self, file_path: str) -> list[SVCData]:
+        if not self._ready or self._repo is None:
+            return []
+        urn = self._urn_for_yaml_path(file_path, "svcs")
+        if urn is None:
+            return []
+        return [s for s in self._repo.get_all_svcs().values() if s.id.urn == urn]
+
+    def get_mvrs_for_yaml(self, file_path: str) -> list[MVRData]:
+        if not self._ready or self._repo is None:
+            return []
+        urn = self._urn_for_yaml_path(file_path, "mvrs")
+        if urn is None:
+            return []
+        return [m for m in self._repo.get_all_mvrs().values() if m.id.urn == urn]

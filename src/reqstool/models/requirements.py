@@ -95,6 +95,7 @@ class RequirementData(BaseModel):
     implementation: IMPLEMENTATION = IMPLEMENTATION.IN_CODE
     categories: List[CATEGORIES] = Field(default_factory=list)
     references: Optional[List[ReferenceData]] = Field(default_factory=list)
+    source_line: Optional[int] = None
 
 
 class MetaData(BaseModel):

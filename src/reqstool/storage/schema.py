@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS requirements (
     description TEXT NOT NULL,
     rationale TEXT,
     revision TEXT NOT NULL,
+    source_line INTEGER,
     PRIMARY KEY (urn, id)
 );
 
@@ -51,6 +52,7 @@ CREATE TABLE IF NOT EXISTS svcs (
     description TEXT,
     instructions TEXT,
     revision TEXT NOT NULL,
+    source_line INTEGER,
     PRIMARY KEY (urn, id)
 );
 
@@ -69,6 +71,7 @@ CREATE TABLE IF NOT EXISTS mvrs (
     id TEXT NOT NULL,
     passed INTEGER NOT NULL,
     comment TEXT,
+    source_line INTEGER,
     PRIMARY KEY (urn, id)
 );
 

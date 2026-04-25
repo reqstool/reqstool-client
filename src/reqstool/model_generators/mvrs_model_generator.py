@@ -9,14 +9,16 @@ from reqstool.commands.exit_codes import EXIT_CODE_SYNTAX_VALIDATION_ERROR
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxValidator
+from reqstool.model_generators.parsing_config import ParsingConfig
 from reqstool.models.generated.manual_verification_results_schema import Model as MVRsPydanticModel
 from reqstool.models.mvrs import MVRData, MVRsData
 
 
 class MVRsModelGenerator:
-    def __init__(self, uri: str, urn: str):
+    def __init__(self, uri: str, urn: str, parsing_config: ParsingConfig = ParsingConfig()):
         self.uri = uri
         self.urn = urn
+        self.parsing_config = parsing_config
         self.model = self.__generate(uri)
 
     def __generate(self, uri: str) -> MVRsData:
@@ -32,11 +34,32 @@ class MVRsModelGenerator:
             sys.exit(EXIT_CODE_SYNTAX_VALIDATION_ERROR)
 
         validated = MVRsPydanticModel.model_validate(data)
-        results = self.__parse_mvrs(validated)
+
+        source_lines = self.__capture_source_lines(response.text) if self.parsing_config.include_line_numbers else {}
+
+        results = self.__parse_mvrs(validated, source_lines)
 
         return MVRsData(results=results)
 
-    def __parse_mvrs(self, validated: MVRsPydanticModel) -> Dict[UrnId, MVRData]:
+    @staticmethod
+    def __capture_source_lines(text: str) -> Dict[str, int]:
+        rt_yaml = YAML(typ="rt")
+        rt_data = rt_yaml.load(text)
+        result: Dict[str, int] = {}
+        if rt_data is None or "results" not in rt_data:
+            return result
+        results = rt_data["results"]
+        if results is None:
+            return result
+        for idx, item in enumerate(results):
+            if not hasattr(results, "lc"):
+                break
+            line = results.lc.item(idx)[0]
+            if isinstance(item, dict) and "id" in item:
+                result[str(item["id"])] = line
+        return result
+
+    def __parse_mvrs(self, validated: MVRsPydanticModel, source_lines: Dict[str, int]) -> Dict[UrnId, MVRData]:
         r_result = {}
 
         for result in validated.results:
@@ -46,6 +69,7 @@ class MVRsModelGenerator:
                 svc_ids=Utils.convert_ids_to_urn_id(ids=result.svc_ids, urn=self.urn),
                 comment=result.comment,
                 passed=result.pass_,
+                source_line=source_lines.get(result.id),
             )
 
             r_result[mvr.id] = mvr
