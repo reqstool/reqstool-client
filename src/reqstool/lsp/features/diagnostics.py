@@ -7,9 +7,12 @@ import re
 
 from ruamel.yaml import YAML, YAMLError
 from jsonschema import Draft202012Validator
+from jsonschema.exceptions import SchemaError
 from lsprotocol import types
+from referencing.exceptions import Unresolvable
 
 from reqstool.common.models.lifecycle import LIFECYCLESTATE
+from reqstool.common.validators.syntax_validator import SyntaxValidator
 from reqstool.lsp.annotation_parser import find_all_annotations
 from reqstool.lsp.project_state import ProjectState
 from reqstool.lsp.yaml_schema import schema_for_yaml_file
@@ -149,11 +152,31 @@ def _yaml_diagnostics(text: str, filename: str) -> list[types.Diagnostic]:
     if data is None:
         return []
 
-    # Validate against JSON schema
-    validator = Draft202012Validator(schema)
+    # Validate against JSON schema. Reuse the CLI's registry so $refs to
+    # common.schema.json#/$defs/* resolve at runtime.
+    validator = Draft202012Validator(
+        schema=schema,
+        registry=SyntaxValidator.registry,
+        format_checker=Draft202012Validator.FORMAT_CHECKER,
+    )
     diagnostics: list[types.Diagnostic] = []
 
-    for error in validator.iter_errors(data):
+    try:
+        errors = list(validator.iter_errors(data))
+    except (Unresolvable, SchemaError) as e:
+        return [
+            types.Diagnostic(
+                range=types.Range(
+                    start=types.Position(line=0, character=0),
+                    end=types.Position(line=0, character=0),
+                ),
+                severity=types.DiagnosticSeverity.Error,
+                source="reqstool",
+                message=f"Schema resolution error: {e}",
+            )
+        ]
+
+    for error in errors:
         line, col = _find_error_position(text, error)
         diagnostics.append(
             types.Diagnostic(
