@@ -187,6 +187,87 @@ def test_diagnostics_yaml_non_reqstool_file():
     assert len(diags) == 0
 
 
+def test_diagnostics_filters_section_does_not_break_validation():
+    """Regression for #361: a requirements.yml using `filters:` (which references
+    common.schema.json#/$defs/filters) must validate without raising
+    Unresolvable, and must not surface an "Unresolvable" message."""
+    text = (
+        "metadata:\n"
+        "  urn: atunko-core\n"
+        "  variant: microservice\n"
+        "  title: Atunko core\n"
+        "filters:\n"
+        "  atunko:\n"
+        "    custom:\n"
+        "      includes: ids == /CORE_.*/\n"
+    )
+    diags = compute_diagnostics(
+        uri="file:///workspace/requirements.yml",
+        text=text,
+        language_id="yaml",
+        project=None,
+    )
+    assert isinstance(diags, list)
+    for d in diags:
+        assert "Unresolvable" not in d.message
+        assert "common.schema.json" not in d.message
+
+
+def test_diagnostics_imports_local_path_does_not_break_validation():
+    """Regression for #361: imports.local[].path is typed against
+    common.schema.json#/$defs/urnid; must validate without raising Unresolvable."""
+    text = (
+        "metadata:\n"
+        "  urn: my-urn\n"
+        "  variant: microservice\n"
+        "  title: Test\n"
+        "imports:\n"
+        "  local:\n"
+        "    - path: ../sys-001\n"
+    )
+    diags = compute_diagnostics(
+        uri="file:///workspace/requirements.yml",
+        text=text,
+        language_id="yaml",
+        project=None,
+    )
+    assert isinstance(diags, list)
+    for d in diags:
+        assert "Unresolvable" not in d.message
+
+
+def test_diagnostics_unresolvable_is_caught_and_reported(monkeypatch):
+    """If a future schema $ref ever fails to resolve, a single Error diagnostic
+    is returned at 0:0 instead of the exception escaping to the LSP client."""
+    from referencing.exceptions import Unresolvable
+
+    from reqstool.lsp.features import diagnostics as diag_mod
+
+    class _BoomValidator:
+        FORMAT_CHECKER = None
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def iter_errors(self, data):
+            raise Unresolvable("simulated $ref failure")
+
+    monkeypatch.setattr(diag_mod, "Draft202012Validator", _BoomValidator)
+
+    text = "metadata:\n  urn: test\n"
+    diags = compute_diagnostics(
+        uri="file:///workspace/requirements.yml",
+        text=text,
+        language_id="yaml",
+        project=None,
+    )
+    assert len(diags) == 1
+    assert diags[0].severity == types.DiagnosticSeverity.Error
+    assert "Schema resolution error" in diags[0].message
+    assert diags[0].range.start.line == 0
+    assert diags[0].range.start.character == 0
+
+
 def test_diagnostics_yaml_empty():
     """Empty YAML should produce no diagnostics (or schema errors for missing required)."""
     text = ""
