@@ -21,6 +21,7 @@ from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.location import LocationInterface
 from reqstool.locations.maven_location import MavenLocation
 from reqstool.locations.pypi_location import PypiLocation
+from reqstool.model_generators.parsing_config import ParsingConfig
 from reqstool.models.generated.requirements_schema import Model as RequirementsPydanticModel
 from reqstool.models.implementations import (
     GitImplData,
@@ -56,11 +57,13 @@ class RequirementsModelGenerator:
         semantic_validator: SemanticValidator,
         filename: str,
         prefix_with_urn: bool = False,
+        parsing_config: ParsingConfig = ParsingConfig(),
     ):
         self.parent = parent
         self.filename = filename
         self.prefix_with_urn = prefix_with_urn
         self.semantic_validator = semantic_validator
+        self.parsing_config = parsing_config
         self.requirements_data = self.__generate(filename)
 
     @staticmethod
@@ -100,11 +103,13 @@ class RequirementsModelGenerator:
         r_requirements: Dict[str, RequirementData] = {}
         r_filters: Dict[str, RequirementFilter] = {}
 
+        source_lines = self.__capture_source_lines(response.text) if self.parsing_config.include_line_numbers else {}
+
         self.prefix_with_urn = False
         r_imports = self.__parse_imports(validated)
         r_filters = self.__parse_requirement_filters(data=data)
         r_implementations = self.__parse_implementations(validated)
-        r_requirements = self.__parse_requirements(validated, data=data)
+        r_requirements = self.__parse_requirements(validated, data=data, source_lines=source_lines)
 
         return RequirementsData(
             metadata=r_metadata,
@@ -242,8 +247,26 @@ class RequirementsModelGenerator:
             validate_fn=self.semantic_validator._validate_req_imports_filter_has_excludes_xor_includes,
         )
 
+    @staticmethod
+    def __capture_source_lines(text: str) -> Dict[str, int]:
+        rt_yaml = YAML(typ="rt")
+        rt_data = rt_yaml.load(text)
+        result: Dict[str, int] = {}
+        if rt_data is None or "requirements" not in rt_data:
+            return result
+        reqs = rt_data["requirements"]
+        if reqs is None:
+            return result
+        for idx, item in enumerate(reqs):
+            if not hasattr(reqs, "lc"):
+                break
+            line = reqs.lc.item(idx)[0]
+            if isinstance(item, dict) and "id" in item:
+                result[str(item["id"])] = line
+        return result
+
     @Requirements("REQ_004", "REQ_036")
-    def __parse_requirements(self, model, data):  # NOSONAR
+    def __parse_requirements(self, model, data, source_lines: Dict[str, int]):  # NOSONAR
         r_reqs = {}
 
         self.semantic_validator._validate_no_duplicate_requirement_ids(data=data)
@@ -281,6 +304,7 @@ class RequirementsModelGenerator:
                     lifecycle=LifecycleData.from_dict(
                         {"state": req.lifecycle.state.value, "reason": req.lifecycle.reason} if req.lifecycle else None
                     ),
+                    source_line=source_lines.get(req.id),
                 )
 
                 if req_data.id not in r_reqs:

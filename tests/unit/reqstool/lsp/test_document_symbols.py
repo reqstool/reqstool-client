@@ -1,173 +1,128 @@
 # Copyright © LFV
 
+import os
+import textwrap
+
+import pytest
 from lsprotocol import types
 
-from reqstool.lsp.features.document_symbols import (
-    handle_document_symbols,
-    _parse_yaml_items,
-)
+from reqstool.lsp.features.document_symbols import handle_document_symbols
+from reqstool.lsp.project_state import ProjectState
 
 
-# -- YAML item parsing --
-
-
-def test_parse_yaml_items_requirements():
-    text = (
-        "requirements:\n"
-        "  - id: REQ_001\n"
-        "    title: First requirement\n"
-        "    significance: shall\n"
-        "  - id: REQ_002\n"
-        "    title: Second requirement\n"
-        "    significance: should\n"
-    )
-    items = _parse_yaml_items(text)
-    assert len(items) == 2
-    assert items[0].fields["id"] == "REQ_001"
-    assert items[0].fields["title"] == "First requirement"
-    assert items[0].fields["significance"] == "shall"
-    assert items[1].fields["id"] == "REQ_002"
-
-
-def test_parse_yaml_items_svcs():
-    text = "svcs:\n" "  - id: SVC_001\n" "    title: Test case\n" "    verification: automated-test\n"
-    items = _parse_yaml_items(text)
-    assert len(items) == 1
-    assert items[0].fields["id"] == "SVC_001"
-    assert items[0].fields["verification"] == "automated-test"
-
-
-def test_parse_yaml_items_empty():
-    text = "metadata:\n  urn: test\n"
-    items = _parse_yaml_items(text)
-    assert len(items) == 0
-
-
-def test_parse_yaml_items_with_metadata():
-    text = (
-        "metadata:\n"
-        "  urn: test\n"
-        "  variant: microservice\n"
-        "requirements:\n"
-        "  - id: REQ_001\n"
-        "    title: Test\n"
-    )
-    items = _parse_yaml_items(text)
-    assert len(items) == 1
-    assert items[0].fields["id"] == "REQ_001"
-
-
-# -- Document symbols --
-
-
-def test_document_symbols_requirements():
-    text = (
-        "requirements:\n"
-        "  - id: REQ_001\n"
-        "    title: First requirement\n"
-        "    significance: shall\n"
-        "  - id: REQ_002\n"
-        "    title: Second requirement\n"
-        "    significance: should\n"
-    )
-    symbols = handle_document_symbols(
-        uri="file:///workspace/requirements.yml",
-        text=text,
-        project=None,
-    )
-    assert len(symbols) == 2
-    assert "REQ_001" in symbols[0].name
-    assert "First requirement" in symbols[0].name
-    assert symbols[0].detail == "shall"
-    assert "REQ_002" in symbols[1].name
-    assert symbols[1].detail == "should"
-
-
-def test_document_symbols_svcs():
-    text = "svcs:\n" "  - id: SVC_001\n" "    title: Login test\n" "    verification: automated-test\n"
-    symbols = handle_document_symbols(
-        uri="file:///workspace/software_verification_cases.yml",
-        text=text,
-        project=None,
-    )
-    assert len(symbols) == 1
-    assert "SVC_001" in symbols[0].name
-    assert symbols[0].detail == "automated-test"
-
-
-def test_document_symbols_mvrs():
-    text = "results:\n" "  - id: SVC_001\n" "    passed: true\n" "  - id: SVC_002\n" "    passed: false\n"
-    symbols = handle_document_symbols(
-        uri="file:///workspace/manual_verification_results.yml",
-        text=text,
-        project=None,
-    )
-    assert len(symbols) == 2
-    assert "SVC_001" in symbols[0].name
-    assert "pass" in symbols[0].name
-    assert "SVC_002" in symbols[1].name
-    assert "fail" in symbols[1].name
-
-
-def test_document_symbols_non_reqstool_file():
-    text = "key: value\n"
-    symbols = handle_document_symbols(
-        uri="file:///workspace/other.yml",
-        text=text,
-        project=None,
-    )
-    assert symbols == []
-
-
-def test_document_symbols_empty():
-    text = ""
-    symbols = handle_document_symbols(
-        uri="file:///workspace/requirements.yml",
-        text=text,
-        project=None,
-    )
-    assert symbols == []
-
-
-def test_document_symbols_with_project(local_testdata_resources_rootdir_w_path):
-    """Test that symbols include children when project is loaded."""
-    import os
-
-    from reqstool.lsp.project_state import ProjectState
-
+@pytest.fixture
+def ms001_project(local_testdata_resources_rootdir_w_path):
     path = local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")
     state = ProjectState(reqstool_path=path)
+    state.build()
+    yield path, state
+    state.close()
+
+
+def test_non_reqstool_file_returns_empty():
+    symbols = handle_document_symbols(uri="file:///workspace/other.yml", text="key: value\n", project=None)
+    assert symbols == []
+
+
+def test_no_project_returns_empty():
+    symbols = handle_document_symbols(
+        uri="file:///workspace/requirements.yml",
+        text="requirements:\n  - id: REQ_001\n",
+        project=None,
+    )
+    assert symbols == []
+
+
+def test_requirements_symbols_have_titles_and_significance(ms001_project):
+    path, state = ms001_project
+    req_file = os.path.join(path, "requirements.yml")
+    with open(req_file) as f:
+        text = f.read()
+
+    symbols = handle_document_symbols(uri="file://" + req_file, text=text, project=state)
+
+    assert len(symbols) == 2
+    for sym in symbols:
+        assert isinstance(sym, types.DocumentSymbol)
+        assert sym.kind == types.SymbolKind.Key
+        assert sym.name  # never empty
+    assert "REQ_010" in symbols[0].name
+    assert "Title REQ_010" in symbols[0].name
+    assert symbols[0].detail == "should"
+    assert "REQ_020" in symbols[1].name
+    assert symbols[1].detail == "shall"
+
+
+def test_requirements_symbol_line_numbers_match_yaml(ms001_project):
+    path, state = ms001_project
+    req_file = os.path.join(path, "requirements.yml")
+    with open(req_file) as f:
+        text = f.read()
+
+    symbols = handle_document_symbols(uri="file://" + req_file, text=text, project=state)
+
+    # REQ_010 is on line 15 (1-based) in the fixture → 0-based line 14
+    assert symbols[0].selection_range.start.line == 14
+    # REQ_020 is on line 22 → 0-based line 21
+    assert symbols[1].selection_range.start.line == 21
+
+
+def test_filter_only_requirements_yml_returns_empty(tmp_path):
+    """Regression for #359: a requirements.yml with only metadata/implementations/filters
+    must not produce ghost symbols with empty names."""
+    yml = textwrap.dedent(
+        """\
+        metadata:
+          urn: filter-only
+          variant: microservice
+          title: Filter only
+        implementations:
+          local:
+            - path: ../target
+        filters:
+          some-other-urn:
+            custom:
+              includes: ids == /CORE_.*/
+        """
+    )
+    req_file = tmp_path / "requirements.yml"
+    req_file.write_text(yml)
+
+    state = ProjectState(reqstool_path=str(tmp_path))
+    state.build()
     try:
-        state.build()
-        req_file = os.path.join(path, "requirements.yml")
-        if os.path.isfile(req_file):
-            with open(req_file) as f:
-                text = f.read()
-            symbols = handle_document_symbols(
-                uri="file://" + req_file,
-                text=text,
-                project=state,
-            )
-            assert len(symbols) > 0
-            # Symbols should be DocumentSymbol instances
-            for sym in symbols:
-                assert isinstance(sym, types.DocumentSymbol)
-                assert sym.kind == types.SymbolKind.Key
+        symbols = handle_document_symbols(uri="file://" + str(req_file), text=yml, project=state)
+        # Either ProjectState fails to build (no implementation target) or it builds but the file
+        # has no `requirements:` section — either way the outline must be empty, never empty-named.
+        assert symbols == [] or all(sym.name for sym in symbols)
     finally:
         state.close()
 
 
-def test_parse_yaml_items_line_ranges():
-    text = (
-        "requirements:\n"
-        "  - id: REQ_001\n"
-        "    title: Test\n"
-        "    significance: shall\n"
-        "  - id: REQ_002\n"
-        "    title: Second\n"
-    )
-    items = _parse_yaml_items(text)
-    assert len(items) == 2
-    assert items[0].start_line == 1
-    assert items[0].id_line == 1
-    assert items[1].start_line == 4
+def test_svcs_symbols_built_from_db(ms001_project):
+    path, state = ms001_project
+    svc_file = os.path.join(path, "software_verification_cases.yml")
+    with open(svc_file) as f:
+        text = f.read()
+
+    symbols = handle_document_symbols(uri="file://" + svc_file, text=text, project=state)
+
+    assert len(symbols) > 0
+    for sym in symbols:
+        assert sym.name
+        assert sym.kind == types.SymbolKind.Key
+
+
+def test_mvrs_symbols_built_from_db(ms001_project):
+    path, state = ms001_project
+    mvr_file = os.path.join(path, "manual_verification_results.yml")
+    if not os.path.isfile(mvr_file):
+        pytest.skip("ms-001 fixture has no MVRs file")
+    with open(mvr_file) as f:
+        text = f.read()
+
+    symbols = handle_document_symbols(uri="file://" + mvr_file, text=text, project=state)
+
+    for sym in symbols:
+        assert sym.name
+        assert "pass" in sym.name or "fail" in sym.name

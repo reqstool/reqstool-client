@@ -13,15 +13,23 @@ from reqstool.common.utils import Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxValidator
 from reqstool.filters.svcs_filters import SVCFilter
+from reqstool.model_generators.parsing_config import ParsingConfig
 from reqstool.models.generated.software_verification_cases_schema import Model as SVCsPydanticModel
 from reqstool.models.svcs import VERIFICATIONTYPES, SVCData, SVCsData
 
 
 class SVCsModelGenerator:
-    def __init__(self, uri: str, semantic_validator: SemanticValidator, urn: str):
+    def __init__(
+        self,
+        uri: str,
+        semantic_validator: SemanticValidator,
+        urn: str,
+        parsing_config: ParsingConfig = ParsingConfig(),
+    ):
         self.uri = uri
         self.semantic_validator = semantic_validator
         self.urn = urn
+        self.parsing_config = parsing_config
         self.model = self.__generate(uri)
 
     def __generate(self, uri: str) -> SVCsData:
@@ -41,12 +49,32 @@ class SVCsModelGenerator:
 
         validated = SVCsPydanticModel.model_validate(data)
 
-        cases = self.__parse_svcs(validated)
+        source_lines = self.__capture_source_lines(response.text) if self.parsing_config.include_line_numbers else {}
+
+        cases = self.__parse_svcs(validated, source_lines)
         filters = self.__parse_svc_filters(data)
 
         return SVCsData(cases=cases, filters=filters)
 
-    def __parse_svcs(self, validated: SVCsPydanticModel) -> dict[UrnId, SVCData]:
+    @staticmethod
+    def __capture_source_lines(text: str) -> Dict[str, int]:
+        rt_yaml = YAML(typ="rt")
+        rt_data = rt_yaml.load(text)
+        result: Dict[str, int] = {}
+        if rt_data is None or "cases" not in rt_data:
+            return result
+        cases = rt_data["cases"]
+        if cases is None:
+            return result
+        for idx, item in enumerate(cases):
+            if not hasattr(cases, "lc"):
+                break
+            line = cases.lc.item(idx)[0]
+            if isinstance(item, dict) and "id" in item:
+                result[str(item["id"])] = line
+        return result
+
+    def __parse_svcs(self, validated: SVCsPydanticModel, source_lines: Dict[str, int]) -> dict[UrnId, SVCData]:
         r_result = {}
 
         for case in validated.cases:
@@ -65,6 +93,7 @@ class SVCsModelGenerator:
                 lifecycle=LifecycleData.from_dict(
                     {"state": case.lifecycle.state.value, "reason": case.lifecycle.reason} if case.lifecycle else None
                 ),
+                source_line=source_lines.get(case.id),
             )
 
             if svc.id not in r_result:

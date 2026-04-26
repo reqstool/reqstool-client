@@ -14,6 +14,7 @@ class MVRData(BaseModel):
     comment: Optional[str] = None
     passed: bool
     svc_ids: List[UrnId] = Field(default_factory=list)
+    source_line: Optional[int] = None
 
 
 class MVRsData(BaseModel):

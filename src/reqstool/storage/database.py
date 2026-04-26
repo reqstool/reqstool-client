@@ -48,8 +48,8 @@ class RequirementsDatabase:
     def insert_requirement(self, urn: str, req: RequirementData) -> None:
         self._conn.execute(
             "INSERT INTO requirements (urn, id, title, significance, lifecycle_state, lifecycle_reason,"
-            " implementation, description, rationale, revision)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " implementation, description, rationale, revision, source_line)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 urn,
                 req.id.id,
@@ -61,6 +61,7 @@ class RequirementsDatabase:
                 req.description,
                 req.rationale,
                 str(req.revision),
+                req.source_line,
             ),
         )
 
@@ -82,8 +83,8 @@ class RequirementsDatabase:
     def insert_svc(self, urn: str, svc: SVCData) -> None:
         self._conn.execute(
             "INSERT INTO svcs (urn, id, title, verification_type, lifecycle_state, lifecycle_reason,"
-            " description, instructions, revision)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " description, instructions, revision, source_line)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 urn,
                 svc.id.id,
@@ -94,6 +95,7 @@ class RequirementsDatabase:
                 svc.description,
                 svc.instructions,
                 str(svc.revision),
+                svc.source_line,
             ),
         )
 
@@ -108,8 +110,8 @@ class RequirementsDatabase:
 
     def insert_mvr(self, urn: str, mvr: MVRData) -> None:
         self._conn.execute(
-            "INSERT INTO mvrs (urn, id, passed, comment) VALUES (?, ?, ?, ?)",
-            (urn, mvr.id.id, int(mvr.passed), mvr.comment),
+            "INSERT INTO mvrs (urn, id, passed, comment, source_line) VALUES (?, ?, ?, ?, ?)",
+            (urn, mvr.id.id, int(mvr.passed), mvr.comment, mvr.source_line),
         )
 
         for svc_urn_id in mvr.svc_ids:
