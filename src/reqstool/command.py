@@ -323,8 +323,14 @@ class Command:
         )
 
         # command: mcp
-        mcp_parser = subparsers.add_parser("mcp", help="Start the Model Context Protocol server (stdio)")
-        mcp_source_subparsers = mcp_parser.add_subparsers(dest="source", required=True)
+        mcp_parser = subparsers.add_parser(
+            "mcp",
+            help=(
+                "Start the Model Context Protocol server (stdio). "
+                "With no source, auto-detects the dataset from .reqstool-ai.yaml in cwd or an ancestor directory."
+            ),
+        )
+        mcp_source_subparsers = mcp_parser.add_subparsers(dest="source", required=False)
         self._add_subparsers_source(mcp_source_subparsers, include_report_options=False, include_filter_options=False)
 
         args = self.__parser.parse_args()
@@ -446,8 +452,32 @@ class Command:
                 file=sys.stderr,
             )
             sys.exit(1)
+
+        if getattr(mcp_args, "source", None) is None:
+            from pathlib import Path
+
+            from reqstool.common.reqstool_ai_config import CONFIG_FILENAME, find_config, resolve_system_path
+
+            config_path = find_config()
+            if config_path is None:
+                print(
+                    f"reqstool mcp: no {CONFIG_FILENAME} found from {Path.cwd()} upward; "
+                    f"either run from a project containing {CONFIG_FILENAME} or specify an explicit source "
+                    f"(e.g. `reqstool mcp local -p <path>`).",
+                    file=sys.stderr,
+                )
+                sys.exit(2)
+            try:
+                resolved = resolve_system_path(config_path)
+            except ValueError as exc:
+                print(f"reqstool mcp: {exc}", file=sys.stderr)
+                sys.exit(2)
+            location: LocationInterface = LocalLocation(path=str(resolved))
+        else:
+            location = self._get_initial_source(mcp_args)
+
         try:
-            start_server(location=self._get_initial_source(mcp_args))
+            start_server(location=location)
         except Exception as exc:
             logging.fatal("reqstool MCP server crashed: %s", exc)
             sys.exit(1)

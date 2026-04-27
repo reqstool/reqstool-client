@@ -170,3 +170,16 @@ def test_pypi_source_parser_requires_package_and_version():
     assert args.source == "pypi"
     assert args.package == "my-package"
     assert args.version == "2.3.4"
+
+
+def test_mcp_parses_without_source():
+    args = _make_command_and_parse(["reqstool", "mcp"])
+    assert args.command == "mcp"
+    assert args.source is None
+
+
+def test_mcp_still_accepts_local_source():
+    args = _make_command_and_parse(["reqstool", "mcp", "local", "-p", "/some/path"])
+    assert args.command == "mcp"
+    assert args.source == "local"
+    assert args.path == "/some/path"
