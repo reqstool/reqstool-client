@@ -39,9 +39,9 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     mcp = FastMCP("reqstool")
 
     @mcp.tool()
-    def list_requirements() -> list[dict]:
-        """List all requirements with id, title, and lifecycle state."""
-        return get_requirements_list(repo)
+    def list_requirements(urn: str | None = None) -> list[dict]:
+        """List requirements with id, title, and lifecycle state. Optionally filter by URN."""
+        return get_requirements_list(repo, urn=urn)
 
     @mcp.tool()
     def get_requirement(id: str) -> dict:
@@ -52,9 +52,9 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_svcs() -> list[dict]:
-        """List all SVCs with id, title, lifecycle state, and verification type."""
-        return get_svcs_list(repo)
+    def list_svcs(urn: str | None = None) -> list[dict]:
+        """List SVCs with id, title, lifecycle state, and verification type. Optionally filter by URN."""
+        return get_svcs_list(repo, urn=urn)
 
     @mcp.tool()
     def get_svc(id: str) -> dict:
@@ -65,9 +65,9 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_mvrs() -> list[dict]:
-        """List all MVRs with id and passed status."""
-        return get_mvrs_list(repo)
+    def list_mvrs(urn: str | None = None) -> list[dict]:
+        """List MVRs with id and passed status. Optionally filter by URN."""
+        return get_mvrs_list(repo, urn=urn)
 
     @mcp.tool()
     def get_mvr(id: str) -> dict:
@@ -91,9 +91,9 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_annotations() -> list[dict]:
-        """List all implementation annotations (@Requirements) found in source code."""
-        impl_annotations = repo.get_annotations_impls()
+    def list_annotations(urn: str | None = None) -> list[dict]:
+        """List implementation annotations (@Requirements) found in source code. Optionally filter by URN."""
+        impl_annotations = repo.get_annotations_impls(urn=urn)
         result = []
         for urn_id, ann_list in impl_annotations.items():
             for ann in ann_list:

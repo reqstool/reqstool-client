@@ -226,9 +226,10 @@ def on_details(ls: ReqstoolLanguageServer, params) -> dict | None:
 
 @server.feature("reqstool/list")
 def on_list(ls: ReqstoolLanguageServer, params) -> dict | None:
+    urn = _get(params, "urn") or None
     for project in ls.workspace_manager.all_projects():
         if project.ready:
-            return get_list(project)
+            return get_list(project, urn=urn)
     return None
 
 
