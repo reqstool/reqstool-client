@@ -159,6 +159,33 @@ def get_mvr_details(
     }
 
 
+def get_urn_details(
+    urn: str,
+    repo: RequirementsRepository,
+    urn_source_paths: dict[str, dict[str, str]] | None = None,
+) -> dict | None:
+    info = repo.get_urn_info(urn)
+    if info is None:
+        return None
+    reqs = repo.get_all_requirements(urn=urn)
+    svcs = repo.get_all_svcs(urn=urn)
+    mvrs = repo.get_all_mvrs(urn=urn)
+    impl_anns = repo.get_annotations_impls(urn=urn)
+    test_anns = repo.get_annotations_tests(urn=urn)
+    paths = urn_source_paths or {}
+    return {
+        **info,
+        "file_paths": paths.get(urn, {}),
+        "counts": {
+            "requirements": len(reqs),
+            "svcs": len(svcs),
+            "mvrs": len(mvrs),
+            "impl_annotations": sum(len(v) for v in impl_anns.values()),
+            "test_annotations": sum(len(v) for v in test_anns.values()),
+        },
+    }
+
+
 def get_requirement_status(raw_id: str, repo: RequirementsRepository) -> dict | None:
     """Lightweight status check — avoids the full detail lookup."""
     initial_urn = repo.get_initial_urn()

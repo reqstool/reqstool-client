@@ -9,8 +9,9 @@ from reqstool.common.queries.details import (
     get_requirement_details,
     get_requirement_status as _get_requirement_status,
     get_svc_details,
+    get_urn_details as _get_urn_details,
 )
-from reqstool.common.queries.list import get_mvrs_list, get_requirements_list, get_svcs_list
+from reqstool.common.queries.list import get_mvrs_list, get_requirements_list, get_svcs_list, get_urns_list
 from reqstool.locations.location import LocationInterface
 from reqstool.services.statistics_service import StatisticsService
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -104,6 +105,19 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
                         "fqn": ann.fully_qualified_name,
                     }
                 )
+        return result
+
+    @mcp.tool()
+    def list_urns() -> list[dict]:
+        """List all URNs in the project graph with variant, title, url, location, and file paths."""
+        return get_urns_list(repo, urn_source_paths)
+
+    @mcp.tool()
+    def get_urn_details(urn: str) -> dict:
+        """Get details for a URN: variant, title, location, file paths, and entity counts."""
+        result = _get_urn_details(urn, repo, urn_source_paths)
+        if result is None:
+            raise ValueError(f"URN {urn!r} not found")
         return result
 
     try:

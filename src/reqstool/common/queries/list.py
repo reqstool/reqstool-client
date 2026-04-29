@@ -43,3 +43,14 @@ def get_list(repo: RequirementsRepository) -> dict:
         "svcs": get_svcs_list(repo),
         "mvrs": get_mvrs_list(repo),
     }
+
+
+def get_urns_list(repo: RequirementsRepository, urn_source_paths: dict[str, dict[str, str]] | None = None) -> list[dict]:
+    paths = urn_source_paths or {}
+    result = []
+    for urn in repo.get_urn_parsing_order():
+        info = repo.get_urn_info(urn)
+        if info:
+            info["file_paths"] = paths.get(urn, {})
+            result.append(info)
+    return result

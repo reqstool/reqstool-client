@@ -11,8 +11,8 @@ from reqstool.lsp.features.code_actions import handle_code_actions
 from reqstool.lsp.features.codelens import handle_code_lens
 from reqstool.lsp.features.completion import handle_completion
 from reqstool.lsp.features.definition import handle_definition
-from reqstool.lsp.features.details import get_mvr_details, get_requirement_details, get_svc_details
-from reqstool.lsp.features.list import get_list
+from reqstool.lsp.features.details import get_mvr_details, get_requirement_details, get_svc_details, get_urn_details
+from reqstool.lsp.features.list import get_list, get_urns_list
 from reqstool.lsp.features.diagnostics import compute_diagnostics
 from reqstool.lsp.features.document_symbols import handle_document_symbols
 from reqstool.lsp.features.hover import handle_hover
@@ -197,6 +197,7 @@ _DETAILS_DISPATCH = {
     "requirement": get_requirement_details,
     "svc": get_svc_details,
     "mvr": get_mvr_details,
+    "urn": get_urn_details,
 }
 
 
@@ -229,6 +230,14 @@ def on_list(ls: ReqstoolLanguageServer, params) -> dict | None:
         if project.ready:
             return get_list(project)
     return None
+
+
+@server.feature("reqstool/list-urns")
+def on_list_urns(ls: ReqstoolLanguageServer, params) -> list[dict]:
+    for project in ls.workspace_manager.all_projects():
+        if project.ready:
+            return get_urns_list(project)
+    return []
 
 
 @server.feature(types.TEXT_DOCUMENT_CODE_LENS, types.CodeLensOptions(resolve_provider=False))
