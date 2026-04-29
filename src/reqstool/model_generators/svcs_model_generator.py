@@ -57,10 +57,10 @@ class SVCsModelGenerator:
         return SVCsData(cases=cases, filters=filters)
 
     @staticmethod
-    def __capture_source_lines(text: str) -> Dict[str, int]:
+    def __capture_source_lines(text: str) -> Dict[str, tuple[int, int, int]]:
         rt_yaml = YAML(typ="rt")
         rt_data = rt_yaml.load(text)
-        result: Dict[str, int] = {}
+        result: Dict[str, tuple[int, int, int]] = {}
         if rt_data is None or "cases" not in rt_data:
             return result
         cases = rt_data["cases"]
@@ -69,12 +69,18 @@ class SVCsModelGenerator:
         for idx, item in enumerate(cases):
             if not hasattr(cases, "lc"):
                 break
-            line = cases.lc.item(idx)[0]
-            if isinstance(item, dict) and "id" in item:
-                result[str(item["id"])] = line
+            if not isinstance(item, dict) or "id" not in item:
+                continue
+            id_text = str(item["id"])
+            id_line, id_col = item.lc.value("id")
+            result[id_text] = (id_line, id_col, id_col + len(id_text))
         return result
 
-    def __parse_svcs(self, validated: SVCsPydanticModel, source_lines: Dict[str, int]) -> dict[UrnId, SVCData]:
+    def __parse_svcs(
+        self,
+        validated: SVCsPydanticModel,
+        source_lines: Dict[str, tuple[int, int, int]],
+    ) -> dict[UrnId, SVCData]:
         r_result = {}
 
         for case in validated.cases:
@@ -93,7 +99,9 @@ class SVCsModelGenerator:
                 lifecycle=LifecycleData.from_dict(
                     {"state": case.lifecycle.state.value, "reason": case.lifecycle.reason} if case.lifecycle else None
                 ),
-                source_line=source_lines.get(case.id),
+                source_line=source_lines[case.id][0] if case.id in source_lines else None,
+                source_col_start=source_lines[case.id][1] if case.id in source_lines else None,
+                source_col_end=source_lines[case.id][2] if case.id in source_lines else None,
             )
 
             if svc.id not in r_result:

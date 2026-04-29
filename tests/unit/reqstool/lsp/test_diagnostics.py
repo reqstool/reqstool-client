@@ -51,6 +51,28 @@ def test_diagnostics_valid_requirement(local_testdata_resources_rootdir_w_path):
         state.close()
 
 
+def test_diagnostics_valid_requirement_qualified_with_local_urn(local_testdata_resources_rootdir_w_path):
+    """Annotations may reference the project's own requirements with the local URN qualifier
+    (e.g. ms-001:REQ_010). This is the canonical form when the project is consumed by another
+    reqstool project, and must resolve as a valid self-reference."""
+    from reqstool.lsp.project_state import ProjectState
+
+    path = local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")
+    state = ProjectState(reqstool_path=path)
+    try:
+        state.build()
+        text = '@Requirements("ms-001:REQ_010")\ndef foo(): pass'
+        diags = compute_diagnostics(
+            uri="file:///test.py",
+            text=text,
+            language_id="python",
+            project=state,
+        )
+        assert [d.message for d in diags] == []
+    finally:
+        state.close()
+
+
 def test_diagnostics_unknown_svc(local_testdata_resources_rootdir_w_path):
     from reqstool.lsp.project_state import ProjectState
 

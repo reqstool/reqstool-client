@@ -260,6 +260,8 @@ class RequirementsRepository:
             categories=categories,
             references=references if references else [],
             source_line=row["source_line"],
+            source_col_start=row["source_col_start"],
+            source_col_end=row["source_col_end"],
         )
 
     def _row_to_svc_data(self, row) -> SVCData:
@@ -287,6 +289,8 @@ class RequirementsRepository:
             lifecycle=lifecycle,
             requirement_ids=requirement_ids,
             source_line=row["source_line"],
+            source_col_start=row["source_col_start"],
+            source_col_end=row["source_col_end"],
         )
 
     def _row_to_mvr_data(self, row) -> MVRData:
@@ -305,4 +309,6 @@ class RequirementsRepository:
             passed=bool(row["passed"]),
             svc_ids=svc_ids,
             source_line=row["source_line"],
+            source_col_start=row["source_col_start"],
+            source_col_end=row["source_col_end"],
         )

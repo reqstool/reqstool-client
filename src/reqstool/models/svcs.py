@@ -32,6 +32,8 @@ class SVCData(BaseModel):
     lifecycle: LifecycleData = Field(default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None))
     requirement_ids: List[UrnId] = Field(default_factory=list)
     source_line: Optional[int] = None
+    source_col_start: Optional[int] = None
+    source_col_end: Optional[int] = None
 
 
 class SVCsData(BaseModel):

@@ -67,6 +67,30 @@ def test_requirements_symbol_line_numbers_match_yaml(ms001_project):
     assert symbols[1].selection_range.start.line == 21
 
 
+def test_requirements_symbol_selection_range_is_non_empty(ms001_project):
+    """VS Code drops symbols whose selection_range has zero width — it's meant to span
+    the clickable name. Every selection_range must therefore cover the id text on the
+    declaring line, not collapse to a single point at column 0."""
+    path, state = ms001_project
+    req_file = os.path.join(path, "requirements.yml")
+    with open(req_file) as f:
+        text = f.read()
+
+    symbols = handle_document_symbols(uri="file://" + req_file, text=text, project=state)
+
+    def _walk(syms):
+        for s in syms:
+            yield s
+            if s.children:
+                yield from _walk(s.children)
+
+    assert symbols
+    for sym in _walk(symbols):
+        sel = sym.selection_range
+        assert sel.start.line == sel.end.line, sym.name
+        assert sel.end.character > sel.start.character, sym.name
+
+
 def test_filter_only_requirements_yml_returns_empty(tmp_path):
     """Regression for #359: a requirements.yml with only metadata/implementations/filters
     must not produce ghost symbols with empty names."""
