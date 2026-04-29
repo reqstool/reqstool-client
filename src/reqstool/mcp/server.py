@@ -8,6 +8,7 @@ from reqstool.common.queries.details import (
     get_mvr_details,
     get_requirement_details,
     get_requirement_status as _get_requirement_status,
+    get_requirements_status_all as _get_requirements_status_all,
     get_svc_details,
     get_urn_details as _get_urn_details,
 )
@@ -39,9 +40,10 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     mcp = FastMCP("reqstool")
 
     @mcp.tool()
-    def list_requirements(urn: str | None = None) -> list[dict]:
-        """List requirements with id, title, and lifecycle state. Optionally filter by URN."""
-        return get_requirements_list(repo, urn=urn)
+    def list_requirements(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
+        """List requirements with id, title, and lifecycle state.
+        Filter by urn and/or lifecycle_state (draft|effective|deprecated|obsolete)."""
+        return get_requirements_list(repo, urn=urn, lifecycle_state=lifecycle_state)
 
     @mcp.tool()
     def get_requirement(id: str) -> dict:
@@ -52,9 +54,17 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_svcs(urn: str | None = None) -> list[dict]:
-        """List SVCs with id, title, lifecycle state, and verification type. Optionally filter by URN."""
-        return get_svcs_list(repo, urn=urn)
+    def get_requirements_status(urn: str | None = None) -> list[dict]:
+        """Batch status for all requirements: id, urn, lifecycle_state, implementation, test_summary,
+        meets_requirements. Use this to find requirements that are incomplete, partially tested,
+        or not yet implemented. Optionally filter by URN."""
+        return _get_requirements_status_all(repo, urn=urn)
+
+    @mcp.tool()
+    def list_svcs(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
+        """List SVCs with id, title, lifecycle state, and verification type.
+        Filter by urn and/or lifecycle_state (draft|effective|deprecated|obsolete)."""
+        return get_svcs_list(repo, urn=urn, lifecycle_state=lifecycle_state)
 
     @mcp.tool()
     def get_svc(id: str) -> dict:
@@ -65,9 +75,9 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_mvrs(urn: str | None = None) -> list[dict]:
-        """List MVRs with id and passed status. Optionally filter by URN."""
-        return get_mvrs_list(repo, urn=urn)
+    def list_mvrs(urn: str | None = None, passed: bool | None = None) -> list[dict]:
+        """List MVRs with id and passed status. Filter by urn and/or passed (True|False)."""
+        return get_mvrs_list(repo, urn=urn, passed=passed)
 
     @mcp.tool()
     def get_mvr(id: str) -> dict:

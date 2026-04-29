@@ -4,18 +4,20 @@
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
-def get_requirements_list(repo: RequirementsRepository, urn: str | None = None) -> list[dict]:
+def get_requirements_list(
+    repo: RequirementsRepository, urn: str | None = None, lifecycle_state: str | None = None
+) -> list[dict]:
     return [
         {
             "id": r.id.id,
             "title": r.title,
             "lifecycle_state": r.lifecycle.state.value,
         }
-        for r in repo.get_all_requirements(urn=urn).values()
+        for r in repo.get_all_requirements(urn=urn, lifecycle_state=lifecycle_state).values()
     ]
 
 
-def get_svcs_list(repo: RequirementsRepository, urn: str | None = None) -> list[dict]:
+def get_svcs_list(repo: RequirementsRepository, urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
     return [
         {
             "id": s.id.id,
@@ -23,17 +25,17 @@ def get_svcs_list(repo: RequirementsRepository, urn: str | None = None) -> list[
             "lifecycle_state": s.lifecycle.state.value,
             "verification": s.verification.value,
         }
-        for s in repo.get_all_svcs(urn=urn).values()
+        for s in repo.get_all_svcs(urn=urn, lifecycle_state=lifecycle_state).values()
     ]
 
 
-def get_mvrs_list(repo: RequirementsRepository, urn: str | None = None) -> list[dict]:
+def get_mvrs_list(repo: RequirementsRepository, urn: str | None = None, passed: bool | None = None) -> list[dict]:
     return [
         {
             "id": m.id.id,
             "passed": m.passed,
         }
-        for m in repo.get_all_mvrs(urn=urn).values()
+        for m in repo.get_all_mvrs(urn=urn, passed=passed).values()
     ]
 
 

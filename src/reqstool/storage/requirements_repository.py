@@ -71,27 +71,53 @@ class RequirementsRepository:
 
     # -- Entity queries --
 
-    def get_all_requirements(self, urn: str | None = None) -> dict[UrnId, RequirementData]:
-        sql = "SELECT * FROM requirements" + (" WHERE urn = ?" if urn else "")
-        rows = self._db.connection.execute(sql, (urn,) if urn else ()).fetchall()
+    def get_all_requirements(
+        self, urn: str | None = None, lifecycle_state: str | None = None
+    ) -> dict[UrnId, RequirementData]:
+        clauses: list[str] = []
+        args: list = []
+        if urn:
+            clauses.append("urn = ?")
+            args.append(urn)
+        if lifecycle_state:
+            clauses.append("lifecycle_state = ?")
+            args.append(lifecycle_state)
+        sql = "SELECT * FROM requirements" + (" WHERE " + " AND ".join(clauses) if clauses else "")
+        rows = self._db.connection.execute(sql, args).fetchall()
         result = {}
         for row in rows:
             urn_id = UrnId(urn=row["urn"], id=row["id"])
             result[urn_id] = self._row_to_requirement_data(row)
         return result
 
-    def get_all_svcs(self, urn: str | None = None) -> dict[UrnId, SVCData]:
-        sql = "SELECT * FROM svcs" + (" WHERE urn = ?" if urn else "")
-        rows = self._db.connection.execute(sql, (urn,) if urn else ()).fetchall()
+    def get_all_svcs(self, urn: str | None = None, lifecycle_state: str | None = None) -> dict[UrnId, SVCData]:
+        clauses: list[str] = []
+        args: list = []
+        if urn:
+            clauses.append("urn = ?")
+            args.append(urn)
+        if lifecycle_state:
+            clauses.append("lifecycle_state = ?")
+            args.append(lifecycle_state)
+        sql = "SELECT * FROM svcs" + (" WHERE " + " AND ".join(clauses) if clauses else "")
+        rows = self._db.connection.execute(sql, args).fetchall()
         result = {}
         for row in rows:
             urn_id = UrnId(urn=row["urn"], id=row["id"])
             result[urn_id] = self._row_to_svc_data(row)
         return result
 
-    def get_all_mvrs(self, urn: str | None = None) -> dict[UrnId, MVRData]:
-        sql = "SELECT * FROM mvrs" + (" WHERE urn = ?" if urn else "")
-        rows = self._db.connection.execute(sql, (urn,) if urn else ()).fetchall()
+    def get_all_mvrs(self, urn: str | None = None, passed: bool | None = None) -> dict[UrnId, MVRData]:
+        clauses: list[str] = []
+        args: list = []
+        if urn:
+            clauses.append("urn = ?")
+            args.append(urn)
+        if passed is not None:
+            clauses.append("passed = ?")
+            args.append(1 if passed else 0)
+        sql = "SELECT * FROM mvrs" + (" WHERE " + " AND ".join(clauses) if clauses else "")
+        rows = self._db.connection.execute(sql, args).fetchall()
         result = {}
         for row in rows:
             urn_id = UrnId(urn=row["urn"], id=row["id"])
