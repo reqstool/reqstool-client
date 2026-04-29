@@ -2,6 +2,7 @@
 
 
 import logging
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
@@ -25,7 +26,10 @@ from reqstool.lsp.workspace_manager import WorkspaceManager
 logger = logging.getLogger(__name__)
 
 SERVER_NAME = "reqstool"
-SERVER_VERSION = "0.1.0"
+try:
+    SERVER_VERSION = _pkg_version("reqstool")
+except PackageNotFoundError:
+    SERVER_VERSION = "0.0.0+unknown"
 
 
 class ReqstoolLanguageServer(LanguageServer):
