@@ -6,6 +6,7 @@ from lsprotocol import types
 from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.lsp.annotation_parser import find_all_annotations
 from reqstool.lsp.project_state import ProjectState
+from reqstool.lsp.workspace_manager import WorkspaceManager
 
 TOKEN_TYPES = ["reqstoolDraft", "reqstoolValid", "reqstoolDeprecated", "reqstoolObsolete"]
 _STATE_TO_IDX = {
@@ -35,6 +36,7 @@ def handle_semantic_tokens(
     text: str,
     language_id: str,
     project: ProjectState | None,
+    workspace_manager: WorkspaceManager | None = None,
 ) -> types.SemanticTokens:
     if project is None or not project.ready:
         return types.SemanticTokens(data=[])
@@ -43,11 +45,12 @@ def handle_semantic_tokens(
     tokens: list[tuple[int, int, int, int]] = []
 
     for match in annotations:
+        p = workspace_manager.resolve_project(match.raw_id, project) if workspace_manager else project
         if match.kind == "Requirements":
-            item = project.get_requirement(match.raw_id)
+            item = p.get_requirement(match.raw_id)
             state = item.lifecycle.state if item is not None else LIFECYCLESTATE.EFFECTIVE
         else:
-            item = project.get_svc(match.raw_id)
+            item = p.get_svc(match.raw_id)
             state = item.lifecycle.state if item is not None else LIFECYCLESTATE.EFFECTIVE
 
         type_idx = _STATE_TO_IDX.get(state, 0)

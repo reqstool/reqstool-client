@@ -142,6 +142,7 @@ def on_hover(ls: ReqstoolLanguageServer, params: types.HoverParams) -> types.Hov
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -250,6 +251,7 @@ def on_code_lens(ls: ReqstoolLanguageServer, params: types.CodeLensParams) -> li
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -263,6 +265,7 @@ def on_inlay_hint(ls: ReqstoolLanguageServer, params: types.InlayHintParams) -> 
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -309,6 +312,7 @@ def on_semantic_tokens(ls: ReqstoolLanguageServer, params: types.SemanticTokensP
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -326,6 +330,7 @@ def on_code_action(ls: ReqstoolLanguageServer, params: types.CodeActionParams) -
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -376,6 +381,7 @@ def _publish_diagnostics_for_document(ls: ReqstoolLanguageServer, uri: str) -> N
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
     ls.text_document_publish_diagnostics(types.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics))
 

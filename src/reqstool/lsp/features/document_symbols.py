@@ -54,7 +54,7 @@ def _symbols_for_requirements(
         sel = _selection_range(req, start)
         name = f"{req.id.id} — {req.title}" if req.title else req.id.id
         children = []
-        for svc in project.get_svcs_for_req(req.id.id):
+        for svc in project.get_svcs_for_req(str(req.id)):
             children.append(
                 types.DocumentSymbol(
                     name=f"→ {svc.id.id} — {svc.title}",
@@ -99,7 +99,7 @@ def _symbols_for_svcs(
                     selection_range=sel,
                 )
             )
-        for mvr in project.get_mvrs_for_svc(svc.id.id):
+        for mvr in project.get_mvrs_for_svc(str(svc.id)):
             result = "pass" if mvr.passed else "fail"
             children.append(
                 types.DocumentSymbol(
