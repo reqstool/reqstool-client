@@ -179,15 +179,83 @@ Code action kinds: `quickfix`, `source`.
 
 === Custom Protocol
 
+NOTE: The methods in this section are *not* part of the standard LSP specification. They are
+reqstool extensions understood only by reqstool-aware clients. Generic LSP clients will ignore them.
+
+==== reqstool/list
+
+_LSP method:_ `reqstool/list`
+
+Returns lightweight lists of all requirements, SVCs, and MVRs in the first ready project. Accepts an optional `urn` to scope the result to a single project node.
+
+*Params:* `{ "urn": "<urn>" }` (optional)
+
+*Returns:*
+
+[source,json]
+----
+{
+  "requirements": [{ "id": "REQ_001", "title": "...", "lifecycle_state": "effective" }],
+  "svcs":         [{ "id": "SVC_001", "title": "...", "lifecycle_state": "effective", "verification": "automated-test" }],
+  "mvrs":         [{ "id": "MVR_001", "passed": true }]
+}
+----
+
+==== reqstool/list-urns
+
+_LSP method:_ `reqstool/list-urns`
+
+Returns all URNs in the loaded project graph with their metadata and resolved file paths.
+
+*Params:* none
+
+*Returns:* array of:
+
+[source,json]
+----
+{
+  "urn": "my-service",
+  "variant": "microservice",
+  "title": "My Service",
+  "url": "https://github.com/example/my-service",
+  "location": { "type": "local", "uri": "/path/to/reqstool" },
+  "file_paths": {
+    "requirements": "/path/to/requirements.yml",
+    "svcs": "/path/to/software_verification_cases.yml"
+  }
+}
+----
+
+==== reqstool/details
+
 _LSP method:_ `reqstool/details`
 
-NOTE: `reqstool/details` is *not* part of the standard LSP specification. It is a reqstool
-extension understood only by reqstool-aware clients. Generic LSP clients will ignore it.
-
-Custom LSP request. Fetches structured data for a single requirement, SVC, or MVR. Can drive
-e.g. a Details panel in an IDE. Searches all ready projects.
+Fetches structured data for a single requirement, SVC, MVR, or URN. Can drive a Details panel in
+an IDE. Searches all ready projects.
 
 The full protocol spec (OpenRPC) is at `docs/modules/ROOT/lsp/reqstool-lsp.openrpc.json`.
+
+*Params:* `{ "type": "<type>", "id": "<id>" }`
+
+|===
+| `type` | `id` example | Description
+
+| `requirement`
+| `REQ_001`
+| Full requirement with linked SVCs, implementations, lifecycle, and test summary
+
+| `svc`
+| `SVC_001`
+| Full SVC with linked requirements, test annotations, test results, and MVRs
+
+| `mvr`
+| `MVR_001`
+| Manual verification result with linked SVC IDs
+
+| `urn`
+| `my-service`
+| URN metadata, file paths, and entity counts
+|===
 
 == Commands
 

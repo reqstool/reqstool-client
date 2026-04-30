@@ -1,0 +1,208 @@
+// Copyright © LFV
+= MCP Server
+:toc: left
+:toclevels: 3
+
+The reqstool MCP server exposes requirements, SVCs, MVRs, and traceability status as
+https://modelcontextprotocol.io[Model Context Protocol] tools. AI agents such as Claude or
+GitHub Copilot can call these tools directly to query and reason over a requirements dataset.
+
+See also: https://github.com/reqstool/reqstool-ai[reqstool-ai] — a marketplace of AI agents,
+prompts, and plugins built on reqstool and reqstool+OpenSpec integrations.
+
+== Starting the Server
+
+=== Installation
+
+The MCP server is included in the `reqstool` package:
+
+[source,bash]
+----
+pip install reqstool
+----
+
+=== Local project
+
+[source,bash]
+----
+reqstool mcp local -p /path/to/reqstool
+----
+
+The server starts and blocks, serving MCP requests over stdio. The project at the given path is
+loaded once at startup.
+
+=== Other sources
+
+All location types supported by the CLI are accepted:
+
+[source,bash]
+----
+reqstool mcp git --url https://github.com/example/repo --path docs/reqstool
+reqstool mcp pypi --package my-lib --version 1.2.3
+reqstool mcp maven --group com.example --artifact my-lib --version 1.2.3
+----
+
+=== Auto-detect (no source)
+
+When called with no source argument, the server searches for a `.reqstool-ai.yaml` config file
+in the current working directory or any parent:
+
+[source,bash]
+----
+reqstool mcp
+----
+
+== Tools
+
+=== Listing Tools
+
+==== `list_requirements`
+
+Returns a lightweight list of all requirements.
+
+*Parameters:*
+
+* `urn` _(string, optional)_ — scope to a single project node
+* `lifecycle_state` _(string, optional)_ — filter by state: `draft`, `effective`, `deprecated`, `obsolete`
+
+*Returns:* array of `{ id, title, lifecycle_state }`
+
+==== `list_svcs`
+
+Returns a lightweight list of all software verification cases.
+
+*Parameters:*
+
+* `urn` _(string, optional)_
+* `lifecycle_state` _(string, optional)_ — `draft`, `effective`, `deprecated`, `obsolete`
+
+*Returns:* array of `{ id, title, lifecycle_state, verification }`
+
+where `verification` is one of `automated-test`, `manual-test`, `review`.
+
+==== `list_mvrs`
+
+Returns a lightweight list of all manual verification results.
+
+*Parameters:*
+
+* `urn` _(string, optional)_
+* `passed` _(boolean, optional)_ — `true` for passing, `false` for failing
+
+*Returns:* array of `{ id, passed }`
+
+==== `list_annotations`
+
+Returns all `@Requirements` implementation annotations found in source code.
+
+*Parameters:*
+
+* `urn` _(string, optional)_
+
+*Returns:* array of `{ req_id, req_urn, element_kind, fqn }`
+
+==== `list_urns`
+
+Returns all URNs in the project graph with metadata and file paths.
+
+*Parameters:* none
+
+*Returns:* array of `{ urn, variant, title, url, location: {type, uri}, file_paths }`
+
+=== Detail Tools
+
+==== `get_requirement`
+
+Full details for a single requirement.
+
+*Parameters:*
+
+* `id` _(string, required)_ — bare requirement ID, e.g. `REQ_010`
+
+*Returns:* `{ type, id, urn, title, significance, description, rationale, revision, lifecycle, categories, implementation, references, implementations, svcs, location, source_paths }`
+
+==== `get_svc`
+
+Full details for a single SVC.
+
+*Parameters:*
+
+* `id` _(string, required)_
+
+*Returns:* `{ type, id, urn, title, description, verification, instructions, revision, lifecycle, requirement_ids, test_annotations, test_results, test_summary, mvrs, location, source_paths }`
+
+==== `get_mvr`
+
+Full details for a single MVR.
+
+*Parameters:*
+
+* `id` _(string, required)_
+
+*Returns:* `{ type, id, urn, passed, comment, svc_ids, location, source_paths }`
+
+==== `get_urn_details`
+
+Full details for a URN: metadata, file paths, and entity counts.
+
+*Parameters:*
+
+* `urn` _(string, required)_
+
+*Returns:* `{ urn, variant, title, url, location, file_paths, counts: { requirements, svcs, mvrs, impl_annotations, test_annotations } }`
+
+=== Status Tools
+
+==== `get_status`
+
+Overall traceability status across all requirements — completion counts, test totals.
+
+*Parameters:* none
+
+*Returns:* status summary dict
+
+==== `get_requirement_status`
+
+Quick status for a single requirement.
+
+*Parameters:*
+
+* `id` _(string, required)_
+
+*Returns:* `{ id, lifecycle_state, implementation, test_summary: {passed, failed, skipped, missing}, meets_requirements }`
+
+==== `get_requirements_status`
+
+Batch status for all requirements. Returns the same fields as `get_requirement_status` for every
+requirement in the dataset. Use this to find incomplete, partially tested, or unimplemented
+requirements without N+1 individual calls.
+
+*Parameters:*
+
+* `urn` _(string, optional)_ — scope to a single project node
+
+*Returns:* array of `{ id, urn, lifecycle_state, implementation, test_summary, meets_requirements }`
+
+== Example: Finding Incomplete Requirements
+
+The following client-side filter finds requirements that have started but are not yet done — they
+have an implementation and at least one passing test, but `meets_requirements` is still false
+(e.g. due to missing or failing tests for other SVCs):
+
+[source,python]
+----
+statuses = get_requirements_status()
+
+in_progress = [
+    r for r in statuses
+    if not r["meets_requirements"]
+    and r["implementation"] != "not_implemented"
+    and r["test_summary"]["passed"] > 0
+]
+----
+
+== reqstool-ai
+
+https://github.com/reqstool/reqstool-ai[reqstool-ai] provides a marketplace of AI agents,
+prompts, and plugins built on the reqstool MCP server. This includes integrations with
+OpenSpec for requirement-driven API design and code generation workflows.
