@@ -227,12 +227,14 @@ def get_requirements_status_all(repo: RequirementsRepository, urn: str | None = 
                 if key in test_summary:
                     test_summary[key] += 1
         all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
-        result.append({
-            "id": req.id.id,
-            "urn": req.id.urn,
-            "lifecycle_state": req.lifecycle.state.value,
-            "implementation": req.implementation.value,
-            "test_summary": test_summary,
-            "meets_requirements": req.implementation.value != "not_implemented" and all_passing,
-        })
+        result.append(
+            {
+                "id": req.id.id,
+                "urn": req.id.urn,
+                "lifecycle_state": req.lifecycle.state.value,
+                "implementation": req.implementation.value,
+                "test_summary": test_summary,
+                "meets_requirements": req.implementation.value != "not_implemented" and all_passing,
+            }
+        )
     return result

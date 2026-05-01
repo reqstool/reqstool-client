@@ -141,9 +141,7 @@ class RequirementsRepository:
         return [UrnId(urn=row["mvr_urn"], id=row["mvr_id"]) for row in rows]
 
     def get_annotations_impls(self, urn: str | None = None) -> dict[UrnId, list[AnnotationData]]:
-        sql = "SELECT req_urn, req_id, element_kind, fqn FROM annotations_impls" + (
-            " WHERE req_urn = ?" if urn else ""
-        )
+        sql = "SELECT req_urn, req_id, element_kind, fqn FROM annotations_impls" + (" WHERE req_urn = ?" if urn else "")
         rows = self._db.connection.execute(sql, (urn,) if urn else ()).fetchall()
         result: dict[UrnId, list[AnnotationData]] = {}
         for row in rows:
@@ -153,9 +151,7 @@ class RequirementsRepository:
         return result
 
     def get_annotations_tests(self, urn: str | None = None) -> dict[UrnId, list[AnnotationData]]:
-        sql = "SELECT svc_urn, svc_id, element_kind, fqn FROM annotations_tests" + (
-            " WHERE svc_urn = ?" if urn else ""
-        )
+        sql = "SELECT svc_urn, svc_id, element_kind, fqn FROM annotations_tests" + (" WHERE svc_urn = ?" if urn else "")
         rows = self._db.connection.execute(sql, (urn,) if urn else ()).fetchall()
         result: dict[UrnId, list[AnnotationData]] = {}
         for row in rows:

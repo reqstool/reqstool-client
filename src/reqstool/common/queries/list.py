@@ -17,7 +17,9 @@ def get_requirements_list(
     ]
 
 
-def get_svcs_list(repo: RequirementsRepository, urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
+def get_svcs_list(
+    repo: RequirementsRepository, urn: str | None = None, lifecycle_state: str | None = None
+) -> list[dict]:
     return [
         {
             "id": s.id.id,
@@ -47,7 +49,9 @@ def get_list(repo: RequirementsRepository, urn: str | None = None) -> dict:
     }
 
 
-def get_urns_list(repo: RequirementsRepository, urn_source_paths: dict[str, dict[str, str]] | None = None) -> list[dict]:
+def get_urns_list(
+    repo: RequirementsRepository, urn_source_paths: dict[str, dict[str, str]] | None = None
+) -> list[dict]:
     paths = urn_source_paths or {}
     result = []
     for urn in repo.get_urn_parsing_order():
