@@ -40,8 +40,21 @@ def test_workspace_symbols_empty_query_returns_all(project):
     manager = _MockWorkspaceManager([project])
     result = handle_workspace_symbols("", manager)
     ids = [s.name.split(" \u2014 ")[0] for s in result]
-    assert any(i.startswith("REQ_") for i in ids)
-    assert any(i.startswith("SVC_") for i in ids)
+    # ids are now fully-qualified "urn:BARE_ID"
+    assert any("REQ_" in i for i in ids)
+    assert any("SVC_" in i for i in ids)
+
+
+def test_workspace_symbols_have_data_field(project):
+    manager = _MockWorkspaceManager([project])
+    result = handle_workspace_symbols("REQ_010", manager)
+    assert result
+    for sym in result:
+        assert sym.data is not None
+        assert "id" in sym.data
+        assert "type" in sym.data
+        # id must be fully-qualified urn:bare_id
+        assert ":" in sym.data["id"]
 
 
 def test_workspace_symbols_query_filters(project):

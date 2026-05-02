@@ -85,6 +85,11 @@ class ProjectState(ProjectSession):
             return []
         return [uid.id for uid in self._repo.get_all_svcs()]
 
+    def get_all_mvr_ids(self) -> list[str]:
+        if not self._ready or self._repo is None:
+            return []
+        return [uid.id for uid in self._repo.get_all_mvrs()]
+
     def get_yaml_paths(self) -> dict[str, dict[str, str]]:
         """Return all URN → file_type → path mappings."""
         return dict(self._urn_source_paths)
