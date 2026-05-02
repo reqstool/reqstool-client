@@ -42,10 +42,10 @@ class MVRsModelGenerator:
         return MVRsData(results=results)
 
     @staticmethod
-    def __capture_source_lines(text: str) -> Dict[str, int]:
+    def __capture_source_lines(text: str) -> Dict[str, tuple[int, int, int]]:
         rt_yaml = YAML(typ="rt")
         rt_data = rt_yaml.load(text)
-        result: Dict[str, int] = {}
+        result: Dict[str, tuple[int, int, int]] = {}
         if rt_data is None or "results" not in rt_data:
             return result
         results = rt_data["results"]
@@ -54,12 +54,18 @@ class MVRsModelGenerator:
         for idx, item in enumerate(results):
             if not hasattr(results, "lc"):
                 break
-            line = results.lc.item(idx)[0]
-            if isinstance(item, dict) and "id" in item:
-                result[str(item["id"])] = line
+            if not isinstance(item, dict) or "id" not in item:
+                continue
+            id_text = str(item["id"])
+            id_line, id_col = item.lc.value("id")
+            result[id_text] = (id_line, id_col, id_col + len(id_text))
         return result
 
-    def __parse_mvrs(self, validated: MVRsPydanticModel, source_lines: Dict[str, int]) -> Dict[UrnId, MVRData]:
+    def __parse_mvrs(
+        self,
+        validated: MVRsPydanticModel,
+        source_lines: Dict[str, tuple[int, int, int]],
+    ) -> Dict[UrnId, MVRData]:
         r_result = {}
 
         for result in validated.results:
@@ -69,7 +75,9 @@ class MVRsModelGenerator:
                 svc_ids=Utils.convert_ids_to_urn_id(ids=result.svc_ids, urn=self.urn),
                 comment=result.comment,
                 passed=result.pass_,
-                source_line=source_lines.get(result.id),
+                source_line=source_lines[result.id][0] if result.id in source_lines else None,
+                source_col_start=source_lines[result.id][1] if result.id in source_lines else None,
+                source_col_end=source_lines[result.id][2] if result.id in source_lines else None,
             )
 
             r_result[mvr.id] = mvr

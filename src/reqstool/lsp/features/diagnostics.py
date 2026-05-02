@@ -15,6 +15,7 @@ from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.common.validators.syntax_validator import SyntaxValidator
 from reqstool.lsp.annotation_parser import find_all_annotations
 from reqstool.lsp.project_state import ProjectState
+from reqstool.lsp.workspace_manager import WorkspaceManager
 from reqstool.lsp.yaml_schema import schema_for_yaml_file
 
 logger = logging.getLogger(__name__)
@@ -33,18 +34,20 @@ def compute_diagnostics(
     text: str,
     language_id: str,
     project: ProjectState | None,
+    workspace_manager: WorkspaceManager | None = None,
 ) -> list[types.Diagnostic]:
     basename = os.path.basename(uri)
     if basename in REQSTOOL_YAML_FILES:
         return _yaml_diagnostics(text, basename)
     else:
-        return _source_diagnostics(text, language_id, project)
+        return _source_diagnostics(text, language_id, project, workspace_manager)
 
 
 def _source_diagnostics(
     text: str,
     language_id: str,
     project: ProjectState | None,
+    workspace_manager: WorkspaceManager | None = None,
 ) -> list[types.Diagnostic]:
     if project is None or not project.ready:
         return []
@@ -53,8 +56,9 @@ def _source_diagnostics(
     diagnostics: list[types.Diagnostic] = []
 
     for match in annotations:
+        p = workspace_manager.resolve_project(match.raw_id, project) if workspace_manager else project
         if match.kind == "Requirements":
-            req = project.get_requirement(match.raw_id)
+            req = p.get_requirement(match.raw_id)
             if req is None:
                 diagnostics.append(
                     types.Diagnostic(
@@ -71,7 +75,7 @@ def _source_diagnostics(
                 _check_lifecycle(diagnostics, match, req.lifecycle.state, req.lifecycle.reason, "Requirement")
 
         elif match.kind == "SVCs":
-            svc = project.get_svc(match.raw_id)
+            svc = p.get_svc(match.raw_id)
             if svc is None:
                 diagnostics.append(
                     types.Diagnostic(

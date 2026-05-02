@@ -41,6 +41,21 @@ class RequirementsRepository:
             return None
         return {"type": row["location_type"], "uri": row["location_uri"]}
 
+    def get_urn_info(self, urn: str) -> dict | None:
+        row = self._db.connection.execute(
+            "SELECT urn, variant, title, url, location_type, location_uri FROM urn_metadata WHERE urn = ?",
+            (urn,),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "urn": row["urn"],
+            "variant": row["variant"],
+            "title": row["title"],
+            "url": row["url"],
+            "location": {"type": row["location_type"], "uri": row["location_uri"]},
+        }
+
     def get_import_graph(self) -> dict[str, list[str]]:
         graph: dict[str, list[str]] = {}
         all_urns = {row["urn"] for row in self._db.connection.execute("SELECT urn FROM urn_metadata").fetchall()}
@@ -56,24 +71,53 @@ class RequirementsRepository:
 
     # -- Entity queries --
 
-    def get_all_requirements(self) -> dict[UrnId, RequirementData]:
-        rows = self._db.connection.execute("SELECT * FROM requirements").fetchall()
+    def get_all_requirements(
+        self, urn: str | None = None, lifecycle_state: str | None = None
+    ) -> dict[UrnId, RequirementData]:
+        clauses: list[str] = []
+        args: list = []
+        if urn:
+            clauses.append("urn = ?")
+            args.append(urn)
+        if lifecycle_state:
+            clauses.append("lifecycle_state = ?")
+            args.append(lifecycle_state)
+        sql = "SELECT * FROM requirements" + (" WHERE " + " AND ".join(clauses) if clauses else "")
+        rows = self._db.connection.execute(sql, args).fetchall()
         result = {}
         for row in rows:
             urn_id = UrnId(urn=row["urn"], id=row["id"])
             result[urn_id] = self._row_to_requirement_data(row)
         return result
 
-    def get_all_svcs(self) -> dict[UrnId, SVCData]:
-        rows = self._db.connection.execute("SELECT * FROM svcs").fetchall()
+    def get_all_svcs(self, urn: str | None = None, lifecycle_state: str | None = None) -> dict[UrnId, SVCData]:
+        clauses: list[str] = []
+        args: list = []
+        if urn:
+            clauses.append("urn = ?")
+            args.append(urn)
+        if lifecycle_state:
+            clauses.append("lifecycle_state = ?")
+            args.append(lifecycle_state)
+        sql = "SELECT * FROM svcs" + (" WHERE " + " AND ".join(clauses) if clauses else "")
+        rows = self._db.connection.execute(sql, args).fetchall()
         result = {}
         for row in rows:
             urn_id = UrnId(urn=row["urn"], id=row["id"])
             result[urn_id] = self._row_to_svc_data(row)
         return result
 
-    def get_all_mvrs(self) -> dict[UrnId, MVRData]:
-        rows = self._db.connection.execute("SELECT * FROM mvrs").fetchall()
+    def get_all_mvrs(self, urn: str | None = None, passed: bool | None = None) -> dict[UrnId, MVRData]:
+        clauses: list[str] = []
+        args: list = []
+        if urn:
+            clauses.append("urn = ?")
+            args.append(urn)
+        if passed is not None:
+            clauses.append("passed = ?")
+            args.append(1 if passed else 0)
+        sql = "SELECT * FROM mvrs" + (" WHERE " + " AND ".join(clauses) if clauses else "")
+        rows = self._db.connection.execute(sql, args).fetchall()
         result = {}
         for row in rows:
             urn_id = UrnId(urn=row["urn"], id=row["id"])
@@ -96,10 +140,9 @@ class RequirementsRepository:
         ).fetchall()
         return [UrnId(urn=row["mvr_urn"], id=row["mvr_id"]) for row in rows]
 
-    def get_annotations_impls(self) -> dict[UrnId, list[AnnotationData]]:
-        rows = self._db.connection.execute(
-            "SELECT req_urn, req_id, element_kind, fqn FROM annotations_impls"
-        ).fetchall()
+    def get_annotations_impls(self, urn: str | None = None) -> dict[UrnId, list[AnnotationData]]:
+        sql = "SELECT req_urn, req_id, element_kind, fqn FROM annotations_impls" + (" WHERE req_urn = ?" if urn else "")
+        rows = self._db.connection.execute(sql, (urn,) if urn else ()).fetchall()
         result: dict[UrnId, list[AnnotationData]] = {}
         for row in rows:
             key = UrnId(urn=row["req_urn"], id=row["req_id"])
@@ -107,10 +150,9 @@ class RequirementsRepository:
             result.setdefault(key, []).append(annotation)
         return result
 
-    def get_annotations_tests(self) -> dict[UrnId, list[AnnotationData]]:
-        rows = self._db.connection.execute(
-            "SELECT svc_urn, svc_id, element_kind, fqn FROM annotations_tests"
-        ).fetchall()
+    def get_annotations_tests(self, urn: str | None = None) -> dict[UrnId, list[AnnotationData]]:
+        sql = "SELECT svc_urn, svc_id, element_kind, fqn FROM annotations_tests" + (" WHERE svc_urn = ?" if urn else "")
+        rows = self._db.connection.execute(sql, (urn,) if urn else ()).fetchall()
         result: dict[UrnId, list[AnnotationData]] = {}
         for row in rows:
             key = UrnId(urn=row["svc_urn"], id=row["svc_id"])
@@ -260,6 +302,8 @@ class RequirementsRepository:
             categories=categories,
             references=references if references else [],
             source_line=row["source_line"],
+            source_col_start=row["source_col_start"],
+            source_col_end=row["source_col_end"],
         )
 
     def _row_to_svc_data(self, row) -> SVCData:
@@ -287,6 +331,8 @@ class RequirementsRepository:
             lifecycle=lifecycle,
             requirement_ids=requirement_ids,
             source_line=row["source_line"],
+            source_col_start=row["source_col_start"],
+            source_col_end=row["source_col_end"],
         )
 
     def _row_to_mvr_data(self, row) -> MVRData:
@@ -305,4 +351,6 @@ class RequirementsRepository:
             passed=bool(row["passed"]),
             svc_ids=svc_ids,
             source_line=row["source_line"],
+            source_col_start=row["source_col_start"],
+            source_col_end=row["source_col_end"],
         )

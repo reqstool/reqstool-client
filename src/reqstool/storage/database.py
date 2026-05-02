@@ -48,8 +48,8 @@ class RequirementsDatabase:
     def insert_requirement(self, urn: str, req: RequirementData) -> None:
         self._conn.execute(
             "INSERT INTO requirements (urn, id, title, significance, lifecycle_state, lifecycle_reason,"
-            " implementation, description, rationale, revision, source_line)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " implementation, description, rationale, revision, source_line, source_col_start, source_col_end)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 urn,
                 req.id.id,
@@ -62,6 +62,8 @@ class RequirementsDatabase:
                 req.rationale,
                 str(req.revision),
                 req.source_line,
+                req.source_col_start,
+                req.source_col_end,
             ),
         )
 
@@ -83,8 +85,8 @@ class RequirementsDatabase:
     def insert_svc(self, urn: str, svc: SVCData) -> None:
         self._conn.execute(
             "INSERT INTO svcs (urn, id, title, verification_type, lifecycle_state, lifecycle_reason,"
-            " description, instructions, revision, source_line)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " description, instructions, revision, source_line, source_col_start, source_col_end)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 urn,
                 svc.id.id,
@@ -96,6 +98,8 @@ class RequirementsDatabase:
                 svc.instructions,
                 str(svc.revision),
                 svc.source_line,
+                svc.source_col_start,
+                svc.source_col_end,
             ),
         )
 
@@ -110,8 +114,17 @@ class RequirementsDatabase:
 
     def insert_mvr(self, urn: str, mvr: MVRData) -> None:
         self._conn.execute(
-            "INSERT INTO mvrs (urn, id, passed, comment, source_line) VALUES (?, ?, ?, ?, ?)",
-            (urn, mvr.id.id, int(mvr.passed), mvr.comment, mvr.source_line),
+            "INSERT INTO mvrs (urn, id, passed, comment, source_line, source_col_start, source_col_end)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                urn,
+                mvr.id.id,
+                int(mvr.passed),
+                mvr.comment,
+                mvr.source_line,
+                mvr.source_col_start,
+                mvr.source_col_end,
+            ),
         )
 
         for svc_urn_id in mvr.svc_ids:

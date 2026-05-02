@@ -165,6 +165,7 @@ Full rationale in `docs/DESIGN.md`.
 ## Key Conventions
 
 - **URN format**: `some:urn:string` — the separator is `:`. `UrnId` is the canonical composite key used throughout indexes.
+- **UrnId routing in LSP features**: All entity lookups in source-feature handlers must route via `workspace_manager.resolve_project(raw_id, file_project)` before calling `project.get_X(raw_id)`. For secondary lookups where you already hold a domain object, use `str(entity.id)` (full `urn:id`) and route via `workspace_manager.project_for_urn(entity.id.urn)`. Never pass bare `entity.id.id` to a project lookup method.
 - **`@Requirements("REQ_xxx")`** decorator from `reqstool-python-decorators` annotates methods that implement a requirement. This is how the tool tracks its own requirement coverage.
 - Data flows are uni-directional: parsing → SQLite population → filtering (SQL DELETEs) → read-only queries via repository. Commands never mutate the database.
 - `assert` statements are used for invariant checks in the generators (not for user-facing validation).

@@ -248,10 +248,10 @@ class RequirementsModelGenerator:
         )
 
     @staticmethod
-    def __capture_source_lines(text: str) -> Dict[str, int]:
+    def __capture_source_lines(text: str) -> Dict[str, tuple[int, int, int]]:
         rt_yaml = YAML(typ="rt")
         rt_data = rt_yaml.load(text)
-        result: Dict[str, int] = {}
+        result: Dict[str, tuple[int, int, int]] = {}
         if rt_data is None or "requirements" not in rt_data:
             return result
         reqs = rt_data["requirements"]
@@ -260,13 +260,15 @@ class RequirementsModelGenerator:
         for idx, item in enumerate(reqs):
             if not hasattr(reqs, "lc"):
                 break
-            line = reqs.lc.item(idx)[0]
-            if isinstance(item, dict) and "id" in item:
-                result[str(item["id"])] = line
+            if not isinstance(item, dict) or "id" not in item:
+                continue
+            id_text = str(item["id"])
+            id_line, id_col = item.lc.value("id")
+            result[id_text] = (id_line, id_col, id_col + len(id_text))
         return result
 
     @Requirements("REQ_004", "REQ_036")
-    def __parse_requirements(self, model, data, source_lines: Dict[str, int]):  # NOSONAR
+    def __parse_requirements(self, model, data, source_lines: Dict[str, tuple[int, int, int]]):  # NOSONAR
         r_reqs = {}
 
         self.semantic_validator._validate_no_duplicate_requirement_ids(data=data)
@@ -304,7 +306,9 @@ class RequirementsModelGenerator:
                     lifecycle=LifecycleData.from_dict(
                         {"state": req.lifecycle.state.value, "reason": req.lifecycle.reason} if req.lifecycle else None
                     ),
-                    source_line=source_lines.get(req.id),
+                    source_line=source_lines[req.id][0] if req.id in source_lines else None,
+                    source_col_start=source_lines[req.id][1] if req.id in source_lines else None,
+                    source_col_end=source_lines[req.id][2] if req.id in source_lines else None,
                 )
 
                 if req_data.id not in r_reqs:

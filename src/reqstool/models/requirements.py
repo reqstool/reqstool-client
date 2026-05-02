@@ -96,6 +96,8 @@ class RequirementData(BaseModel):
     categories: List[CATEGORIES] = Field(default_factory=list)
     references: Optional[List[ReferenceData]] = Field(default_factory=list)
     source_line: Optional[int] = None
+    source_col_start: Optional[int] = None
+    source_col_end: Optional[int] = None
 
 
 class MetaData(BaseModel):

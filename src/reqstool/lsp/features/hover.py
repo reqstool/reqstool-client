@@ -10,6 +10,7 @@ from lsprotocol import types
 
 from reqstool.lsp.annotation_parser import annotation_at_position
 from reqstool.lsp.project_state import ProjectState
+from reqstool.lsp.workspace_manager import WorkspaceManager
 from reqstool.lsp.yaml_schema import get_field_description, schema_for_yaml_file
 
 # YAML files that the LSP provides hover for
@@ -27,12 +28,13 @@ def handle_hover(
     text: str,
     language_id: str,
     project: ProjectState | None,
+    workspace_manager: WorkspaceManager | None = None,
 ) -> types.Hover | None:
     basename = os.path.basename(uri)
     if basename in REQSTOOL_YAML_FILES:
         return _hover_yaml(text, position, basename)
     else:
-        return _hover_source(uri, text, position, language_id, project)
+        return _hover_source(uri, text, position, language_id, project, workspace_manager)
 
 
 def _hover_source(
@@ -41,6 +43,7 @@ def _hover_source(
     position: types.Position,
     language_id: str,
     project: ProjectState | None,
+    workspace_manager: WorkspaceManager | None = None,
 ) -> types.Hover | None:
     match = annotation_at_position(text, position.line, position.character, language_id)
     if match is None:
@@ -58,10 +61,11 @@ def _hover_source(
             ),
         )
 
+    p = workspace_manager.resolve_project(match.raw_id, project) if workspace_manager else project
     if match.kind == "Requirements":
-        return _hover_requirement(match.raw_id, match, project)
+        return _hover_requirement(match.raw_id, match, p, workspace_manager)
     elif match.kind == "SVCs":
-        return _hover_svc(match.raw_id, match, project)
+        return _hover_svc(match.raw_id, match, p, workspace_manager)
 
     return None
 
@@ -71,7 +75,9 @@ def _open_details_link(raw_id: str, kind: str) -> str:
     return f"[Open Details](command:reqstool.openDetails?{args})"
 
 
-def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover | None:
+def _hover_requirement(
+    raw_id: str, match, project: ProjectState, workspace_manager: WorkspaceManager | None = None
+) -> types.Hover | None:
     req = project.get_requirement(raw_id)
     if req is None:
         md = f"**Unknown requirement**: `{raw_id}`"
@@ -79,7 +85,8 @@ def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover
         svcs = project.get_svcs_for_req(raw_id)
         svc_ids = ", ".join(f"`{s.id.id}`" for s in svcs) if svcs else "—"
         categories = ", ".join(c.value for c in req.categories) if req.categories else "—"
-        impl_count = len(project.get_impl_annotations_for_req(raw_id))
+        req_project = (workspace_manager.project_for_urn(req.id.urn) or project) if workspace_manager else project
+        impl_count = len(req_project.get_impl_annotations_for_req(str(req.id)))
 
         parts = [
             _open_details_link(raw_id, "requirement"),
@@ -110,13 +117,16 @@ def _hover_requirement(raw_id: str, match, project: ProjectState) -> types.Hover
     )
 
 
-def _hover_svc(raw_id: str, match, project: ProjectState) -> types.Hover | None:
+def _hover_svc(
+    raw_id: str, match, project: ProjectState, workspace_manager: WorkspaceManager | None = None
+) -> types.Hover | None:
     svc = project.get_svc(raw_id)
     if svc is None:
         md = f"**Unknown SVC**: `{raw_id}`"
     else:
-        mvrs = project.get_mvrs_for_svc(raw_id)
-        test_results = project.get_test_results_for_svc(raw_id)
+        svc_project = (workspace_manager.project_for_urn(svc.id.urn) or project) if workspace_manager else project
+        mvrs = svc_project.get_mvrs_for_svc(str(svc.id))
+        test_results = svc_project.get_test_results_for_svc(str(svc.id))
         req_ids = ", ".join(f"`{r.id}`" for r in svc.requirement_ids) if svc.requirement_ids else "—"
 
         test_passed = sum(1 for t in test_results if t.status.value == "passed")

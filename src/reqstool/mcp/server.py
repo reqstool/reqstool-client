@@ -8,9 +8,11 @@ from reqstool.common.queries.details import (
     get_mvr_details,
     get_requirement_details,
     get_requirement_status as _get_requirement_status,
+    get_requirements_status_all as _get_requirements_status_all,
     get_svc_details,
+    get_urn_details as _get_urn_details,
 )
-from reqstool.common.queries.list import get_mvrs_list, get_requirements_list, get_svcs_list
+from reqstool.common.queries.list import get_mvrs_list, get_requirements_list, get_svcs_list, get_urns_list
 from reqstool.locations.location import LocationInterface
 from reqstool.services.statistics_service import StatisticsService
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -38,9 +40,10 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     mcp = FastMCP("reqstool")
 
     @mcp.tool()
-    def list_requirements() -> list[dict]:
-        """List all requirements with id, title, and lifecycle state."""
-        return get_requirements_list(repo)
+    def list_requirements(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
+        """List requirements with id, title, and lifecycle state.
+        Filter by urn and/or lifecycle_state (draft|effective|deprecated|obsolete)."""
+        return get_requirements_list(repo, urn=urn, lifecycle_state=lifecycle_state)
 
     @mcp.tool()
     def get_requirement(id: str) -> dict:
@@ -51,9 +54,17 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_svcs() -> list[dict]:
-        """List all SVCs with id, title, lifecycle state, and verification type."""
-        return get_svcs_list(repo)
+    def get_requirements_status(urn: str | None = None) -> list[dict]:
+        """Batch status for all requirements: id, urn, lifecycle_state, implementation, test_summary,
+        meets_requirements. Use this to find requirements that are incomplete, partially tested,
+        or not yet implemented. Optionally filter by URN."""
+        return _get_requirements_status_all(repo, urn=urn)
+
+    @mcp.tool()
+    def list_svcs(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
+        """List SVCs with id, title, lifecycle state, and verification type.
+        Filter by urn and/or lifecycle_state (draft|effective|deprecated|obsolete)."""
+        return get_svcs_list(repo, urn=urn, lifecycle_state=lifecycle_state)
 
     @mcp.tool()
     def get_svc(id: str) -> dict:
@@ -64,9 +75,9 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_mvrs() -> list[dict]:
-        """List all MVRs with id and passed status."""
-        return get_mvrs_list(repo)
+    def list_mvrs(urn: str | None = None, passed: bool | None = None) -> list[dict]:
+        """List MVRs with id and passed status. Filter by urn and/or passed (True|False)."""
+        return get_mvrs_list(repo, urn=urn, passed=passed)
 
     @mcp.tool()
     def get_mvr(id: str) -> dict:
@@ -90,9 +101,9 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_annotations() -> list[dict]:
-        """List all implementation annotations (@Requirements) found in source code."""
-        impl_annotations = repo.get_annotations_impls()
+    def list_annotations(urn: str | None = None) -> list[dict]:
+        """List implementation annotations (@Requirements) found in source code. Optionally filter by URN."""
+        impl_annotations = repo.get_annotations_impls(urn=urn)
         result = []
         for urn_id, ann_list in impl_annotations.items():
             for ann in ann_list:
@@ -104,6 +115,19 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
                         "fqn": ann.fully_qualified_name,
                     }
                 )
+        return result
+
+    @mcp.tool()
+    def list_urns() -> list[dict]:
+        """List all URNs in the project graph with variant, title, url, location, and file paths."""
+        return get_urns_list(repo, urn_source_paths)
+
+    @mcp.tool()
+    def get_urn_details(urn: str) -> dict:
+        """Get details for a URN: variant, title, location, file paths, and entity counts."""
+        result = _get_urn_details(urn, repo, urn_source_paths)
+        if result is None:
+            raise ValueError(f"URN {urn!r} not found")
         return result
 
     try:

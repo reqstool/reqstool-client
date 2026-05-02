@@ -159,6 +159,33 @@ def get_mvr_details(
     }
 
 
+def get_urn_details(
+    urn: str,
+    repo: RequirementsRepository,
+    urn_source_paths: dict[str, dict[str, str]] | None = None,
+) -> dict | None:
+    info = repo.get_urn_info(urn)
+    if info is None:
+        return None
+    reqs = repo.get_all_requirements(urn=urn)
+    svcs = repo.get_all_svcs(urn=urn)
+    mvrs = repo.get_all_mvrs(urn=urn)
+    impl_anns = repo.get_annotations_impls(urn=urn)
+    test_anns = repo.get_annotations_tests(urn=urn)
+    paths = urn_source_paths or {}
+    return {
+        **info,
+        "file_paths": paths.get(urn, {}),
+        "counts": {
+            "requirements": len(reqs),
+            "svcs": len(svcs),
+            "mvrs": len(mvrs),
+            "impl_annotations": sum(len(v) for v in impl_anns.values()),
+            "test_annotations": sum(len(v) for v in test_anns.values()),
+        },
+    }
+
+
 def get_requirement_status(raw_id: str, repo: RequirementsRepository) -> dict | None:
     """Lightweight status check — avoids the full detail lookup."""
     initial_urn = repo.get_initial_urn()
@@ -185,3 +212,29 @@ def get_requirement_status(raw_id: str, repo: RequirementsRepository) -> dict | 
         "test_summary": test_summary,
         "meets_requirements": req.implementation.value != "not_implemented" and all_passing,
     }
+
+
+def get_requirements_status_all(repo: RequirementsRepository, urn: str | None = None) -> list[dict]:
+    """Batch status for all requirements. Optionally scoped to a URN."""
+    reqs = repo.get_all_requirements(urn=urn)
+    result = []
+    for req in reqs.values():
+        svc_urn_ids = repo.get_svcs_for_req(req.id)
+        test_summary = {"passed": 0, "failed": 0, "skipped": 0, "missing": 0}
+        for svc_uid in svc_urn_ids:
+            for t in repo.get_test_results_for_svc(svc_uid):
+                key = t.status.value
+                if key in test_summary:
+                    test_summary[key] += 1
+        all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
+        result.append(
+            {
+                "id": req.id.id,
+                "urn": req.id.urn,
+                "lifecycle_state": req.lifecycle.state.value,
+                "implementation": req.implementation.value,
+                "test_summary": test_summary,
+                "meets_requirements": req.implementation.value != "not_implemented" and all_passing,
+            }
+        )
+    return result

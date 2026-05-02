@@ -7,6 +7,7 @@ from lsprotocol import types
 
 from reqstool.lsp.annotation_parser import annotation_at_position
 from reqstool.lsp.project_state import ProjectState
+from reqstool.lsp.workspace_manager import WorkspaceManager
 
 # Patterns matching diagnostic messages from diagnostics.py
 _UNKNOWN_REQ_RE = re.compile(r"Unknown requirement: (.+)")
@@ -21,10 +22,11 @@ def handle_code_actions(
     text: str,
     language_id: str,
     project: ProjectState | None,
+    workspace_manager: WorkspaceManager | None = None,
 ) -> list[types.CodeAction]:
     only = set(context.only) if context.only else None
     actions = _actions_from_diagnostics(uri, context.diagnostics, only)
-    actions += _source_action(uri, range_, text, language_id, project, only)
+    actions += _source_action(uri, range_, text, language_id, project, only, workspace_manager)
     return actions
 
 
@@ -69,6 +71,7 @@ def _source_action(
     language_id: str,
     project: ProjectState | None,
     only: set | None,
+    workspace_manager: WorkspaceManager | None = None,
 ) -> list[types.CodeAction]:
     if project is None or not project.ready:
         return []
@@ -77,8 +80,9 @@ def _source_action(
     match = annotation_at_position(text, range_.start.line, range_.start.character, language_id)
     if match is None:
         return []
+    p = workspace_manager.resolve_project(match.raw_id, project) if workspace_manager else project
     item_type = "requirement" if match.kind == "Requirements" else "svc"
-    known = project.get_requirement(match.raw_id) if match.kind == "Requirements" else project.get_svc(match.raw_id)
+    known = p.get_requirement(match.raw_id) if match.kind == "Requirements" else p.get_svc(match.raw_id)
     if known is None:
         return []
     return [_make_action("Open Details", match.raw_id, uri, item_type, types.CodeActionKind.Source)]

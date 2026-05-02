@@ -51,15 +51,16 @@ def _symbols_for_requirements(
     for idx, req in enumerate(sorted_reqs):
         start = req.source_line if req.source_line is not None else 0
         end = _end_line(sorted_reqs, idx, line_count)
+        sel = _selection_range(req, start)
         name = f"{req.id.id} — {req.title}" if req.title else req.id.id
         children = []
-        for svc in project.get_svcs_for_req(req.id.id):
+        for svc in project.get_svcs_for_req(str(req.id)):
             children.append(
                 types.DocumentSymbol(
                     name=f"→ {svc.id.id} — {svc.title}",
                     kind=types.SymbolKind.Key,
                     range=_range(start, end),
-                    selection_range=_range(start, start),
+                    selection_range=sel,
                     detail=svc.verification.value,
                 )
             )
@@ -68,7 +69,7 @@ def _symbols_for_requirements(
                 name=name,
                 kind=types.SymbolKind.Key,
                 range=_range(start, end),
-                selection_range=_range(start, start),
+                selection_range=sel,
                 detail=req.significance.value,
                 children=children if children else None,
             )
@@ -86,6 +87,7 @@ def _symbols_for_svcs(
     for idx, svc in enumerate(sorted_svcs):
         start = svc.source_line if svc.source_line is not None else 0
         end = _end_line(sorted_svcs, idx, line_count)
+        sel = _selection_range(svc, start)
         name = f"{svc.id.id} — {svc.title}" if svc.title else svc.id.id
         children = []
         for req_urn_id in svc.requirement_ids:
@@ -94,17 +96,17 @@ def _symbols_for_svcs(
                     name=f"← {req_urn_id.id}",
                     kind=types.SymbolKind.Key,
                     range=_range(start, end),
-                    selection_range=_range(start, start),
+                    selection_range=sel,
                 )
             )
-        for mvr in project.get_mvrs_for_svc(svc.id.id):
+        for mvr in project.get_mvrs_for_svc(str(svc.id)):
             result = "pass" if mvr.passed else "fail"
             children.append(
                 types.DocumentSymbol(
                     name=f"→ MVR: {result}",
                     kind=types.SymbolKind.Key,
                     range=_range(start, end),
-                    selection_range=_range(start, start),
+                    selection_range=sel,
                 )
             )
         symbols.append(
@@ -112,7 +114,7 @@ def _symbols_for_svcs(
                 name=name,
                 kind=types.SymbolKind.Key,
                 range=_range(start, end),
-                selection_range=_range(start, start),
+                selection_range=sel,
                 detail=svc.verification.value,
                 children=children if children else None,
             )
@@ -129,6 +131,7 @@ def _symbols_for_mvrs(
     for idx, mvr in enumerate(sorted_mvrs):
         start = mvr.source_line if mvr.source_line is not None else 0
         end = _end_line(sorted_mvrs, idx, line_count)
+        sel = _selection_range(mvr, start)
         result = "pass" if mvr.passed else "fail"
         name = f"{mvr.id.id} — {result}"
         symbols.append(
@@ -136,7 +139,7 @@ def _symbols_for_mvrs(
                 name=name,
                 kind=types.SymbolKind.Key,
                 range=_range(start, end),
-                selection_range=_range(start, start),
+                selection_range=sel,
                 detail="",
             )
         )
@@ -159,6 +162,24 @@ def _range(start_line: int, end_line: int) -> types.Range:
     return types.Range(
         start=types.Position(line=start_line, character=0),
         end=types.Position(line=end_line, character=0),
+    )
+
+
+def _selection_range(item, fallback_line: int) -> types.Range:
+    """Range covering the `id:` value, used by VS Code as the symbol's clickable name.
+
+    VS Code drops symbols whose selection_range is zero-width, so fall back to a
+    1-character span at column 0 if the id span wasn't captured.
+    """
+    if item.source_col_start is not None and item.source_col_end is not None:
+        line = item.source_line if item.source_line is not None else fallback_line
+        return types.Range(
+            start=types.Position(line=line, character=item.source_col_start),
+            end=types.Position(line=line, character=item.source_col_end),
+        )
+    return types.Range(
+        start=types.Position(line=fallback_line, character=0),
+        end=types.Position(line=fallback_line, character=1),
     )
 
 

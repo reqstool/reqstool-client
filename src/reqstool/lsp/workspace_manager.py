@@ -5,6 +5,7 @@ import logging
 import os
 from urllib.parse import unquote, urlparse
 
+from reqstool.common.models.urn_id import UrnId
 from reqstool.lsp.project_state import ProjectState
 from reqstool.lsp.root_discovery import discover_root_projects
 
@@ -92,6 +93,25 @@ class WorkspaceManager:
                 return max(projects, key=lambda p: os.path.normpath(p.reqstool_path).count(os.sep))
 
         return None
+
+    def project_for_urn(self, urn: str) -> ProjectState | None:
+        """Return the ready project whose initial_urn matches `urn`, or None."""
+        for project in self.all_projects():
+            if project.ready and project.get_initial_urn() == urn:
+                return project
+        return None
+
+    def resolve_project(self, raw_id: str, file_project: ProjectState | None) -> ProjectState | None:
+        """Route a raw_id (bare or urn-qualified) to the project whose initial_urn matches.
+
+        Converts raw_id to a UrnId using file_project's initial_urn as fallback, then looks
+        up the project that owns that urn. Falls back to file_project if no match is found.
+        """
+        if file_project is None:
+            return None
+        initial_urn = file_project.get_initial_urn() or ""
+        urn_id = UrnId.assure_urn_id(initial_urn, raw_id)
+        return self.project_for_urn(urn_id.urn) or file_project
 
     def all_projects(self) -> list[ProjectState]:
         result = []

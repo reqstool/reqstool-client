@@ -2,6 +2,7 @@
 
 
 import logging
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
@@ -10,8 +11,8 @@ from reqstool.lsp.features.code_actions import handle_code_actions
 from reqstool.lsp.features.codelens import handle_code_lens
 from reqstool.lsp.features.completion import handle_completion
 from reqstool.lsp.features.definition import handle_definition
-from reqstool.lsp.features.details import get_mvr_details, get_requirement_details, get_svc_details
-from reqstool.lsp.features.list import get_list
+from reqstool.lsp.features.details import get_mvr_details, get_requirement_details, get_svc_details, get_urn_details
+from reqstool.lsp.features.list import get_list, get_urns_list
 from reqstool.lsp.features.diagnostics import compute_diagnostics
 from reqstool.lsp.features.document_symbols import handle_document_symbols
 from reqstool.lsp.features.hover import handle_hover
@@ -25,7 +26,10 @@ from reqstool.lsp.workspace_manager import WorkspaceManager
 logger = logging.getLogger(__name__)
 
 SERVER_NAME = "reqstool"
-SERVER_VERSION = "0.1.0"
+try:
+    SERVER_VERSION = _pkg_version("reqstool")
+except PackageNotFoundError:
+    SERVER_VERSION = "0.0.0+unknown"
 
 
 class ReqstoolLanguageServer(LanguageServer):
@@ -138,6 +142,7 @@ def on_hover(ls: ReqstoolLanguageServer, params: types.HoverParams) -> types.Hov
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -193,6 +198,7 @@ _DETAILS_DISPATCH = {
     "requirement": get_requirement_details,
     "svc": get_svc_details,
     "mvr": get_mvr_details,
+    "urn": get_urn_details,
 }
 
 
@@ -221,10 +227,19 @@ def on_details(ls: ReqstoolLanguageServer, params) -> dict | None:
 
 @server.feature("reqstool/list")
 def on_list(ls: ReqstoolLanguageServer, params) -> dict | None:
+    urn = _get(params, "urn") or None
     for project in ls.workspace_manager.all_projects():
         if project.ready:
-            return get_list(project)
+            return get_list(project, urn=urn)
     return None
+
+
+@server.feature("reqstool/list-urns")
+def on_list_urns(ls: ReqstoolLanguageServer, params) -> list[dict]:
+    for project in ls.workspace_manager.all_projects():
+        if project.ready:
+            return get_urns_list(project)
+    return []
 
 
 @server.feature(types.TEXT_DOCUMENT_CODE_LENS, types.CodeLensOptions(resolve_provider=False))
@@ -236,6 +251,7 @@ def on_code_lens(ls: ReqstoolLanguageServer, params: types.CodeLensParams) -> li
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -249,6 +265,7 @@ def on_inlay_hint(ls: ReqstoolLanguageServer, params: types.InlayHintParams) -> 
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -295,6 +312,7 @@ def on_semantic_tokens(ls: ReqstoolLanguageServer, params: types.SemanticTokensP
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -312,6 +330,7 @@ def on_code_action(ls: ReqstoolLanguageServer, params: types.CodeActionParams) -
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
 
 
@@ -362,6 +381,7 @@ def _publish_diagnostics_for_document(ls: ReqstoolLanguageServer, uri: str) -> N
         text=document.source,
         language_id=document.language_id or "",
         project=project,
+        workspace_manager=ls.workspace_manager,
     )
     ls.text_document_publish_diagnostics(types.PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics))
 

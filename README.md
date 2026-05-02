@@ -44,6 +44,12 @@ reqstool [-h] {report,export,status} {local,git,maven,pypi} ...
 
 Use `-h/--help` for more information about each command and location.
 
+## Editor and AI Integration
+
+- **LSP** — language server for IDE features: hover, completion, go-to-definition, diagnostics, and outline view (`reqstool lsp`)
+- **MCP** — tool server for AI agents (Claude, Copilot, etc.) to query requirements, SVCs, and traceability status (`reqstool mcp`)
+- **reqstool-ai** — marketplace and plugins for reqstool and reqstool+OpenSpec integrations ([github.com/reqstool/reqstool-ai](https://github.com/reqstool/reqstool-ai))
+
 ## Documentation
 
 Full documentation, including getting started guides for Java, Python, and TypeScript, can be found at [reqstool.github.io](https://reqstool.github.io).

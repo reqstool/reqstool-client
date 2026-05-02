@@ -3,3 +3,4 @@
 * xref:usage.adoc[Usage]
 * xref:how_it_works.adoc[How it Works]
 * xref:lsp.adoc[LSP Server]
+* xref:mcp.adoc[MCP Server]

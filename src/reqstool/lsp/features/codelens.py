@@ -6,6 +6,7 @@ from lsprotocol import types
 from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.lsp.annotation_parser import find_all_annotations
 from reqstool.lsp.project_state import ProjectState
+from reqstool.lsp.workspace_manager import WorkspaceManager
 
 
 def handle_code_lens(
@@ -13,6 +14,7 @@ def handle_code_lens(
     text: str,
     language_id: str,
     project: ProjectState | None,
+    workspace_manager: WorkspaceManager | None = None,
 ) -> list[types.CodeLens]:
     if project is None or not project.ready:
         return []
@@ -38,10 +40,10 @@ def handle_code_lens(
         )
 
         if kind == "Requirements":
-            label = _req_label(ids, project)
+            label = _req_label(ids, project, workspace_manager)
             item_type = "requirement"
         else:
-            label = _svc_label(ids, project)
+            label = _svc_label(ids, project, workspace_manager)
             item_type = "svc"
 
         result.append(
@@ -66,15 +68,17 @@ def _lifecycle_badge(state: LIFECYCLESTATE) -> str:
     return ""
 
 
-def _req_label(ids: list[str], project: ProjectState) -> str:
+def _req_label(ids: list[str], project: ProjectState, workspace_manager: WorkspaceManager | None = None) -> str:
     all_svcs = []
     for raw_id in ids:
-        all_svcs.extend(project.get_svcs_for_req(raw_id))
+        p = workspace_manager.resolve_project(raw_id, project) if workspace_manager else project
+        all_svcs.extend(p.get_svcs_for_req(raw_id))
 
     pass_count = 0
     fail_count = 0
     for svc in all_svcs:
-        for mvr in project.get_mvrs_for_svc(svc.id.id):
+        svc_project = (workspace_manager.project_for_urn(svc.id.urn) or project) if workspace_manager else project
+        for mvr in svc_project.get_mvrs_for_svc(str(svc.id)):
             if mvr.passed:
                 pass_count += 1
             else:
@@ -89,25 +93,29 @@ def _req_label(ids: list[str], project: ProjectState) -> str:
 
     badges = []
     for raw_id in ids:
-        req = project.get_requirement(raw_id)
+        p = workspace_manager.resolve_project(raw_id, project) if workspace_manager else project
+        req = p.get_requirement(raw_id)
         badge = _lifecycle_badge(req.lifecycle.state) if req else ""
         badges.append(f"{badge}{raw_id}")
     id_str = ", ".join(badges)
     return f"{id_str}: {counts}"
 
 
-def _svc_label(ids: list[str], project: ProjectState) -> str:
+def _svc_label(ids: list[str], project: ProjectState, workspace_manager: WorkspaceManager | None = None) -> str:
     id_parts = []
     for raw_id in ids:
-        svc = project.get_svc(raw_id)
+        p = workspace_manager.resolve_project(raw_id, project) if workspace_manager else project
+        svc = p.get_svc(raw_id)
         badge = _lifecycle_badge(svc.lifecycle.state) if svc else ""
         id_parts.append(f"{badge}{raw_id}")
     id_str = ", ".join(id_parts)
 
     if len(ids) == 1:
-        svc = project.get_svc(ids[0])
+        p = workspace_manager.resolve_project(ids[0], project) if workspace_manager else project
+        svc = p.get_svc(ids[0])
         if svc is not None:
-            mvrs = project.get_mvrs_for_svc(ids[0])
+            svc_project = (workspace_manager.project_for_urn(svc.id.urn) or project) if workspace_manager else project
+            mvrs = svc_project.get_mvrs_for_svc(str(svc.id))
             if mvrs:
                 result = "pass" if all(m.passed for m in mvrs) else "fail"
                 return f"{id_str}: {svc.verification.value} · {result}"
