@@ -34,12 +34,14 @@ def _collect_requirements(results, project, initial_urn, query_lower):
         if query_lower and query_lower not in req_id.lower() and query_lower not in req.title.lower():
             continue
         yaml_path = project.get_yaml_path(req.id.urn or initial_urn, "requirements")
-        results.append(types.WorkspaceSymbol(
-            name=f"{req.id} — {req.title}",
-            kind=types.SymbolKind.Key,
-            location=_make_location(yaml_path, req_id),
-            data={"id": str(req.id), "type": "requirement"},
-        ))
+        results.append(
+            types.WorkspaceSymbol(
+                name=f"{req.id} — {req.title}",
+                kind=types.SymbolKind.Key,
+                location=_make_location(yaml_path, req_id),
+                data={"id": str(req.id), "type": "requirement"},
+            )
+        )
 
 
 def _collect_svcs(results, project, initial_urn, query_lower):
@@ -50,12 +52,14 @@ def _collect_svcs(results, project, initial_urn, query_lower):
         if query_lower and query_lower not in svc_id.lower() and query_lower not in svc.title.lower():
             continue
         yaml_path = project.get_yaml_path(svc.id.urn or initial_urn, "svcs")
-        results.append(types.WorkspaceSymbol(
-            name=f"{svc.id} — {svc.title}",
-            kind=types.SymbolKind.Key,
-            location=_make_location(yaml_path, svc_id),
-            data={"id": str(svc.id), "type": "svc"},
-        ))
+        results.append(
+            types.WorkspaceSymbol(
+                name=f"{svc.id} — {svc.title}",
+                kind=types.SymbolKind.Key,
+                location=_make_location(yaml_path, svc_id),
+                data={"id": str(svc.id), "type": "svc"},
+            )
+        )
 
 
 def _collect_mvrs(results, project, initial_urn, query_lower):
@@ -67,12 +71,14 @@ def _collect_mvrs(results, project, initial_urn, query_lower):
         if query_lower and query_lower not in mvr_id.lower() and query_lower not in status:
             continue
         yaml_path = project.get_yaml_path(mvr.id.urn or initial_urn, "mvrs")
-        results.append(types.WorkspaceSymbol(
-            name=f"{mvr.id} — {status}",
-            kind=types.SymbolKind.Key,
-            location=_make_location(yaml_path, mvr_id),
-            data={"id": str(mvr.id), "type": "mvr"},
-        ))
+        results.append(
+            types.WorkspaceSymbol(
+                name=f"{mvr.id} — {status}",
+                kind=types.SymbolKind.Key,
+                location=_make_location(yaml_path, mvr_id),
+                data={"id": str(mvr.id), "type": "mvr"},
+            )
+        )
 
 
 def _make_location(yaml_path: str | None, bare_id: str) -> types.Location:
