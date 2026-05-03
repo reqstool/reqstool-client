@@ -8,7 +8,12 @@ import sys
 from typing import Optional, TextIO, Union
 
 if __package__ is None or len(__package__) == 0:
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    _script_dir = os.path.abspath(os.path.dirname(__file__))
+    # Remove the script directory from sys.path: Python adds it automatically, but
+    # reqstool subpackages (e.g. mcp/) would then shadow same-named third-party packages.
+    if _script_dir in sys.path:
+        sys.path.remove(_script_dir)
+    sys.path.insert(0, os.path.abspath(os.path.join(_script_dir, "..")))
 
     from reqstool.common.utils import Utils
 
