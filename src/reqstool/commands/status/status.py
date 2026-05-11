@@ -214,21 +214,21 @@ def _summarize_statistics(ts: TotalStats) -> str:
 
     CODE, NA, CONFIGURATION, PLATFORM, FRAMEWORK, IMPLEMENTATIONS = __colorize_headers()
 
-    # In Code group: 4 stats (total, implemented, verified, not verified)
+    annotated_not_verified = ts.with_implementation - code_completed
+    missing_annotation = code_reqs - ts.with_implementation
+
+    # In Code group: 5 stats (total, verified, annotated not verified, missing annotation)
     code_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=CODE, title_justify="center")
     code_table.add_column("Total", justify="center")
-    code_table.add_column("Implemented", justify="center")
     code_table.add_column("Verified", justify="center")
-    code_table.add_column("Not Verified", justify="center")
+    code_table.add_column("Annotated, not verified", justify="center")
+    code_table.add_column("Missing annotation", justify="center")
     code_table.add_row(
         str(code_reqs) + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
-        str(ts.with_implementation) + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
         str(code_completed) + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
-        str(code_reqs - code_completed)
-        + __numbers_as_percentage(
-            numerator=(code_reqs - code_completed),
-            denominator=code_reqs,
-        ),
+        str(annotated_not_verified)
+        + __numbers_as_percentage(numerator=annotated_not_verified, denominator=code_reqs),
+        str(missing_annotation) + __numbers_as_percentage(numerator=missing_annotation, denominator=code_reqs),
     )
 
     def _non_code_table(title: Text, total: int, completed: int) -> Table:
