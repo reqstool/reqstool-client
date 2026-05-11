@@ -81,6 +81,13 @@
                     },
                     "description": "Array of Maven artifacts"
                 },
+                "npm": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/npm"
+                    },
+                    "description": "Array of npm packages"
+                },
                 "pypi": {
                     "type": "array",
                     "items": {
@@ -157,6 +164,33 @@
             "required": [
                 "group_id",
                 "artifact_id",
+                "version"
+            ]
+        },
+        "npm": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "env_token": {
+                    "type": "string",
+                    "description": "Token to authenticate. E.g. NPM_TOKEN or empty."
+                },
+                "url": {
+                    "$ref": "#/$defs/url",
+                    "description": "URL to npm-compatible registry (default: https://registry.npmjs.org)"
+                },
+                "package": {
+                    "type": "string",
+                    "description": "npm package name (e.g. @scope/package-reqstool)"
+                },
+                "version": {
+                    "type": "string",
+                    "pattern": "^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+).*$",
+                    "description": "Version of the npm package"
+                }
+            },
+            "required": [
+                "package",
                 "version"
             ]
         },

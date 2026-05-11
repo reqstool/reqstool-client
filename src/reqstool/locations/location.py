@@ -11,6 +11,7 @@ class LOCATIONTYPES(Enum):
     GIT = "git"
     LOCAL = "local"
     MAVEN = "maven"
+    NPM = "npm"
     PYPI = "pypi"
 
 
