@@ -6,6 +6,7 @@ from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import (
     CATEGORIES,
     IMPLEMENTATION,
+    NON_CODE_IMPLEMENTATIONS,
     SIGNIFICANCETYPES,
     RequirementData,
 )
@@ -132,7 +133,7 @@ def test_incomplete_requirement_no_implementations(db):
     assert stats.total_statistics.with_implementation == 0
 
 
-# -- Not-applicable implementation --
+# -- Non-code implementation types --
 
 
 def test_not_applicable_implementation(db):
@@ -149,6 +150,54 @@ def test_not_applicable_implementation(db):
 
     assert stats.total_statistics.without_implementation_total == 1
     assert stats.total_statistics.without_implementation_completed == 1
+
+
+@pytest.mark.parametrize(
+    "impl_type, total_attr, completed_attr",
+    [
+        (IMPLEMENTATION.CONFIGURATION, "configuration_total", "configuration_completed"),
+        (IMPLEMENTATION.PLATFORM, "platform_total", "platform_completed"),
+        (IMPLEMENTATION.FRAMEWORK, "framework_total", "framework_completed"),
+    ],
+)
+def test_non_code_implementation_type_completed(db, impl_type, total_attr, completed_attr):
+    req_id = UrnId(urn=URN, id="REQ_NC")
+    _insert_req(db, req_id=req_id, implementation=impl_type)
+    svc_id = UrnId(urn=URN, id="SVC_NC")
+    _insert_svc(db, svc_id=svc_id, req_ids=[req_id], verification=VERIFICATIONTYPES.MANUAL_TEST)
+    mvr_id = UrnId(urn=URN, id="MVR_NC")
+    _insert_mvr(db, mvr_id=mvr_id, svc_ids=[svc_id], passed=True)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+
+    assert getattr(stats.total_statistics, total_attr) == 1
+    assert getattr(stats.total_statistics, completed_attr) == 1
+    assert stats.requirement_statistics[req_id].completed is True
+
+
+@pytest.mark.parametrize("impl_type", list(NON_CODE_IMPLEMENTATIONS))
+def test_non_code_implementation_with_annotation_raises(db, impl_type):
+    req_id = UrnId(urn=URN, id="REQ_ERR")
+    _insert_req(db, req_id=req_id, implementation=impl_type)
+    db.insert_annotation_impl(req_id, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    with pytest.raises(TypeError, match="should not have an implementation"):
+        StatisticsService(repo)
+
+
+@pytest.mark.parametrize("impl_type", list(NON_CODE_IMPLEMENTATIONS))
+def test_non_code_implementation_type_in_row(db, impl_type):
+    req_id = UrnId(urn=URN, id="REQ_TYPE")
+    _insert_req(db, req_id=req_id, implementation=impl_type)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+    assert stats.requirement_statistics[req_id].implementation_type is impl_type
 
 
 # -- MVR stats --

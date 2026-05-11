@@ -34,6 +34,8 @@ def test_export_schema_is_valid_json_schema(export_schema):
 
 # ── Status schema: positive cases ─────────────────────────────────────────────
 
+_EMPTY_NON_CODE = {"total": 0, "completed": 0}
+
 MINIMAL_STATUS = {
     "metadata": {"initial_urn": "ms-001", "filtered": False},
     "requirements": {},
@@ -42,7 +44,10 @@ MINIMAL_STATUS = {
             "total": 0,
             "completed": 0,
             "with_implementation": 0,
-            "without_implementation": {"total": 0, "completed": 0},
+            "without_implementation": _EMPTY_NON_CODE,
+            "configuration": _EMPTY_NON_CODE,
+            "platform": _EMPTY_NON_CODE,
+            "framework": _EMPTY_NON_CODE,
         },
         "svcs": {"total": 0},
         "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "missing_automated": 0, "missing_manual": 0},
@@ -96,13 +101,58 @@ FULL_STATUS = {
                 "not_applicable": False,
             },
         },
+        "ms-001:REQ_030": {
+            "completed": True,
+            "implementations": 0,
+            "implementation_type": "configuration",
+            "automated_tests": {
+                "total": 0,
+                "passed": 0,
+                "failed": 0,
+                "skipped": 0,
+                "missing": 0,
+                "not_applicable": True,
+            },
+            "manual_tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "missing": 0, "not_applicable": True},
+        },
+        "ms-001:REQ_040": {
+            "completed": True,
+            "implementations": 0,
+            "implementation_type": "platform",
+            "automated_tests": {
+                "total": 0,
+                "passed": 0,
+                "failed": 0,
+                "skipped": 0,
+                "missing": 0,
+                "not_applicable": True,
+            },
+            "manual_tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "missing": 0, "not_applicable": True},
+        },
+        "ms-001:REQ_050": {
+            "completed": True,
+            "implementations": 0,
+            "implementation_type": "framework",
+            "automated_tests": {
+                "total": 0,
+                "passed": 0,
+                "failed": 0,
+                "skipped": 0,
+                "missing": 0,
+                "not_applicable": True,
+            },
+            "manual_tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "missing": 0, "not_applicable": True},
+        },
     },
     "totals": {
         "requirements": {
-            "total": 2,
-            "completed": 1,
+            "total": 5,
+            "completed": 4,
             "with_implementation": 1,
             "without_implementation": {"total": 1, "completed": 0},
+            "configuration": {"total": 1, "completed": 1},
+            "platform": {"total": 1, "completed": 1},
+            "framework": {"total": 1, "completed": 1},
         },
         "svcs": {"total": 4},
         "tests": {"total": 4, "passed": 4, "failed": 0, "skipped": 0, "missing_automated": 0, "missing_manual": 1},

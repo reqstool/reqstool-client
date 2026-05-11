@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS requirements (
     significance TEXT NOT NULL CHECK (significance IN ('shall', 'should', 'may')),
     lifecycle_state TEXT NOT NULL CHECK (lifecycle_state IN ('draft', 'effective', 'deprecated', 'obsolete')),
     lifecycle_reason TEXT,
-    implementation TEXT NOT NULL CHECK (implementation IN ('in-code', 'N/A')),
+    implementation TEXT NOT NULL CHECK (implementation IN ('in-code', 'configuration', 'platform', 'framework', 'N/A')),
     description TEXT NOT NULL,
     rationale TEXT,
     revision TEXT NOT NULL,

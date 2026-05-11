@@ -2,6 +2,8 @@
 
 from rich.console import Console
 
+import pytest
+
 from reqstool.commands.status.status import _build_table, _format_test_cell, _summarize_statistics
 from reqstool.models.requirements import IMPLEMENTATION
 from reqstool.services.statistics_service import TestStats, TotalStats
@@ -224,3 +226,36 @@ def test_summarize_statistics_contains_percentage_string():
         )
     )
     assert "%" in result
+
+
+@pytest.mark.parametrize(
+    "impl_type, expected_label",
+    [
+        (IMPLEMENTATION.NOT_APPLICABLE, "N/A"),
+        (IMPLEMENTATION.CONFIGURATION, "config"),
+        (IMPLEMENTATION.PLATFORM, "platform"),
+        (IMPLEMENTATION.FRAMEWORK, "framework"),
+    ],
+)
+def test_build_table_non_code_type_shows_dim_label(impl_type, expected_label):
+    """Non-code implementation types show a dim label, not a count."""
+    row = _build_table(
+        req_id="REQ_001",
+        urn="ms-001",
+        impls=0,
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
+        completed=True,
+        implementation=impl_type,
+    )
+    assert row[2].plain == expected_label
+    assert row[2].style == "dim"
+
+
+def test_summarize_statistics_shows_all_non_code_section_headers():
+    """All four non-code section headers appear in the summary output."""
+    result = _summarize_statistics(TotalStats())
+    assert "N/A" in result
+    assert "Configuration" in result
+    assert "Platform" in result
+    assert "Framework" in result
