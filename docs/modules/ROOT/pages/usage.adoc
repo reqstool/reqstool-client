@@ -63,9 +63,17 @@ The requirements table shows for each requirement:
 
 * *URN* -- the source system or microservice
 * *ID* -- the requirement identifier
-* *Implementation* -- whether the requirement has a matching `@Requirements` annotation in code (`Implemented` or `Missing`)
+* *Implementation* -- how the requirement is fulfilled, determined by the `implementation` field in `requirements.yml`:
+** a number (green/red) -- `in-code` (default): count of `@Requirements` annotations found; red means none found
+** `config` -- `configuration`: fulfilled by application config (YAML properties, env vars); no annotation required
+** `platform` -- `platform`: fulfilled by infrastructure or platform layer (Kubernetes, load balancing, network policies); no annotation required
+** `framework` -- `framework`: fulfilled by framework auto-configuration (Spring Boot starters, OTel agents); no annotation required
+** `N/A` -- not applicable, intentionally deferred, or out of scope; no annotation required
 * *Automated Tests* -- test results from JUnit XML: T=total SVCs, P=passed, F=failed, S=skipped, M=missing (no test found for SVC)
 * *Manual Tests* -- manual verification results: T=total, P=passed, F=failed, M=missing
+
+The summary panels below the table break down requirements by implementation type:
+`In Code`, `N/A`, `Configuration`, `Platform`, and `Framework`, each showing total, verified, and not-verified counts.
 
 The exit code equals the number of unmet requirements, making it suitable for CI/CD gates (`exit 0` = all requirements met).
 
