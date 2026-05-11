@@ -2,6 +2,7 @@
 
 
 from reqstool.common.models.urn_id import UrnId
+from reqstool.models.requirements import IMPLEMENTATION
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
@@ -202,15 +203,18 @@ def get_requirement_status(raw_id: str, repo: RequirementsRepository) -> dict | 
             if key in test_summary:
                 test_summary[key] += 1
 
-    # skipped tests are not counted as failures; a requirement only "meets" if
-    # it has at least one implementation and no failed or missing test results
     all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
+    if req.implementation == IMPLEMENTATION.IN_CODE:
+        has_annotation = len(repo.get_annotations_impls_for_req(req.id)) > 0
+        meets = has_annotation and all_passing
+    else:
+        meets = all_passing
     return {
         "id": req.id.id,
         "lifecycle_state": req.lifecycle.state.value,
         "implementation": req.implementation.value,
         "test_summary": test_summary,
-        "meets_requirements": req.implementation.value != "not_implemented" and all_passing,
+        "meets_requirements": meets,
     }
 
 
@@ -227,6 +231,11 @@ def get_requirements_status_all(repo: RequirementsRepository, urn: str | None = 
                 if key in test_summary:
                     test_summary[key] += 1
         all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
+        if req.implementation == IMPLEMENTATION.IN_CODE:
+            has_annotation = len(repo.get_annotations_impls_for_req(req.id)) > 0
+            meets = has_annotation and all_passing
+        else:
+            meets = all_passing
         result.append(
             {
                 "id": req.id.id,
@@ -234,7 +243,7 @@ def get_requirements_status_all(repo: RequirementsRepository, urn: str | None = 
                 "lifecycle_state": req.lifecycle.state.value,
                 "implementation": req.implementation.value,
                 "test_summary": test_summary,
-                "meets_requirements": req.implementation.value != "not_implemented" and all_passing,
+                "meets_requirements": meets,
             }
         )
     return result
