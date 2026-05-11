@@ -1,13 +1,26 @@
 
+{% set non_code_total = data.without_implementation_total + data.configuration_total + data.platform_total + data.framework_total %}
+{% set non_code_completed = data.without_implementation_completed + data.configuration_completed + data.platform_completed + data.framework_completed %}
+{% set code_reqs = data.total_requirements - non_code_total %}
+{% set code_completed = data.completed_requirements - non_code_completed %}
 
 
 ## TOTAL STATISTICS
 
-**Total Requirements: {{data.total_requirements}}**
+**In Code Requirements: {{code_reqs}}**
 
-| Implemented and Verified | Implemented | Not Implemented |
+| Verified | Annotated, not verified | Missing annotation |
 |---|---|---|
-| {{data.completed_requirements}} | {{data.with_implementation - data.completed_requirements}} | {{data.total_requirements - data.with_implementation}} |
+| {{code_completed}} | {{data.with_implementation - code_completed}} | {{code_reqs - data.with_implementation}} |
+
+**Non-code Requirements: {{non_code_total}}**
+
+| Type | Total | Verified | Not Verified |
+|---|---|---|---|
+| N/A | {{data.without_implementation_total}} | {{data.without_implementation_completed}} | {{data.without_implementation_total - data.without_implementation_completed}} |
+| Configuration | {{data.configuration_total}} | {{data.configuration_completed}} | {{data.configuration_total - data.configuration_completed}} |
+| Platform | {{data.platform_total}} | {{data.platform_completed}} | {{data.platform_total - data.platform_completed}} |
+| Framework | {{data.framework_total}} | {{data.framework_completed}} | {{data.framework_total - data.framework_completed}} |
 
 **Total Tests / SVCs: ( {{data.total_tests}} / {{data.total_svcs}} )**
 
