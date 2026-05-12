@@ -60,6 +60,18 @@ class TotalStats:
     framework_total: int = 0
     framework_completed: int = 0
     total_svcs: int = 0
+    total_tests: int = 0
+    passed_tests: int = 0
+    failed_tests: int = 0
+    skipped_tests: int = 0
+    missing_automated_tests: int = 0
+    missing_manual_tests: int = 0
+    total_manual_tests: int = 0
+    total_annotated_tests: int = 0
+    passed_manual_tests: int = 0
+    failed_manual_tests: int = 0
+    passed_automatic_tests: int = 0
+    failed_automatic_tests: int = 0
 
     @property
     def non_code_total(self) -> int:
@@ -81,19 +93,6 @@ class TotalStats:
     @property
     def code_completed(self) -> int:
         return self.completed_requirements - self.non_code_completed
-
-    total_tests: int = 0
-    passed_tests: int = 0
-    failed_tests: int = 0
-    skipped_tests: int = 0
-    missing_automated_tests: int = 0
-    missing_manual_tests: int = 0
-    total_manual_tests: int = 0
-    total_annotated_tests: int = 0
-    passed_manual_tests: int = 0
-    failed_manual_tests: int = 0
-    passed_automatic_tests: int = 0
-    failed_automatic_tests: int = 0
 
 
 @Requirements("REQ_028")

@@ -226,22 +226,23 @@ def _summarize_statistics(ts: TotalStats) -> str:
         str(missing_annotation) + __numbers_as_percentage(numerator=missing_annotation, denominator=ts.code_reqs),
     )
 
-    def _non_code_table(title: Text, total: int, completed: int) -> Table:
+    def _non_code_table(title: Text, total: int, completed: int, overall_total: int) -> Table:
         t = Table(box=box.DOUBLE_EDGE, show_header=True, title=title, title_justify="center")
         t.add_column("Total", justify="center")
         t.add_column("Verified", justify="center")
         t.add_column("Not Verified", justify="center")
         t.add_row(
-            str(total) + __numbers_as_percentage(numerator=total, denominator=ts.total_requirements),
+            str(total) + __numbers_as_percentage(numerator=total, denominator=overall_total),
             str(completed) + __numbers_as_percentage(numerator=completed, denominator=total),
             str(total - completed) + __numbers_as_percentage(numerator=(total - completed), denominator=total),
         )
         return t
 
-    na_table = _non_code_table(NA, ts.without_implementation_total, ts.without_implementation_completed)
-    config_table = _non_code_table(CONFIGURATION, ts.configuration_total, ts.configuration_completed)
-    platform_table = _non_code_table(PLATFORM, ts.platform_total, ts.platform_completed)
-    framework_table = _non_code_table(FRAMEWORK, ts.framework_total, ts.framework_completed)
+    overall = ts.total_requirements
+    na_table = _non_code_table(NA, ts.without_implementation_total, ts.without_implementation_completed, overall)
+    config_table = _non_code_table(CONFIGURATION, ts.configuration_total, ts.configuration_completed, overall)
+    platform_table = _non_code_table(PLATFORM, ts.platform_total, ts.platform_completed, overall)
+    framework_table = _non_code_table(FRAMEWORK, ts.framework_total, ts.framework_completed, overall)
 
     tests_table = Table(
         box=box.DOUBLE_EDGE, show_header=True, title=f"Total Tests: {ts.total_tests}", title_style="white"
