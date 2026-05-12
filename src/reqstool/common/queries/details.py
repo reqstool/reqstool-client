@@ -6,6 +6,20 @@ from reqstool.models.requirements import IMPLEMENTATION
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
+def _compute_meets(req, repo: RequirementsRepository, svc_urn_ids: list, all_passing: bool) -> bool:
+    """Return whether a requirement is considered met by this lightweight check.
+
+    Mirrors StatisticsService semantics: IN_CODE requires at least one annotation;
+    non-code types require only passing tests. Both require at least one SVC to exist,
+    matching StatisticsService's (should_have_mvrs or should_have_automated_tests) guard.
+    """
+    if not svc_urn_ids:
+        return False
+    if req.implementation == IMPLEMENTATION.IN_CODE:
+        return len(repo.get_annotations_impls_for_req(req.id)) > 0 and all_passing
+    return all_passing
+
+
 def _svc_test_summary(svc_urn_id: UrnId, repo: RequirementsRepository) -> dict:
     test_results = repo.get_test_results_for_svc(svc_urn_id)
     return {
@@ -204,17 +218,12 @@ def get_requirement_status(raw_id: str, repo: RequirementsRepository) -> dict | 
                 test_summary[key] += 1
 
     all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
-    if req.implementation == IMPLEMENTATION.IN_CODE:
-        has_annotation = len(repo.get_annotations_impls_for_req(req.id)) > 0
-        meets = has_annotation and all_passing
-    else:
-        meets = all_passing
     return {
         "id": req.id.id,
         "lifecycle_state": req.lifecycle.state.value,
         "implementation": req.implementation.value,
         "test_summary": test_summary,
-        "meets_requirements": meets,
+        "meets_requirements": _compute_meets(req, repo, svc_urn_ids, all_passing),
     }
 
 
@@ -231,11 +240,6 @@ def get_requirements_status_all(repo: RequirementsRepository, urn: str | None = 
                 if key in test_summary:
                     test_summary[key] += 1
         all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
-        if req.implementation == IMPLEMENTATION.IN_CODE:
-            has_annotation = len(repo.get_annotations_impls_for_req(req.id)) > 0
-            meets = has_annotation and all_passing
-        else:
-            meets = all_passing
         result.append(
             {
                 "id": req.id.id,
@@ -243,7 +247,7 @@ def get_requirements_status_all(repo: RequirementsRepository, urn: str | None = 
                 "lifecycle_state": req.lifecycle.state.value,
                 "implementation": req.implementation.value,
                 "test_summary": test_summary,
-                "meets_requirements": meets,
+                "meets_requirements": _compute_meets(req, repo, svc_urn_ids, all_passing),
             }
         )
     return result

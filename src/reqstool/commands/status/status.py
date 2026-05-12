@@ -14,7 +14,7 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
-from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
+from reqstool.models.requirements import IMPLEMENTATION
 from reqstool.services.statistics_service import StatisticsService, TestStats, TotalStats
 from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -23,6 +23,15 @@ from reqstool.storage.requirements_repository import RequirementsRepository
 _ORANGE = "dark_orange"
 _DIM = "dim"
 _ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+# Labels shown in the per-row Implementation cell for non-code types.
+# Also acts as the canonical membership set for non-code types in this module.
+_NON_CODE_LABELS: dict[IMPLEMENTATION, str] = {
+    IMPLEMENTATION.NOT_APPLICABLE: "N/A",
+    IMPLEMENTATION.CONFIGURATION: "configuration",
+    IMPLEMENTATION.PLATFORM: "platform",
+    IMPLEMENTATION.FRAMEWORK: "framework",
+}
 
 
 def _make_console() -> Console:
@@ -105,12 +114,6 @@ def _build_table(
         Text(urn),
         Text(req_id, style=id_style),
     ]
-    _NON_CODE_LABELS = {
-        IMPLEMENTATION.NOT_APPLICABLE: "N/A",
-        IMPLEMENTATION.CONFIGURATION: "config",
-        IMPLEMENTATION.PLATFORM: "platform",
-        IMPLEMENTATION.FRAMEWORK: "framework",
-    }
     if implementation in _NON_CODE_LABELS:
         row.append(Text(_NON_CODE_LABELS[implementation], style="dim"))
     else:
@@ -128,7 +131,7 @@ def _get_row_with_totals(stats_service: StatisticsService) -> list:
     total_implementations = sum(
         stats.implementations
         for stats in stats_service.requirement_statistics.values()
-        if stats.implementation_type not in NON_CODE_IMPLEMENTATIONS
+        if stats.implementation_type not in _NON_CODE_LABELS
     )
     auto_stats = TestStats(
         total=total_automatic,
@@ -202,22 +205,15 @@ def _status_table(stats_service: StatisticsService) -> str:
 
 
 def _summarize_statistics(ts: TotalStats) -> str:
-    non_code_total = ts.without_implementation_total + ts.configuration_total + ts.platform_total + ts.framework_total
-    non_code_completed = (
-        ts.without_implementation_completed
-        + ts.configuration_completed
-        + ts.platform_completed
-        + ts.framework_completed
-    )
-    code_reqs = ts.total_requirements - non_code_total
-    code_completed = ts.completed_requirements - non_code_completed
+    code_reqs = ts.total_requirements - ts.non_code_total
+    code_completed = ts.completed_requirements - ts.non_code_completed
 
     CODE, NA, CONFIGURATION, PLATFORM, FRAMEWORK, IMPLEMENTATIONS = __colorize_headers()
 
     annotated_not_verified = ts.with_implementation - code_completed
     missing_annotation = code_reqs - ts.with_implementation
 
-    # In Code group: 5 stats (total, verified, annotated not verified, missing annotation)
+    # In Code group: 4 stats (total, verified, annotated not verified, missing annotation)
     code_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=CODE, title_justify="center")
     code_table.add_column("Total", justify="center")
     code_table.add_column("Verified", justify="center")
@@ -226,8 +222,7 @@ def _summarize_statistics(ts: TotalStats) -> str:
     code_table.add_row(
         str(code_reqs) + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
         str(code_completed) + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
-        str(annotated_not_verified)
-        + __numbers_as_percentage(numerator=annotated_not_verified, denominator=code_reqs),
+        str(annotated_not_verified) + __numbers_as_percentage(numerator=annotated_not_verified, denominator=code_reqs),
         str(missing_annotation) + __numbers_as_percentage(numerator=missing_annotation, denominator=code_reqs),
     )
 
@@ -237,7 +232,7 @@ def _summarize_statistics(ts: TotalStats) -> str:
         t.add_column("Verified", justify="center")
         t.add_column("Not Verified", justify="center")
         t.add_row(
-            str(total) + __numbers_as_percentage(numerator=total, denominator=total),
+            str(total) + __numbers_as_percentage(numerator=total, denominator=ts.total_requirements),
             str(completed) + __numbers_as_percentage(numerator=completed, denominator=total),
             str(total - completed) + __numbers_as_percentage(numerator=(total - completed), denominator=total),
         )

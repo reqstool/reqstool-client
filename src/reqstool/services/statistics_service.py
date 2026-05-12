@@ -60,6 +60,20 @@ class TotalStats:
     framework_total: int = 0
     framework_completed: int = 0
     total_svcs: int = 0
+
+    @property
+    def non_code_total(self) -> int:
+        return self.without_implementation_total + self.configuration_total + self.platform_total + self.framework_total
+
+    @property
+    def non_code_completed(self) -> int:
+        return (
+            self.without_implementation_completed
+            + self.configuration_completed
+            + self.platform_completed
+            + self.framework_completed
+        )
+
     total_tests: int = 0
     passed_tests: int = 0
     failed_tests: int = 0
@@ -222,6 +236,10 @@ class StatisticsService:
                 self._totals.framework_total += 1
                 if completed:
                     self._totals.framework_completed += 1
+            case IMPLEMENTATION.IN_CODE:
+                pass  # tracked via with_implementation above
+            case _:
+                raise ValueError(f"Unhandled IMPLEMENTATION value: {req_data.implementation}")
 
         if completed:
             self._totals.completed_requirements += 1
@@ -238,7 +256,7 @@ class StatisticsService:
             if nr_of_implementations > 0:
                 raise TypeError(f"Requirement {urn_id} should not have an implementation")
             return True
-        return False
+        raise ValueError(f"Unhandled IMPLEMENTATION value: {implementation}")
 
     def _get_test_stats(self, tests: list[TestData], svcs) -> TestStats:
         if not tests:

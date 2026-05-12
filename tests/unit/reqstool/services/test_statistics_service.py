@@ -6,7 +6,6 @@ from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import (
     CATEGORIES,
     IMPLEMENTATION,
-    NON_CODE_IMPLEMENTATIONS,
     SIGNIFICANCETYPES,
     RequirementData,
 )
@@ -177,7 +176,40 @@ def test_non_code_implementation_type_completed(db, impl_type, total_attr, compl
     assert stats.requirement_statistics[req_id].completed is True
 
 
-@pytest.mark.parametrize("impl_type", list(NON_CODE_IMPLEMENTATIONS))
+_ALL_NON_CODE = [
+    IMPLEMENTATION.NOT_APPLICABLE,
+    IMPLEMENTATION.CONFIGURATION,
+    IMPLEMENTATION.PLATFORM,
+    IMPLEMENTATION.FRAMEWORK,
+]
+
+
+@pytest.mark.parametrize(
+    "impl_type, total_attr, completed_attr",
+    [
+        (IMPLEMENTATION.CONFIGURATION, "configuration_total", "configuration_completed"),
+        (IMPLEMENTATION.PLATFORM, "platform_total", "platform_completed"),
+        (IMPLEMENTATION.FRAMEWORK, "framework_total", "framework_completed"),
+    ],
+)
+def test_non_code_implementation_type_not_completed(db, impl_type, total_attr, completed_attr):
+    req_id = UrnId(urn=URN, id="REQ_NC")
+    _insert_req(db, req_id=req_id, implementation=impl_type)
+    svc_id = UrnId(urn=URN, id="SVC_NC")
+    _insert_svc(db, svc_id=svc_id, req_ids=[req_id], verification=VERIFICATIONTYPES.MANUAL_TEST)
+    mvr_id = UrnId(urn=URN, id="MVR_NC")
+    _insert_mvr(db, mvr_id=mvr_id, svc_ids=[svc_id], passed=False)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+
+    assert getattr(stats.total_statistics, total_attr) == 1
+    assert getattr(stats.total_statistics, completed_attr) == 0
+    assert stats.requirement_statistics[req_id].completed is False
+
+
+@pytest.mark.parametrize("impl_type", _ALL_NON_CODE)
 def test_non_code_implementation_with_annotation_raises(db, impl_type):
     req_id = UrnId(urn=URN, id="REQ_ERR")
     _insert_req(db, req_id=req_id, implementation=impl_type)
@@ -189,7 +221,7 @@ def test_non_code_implementation_with_annotation_raises(db, impl_type):
         StatisticsService(repo)
 
 
-@pytest.mark.parametrize("impl_type", list(NON_CODE_IMPLEMENTATIONS))
+@pytest.mark.parametrize("impl_type", _ALL_NON_CODE)
 def test_non_code_implementation_type_in_row(db, impl_type):
     req_id = UrnId(urn=URN, id="REQ_TYPE")
     _insert_req(db, req_id=req_id, implementation=impl_type)

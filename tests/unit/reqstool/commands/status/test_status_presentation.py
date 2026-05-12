@@ -232,7 +232,7 @@ def test_summarize_statistics_contains_percentage_string():
     "impl_type, expected_label",
     [
         (IMPLEMENTATION.NOT_APPLICABLE, "N/A"),
-        (IMPLEMENTATION.CONFIGURATION, "config"),
+        (IMPLEMENTATION.CONFIGURATION, "configuration"),
         (IMPLEMENTATION.PLATFORM, "platform"),
         (IMPLEMENTATION.FRAMEWORK, "framework"),
     ],
@@ -256,6 +256,32 @@ def test_summarize_statistics_shows_all_non_code_section_headers():
     """All four non-code section headers appear in the summary output."""
     result = _summarize_statistics(TotalStats())
     assert "N/A" in result
+    assert "Configuration" in result
+    assert "Platform" in result
+    assert "Framework" in result
+
+
+def test_summarize_statistics_non_zero_non_code_counts_show_percentages():
+    """_non_code_table percentage path is exercised with non-zero type counts."""
+    result = _summarize_statistics(
+        TotalStats(
+            total_requirements=7,
+            completed_requirements=5,
+            with_implementation=2,
+            without_implementation_total=2,
+            without_implementation_completed=1,
+            configuration_total=1,
+            configuration_completed=1,
+            platform_total=1,
+            platform_completed=1,
+            framework_total=1,
+            framework_completed=0,
+            total_svcs=4,
+            total_tests=4,
+            passed_tests=3,
+        )
+    )
+    assert "%" in result
     assert "Configuration" in result
     assert "Platform" in result
     assert "Framework" in result

@@ -72,8 +72,9 @@ The requirements table shows for each requirement:
 * *Automated Tests* -- test results from JUnit XML: T=total SVCs, P=passed, F=failed, S=skipped, M=missing (no test found for SVC)
 * *Manual Tests* -- manual verification results: T=total, P=passed, F=failed, M=missing
 
-The summary panels below the table break down requirements by implementation type:
-`In Code`, `N/A`, `Configuration`, `Platform`, and `Framework`, each showing total, verified, and not-verified counts.
+The summary panels below the table break down requirements by implementation type.
+The `In Code` panel shows total, verified, annotated-not-verified, and missing-annotation counts.
+The `N/A`, `Configuration`, `Platform`, and `Framework` panels each show total, verified, and not-verified counts.
 
 The exit code equals the number of unmet requirements, making it suitable for CI/CD gates (`exit 0` = all requirements met).
 

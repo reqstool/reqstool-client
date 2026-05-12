@@ -3,12 +3,25 @@
 import pytest
 
 from reqstool.common.project_session import ProjectSession
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.queries.details import (
     get_mvr_details,
     get_requirement_details,
     get_requirement_status,
+    get_requirements_status_all,
     get_svc_details,
 )
+from reqstool.models.annotations import AnnotationData
+from reqstool.models.requirements import (
+    CATEGORIES,
+    IMPLEMENTATION,
+    SIGNIFICANCETYPES,
+    RequirementData,
+)
+from reqstool.models.svcs import SVCData, VERIFICATIONTYPES
+from reqstool.models.test_data import TEST_RUN_STATUS
+from reqstool.storage.database import RequirementsDatabase
+from reqstool.storage.requirements_repository import RequirementsRepository
 from reqstool.locations.local_location import LocalLocation
 
 
@@ -109,47 +122,161 @@ def test_get_requirement_status_unknown(session):
     assert get_requirement_status("REQ_NONEXISTENT", session.repo) is None
 
 
-def test_meets_requirements_in_code_with_annotation_and_passing_tests(session):
-    """IN_CODE req with annotation and passing tests → meets_requirements True."""
-    result = get_requirement_status("REQ_010", session.repo)
+def _make_db_with_req(impl_type, passed: bool, with_annotation: bool = False):
+    """Build a minimal in-memory DB with one requirement + SVC + MVR."""
+    db = RequirementsDatabase()
+    db.set_metadata("initial_urn", "ms-001")
+    req_id = UrnId(urn="ms-001", id="REQ_T")
+    svc_id = UrnId(urn="ms-001", id="SVC_T")
+    ann_fqn = "com.example.Foo.bar"
+    req = RequirementData(
+        id=req_id,
+        title="T",
+        significance=SIGNIFICANCETYPES.SHALL,
+        description="D",
+        implementation=impl_type,
+        categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+        revision="1.0.0",
+    )
+    svc = SVCData(
+        id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST, revision="1.0.0", requirement_ids=[req_id]
+    )
+    db.insert_requirement(req_id.urn, req)
+    db.insert_svc(svc_id.urn, svc)
+    if with_annotation:
+        db.insert_annotation_impl(req_id, AnnotationData(element_kind="METHOD", fully_qualified_name=ann_fqn))
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="test_method")
+    db.insert_annotation_test(svc_id, ann)
+    status = TEST_RUN_STATUS.PASSED if passed else TEST_RUN_STATUS.FAILED
+    db.insert_test_result("ms-001", "test_method", status)
+    db.commit()
+    return db, req_id
+
+
+def test_meets_requirements_in_code_with_annotation_and_passing_tests():
+    db, req_id = _make_db_with_req(IMPLEMENTATION.IN_CODE, passed=True, with_annotation=True)
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
     assert result is not None
     assert result["implementation"] == "in-code"
-    # REQ_010 has annotations in the standard fixture; tests may or may not all pass,
-    # but meets_requirements must be a bool and not crash.
-    assert isinstance(result["meets_requirements"], bool)
+    assert result["meets_requirements"] is True
+    db.close()
 
 
-def test_meets_requirements_non_code_type_only_needs_tests(tmp_path):
-    """Non-code implementation types: meets_requirements depends only on tests, not annotations."""
-    from reqstool.models.annotations import AnnotationData
-    from reqstool.models.requirements import CATEGORIES, IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS, SIGNIFICANCETYPES, RequirementData
-    from reqstool.models.svcs import SVCData, VERIFICATIONTYPES
-    from reqstool.models.test_data import TEST_RUN_STATUS
-    from reqstool.common.models.urn_id import UrnId
-    from reqstool.storage.database import RequirementsDatabase
-    from reqstool.storage.requirements_repository import RequirementsRepository
+def test_meets_requirements_in_code_without_annotation_is_false():
+    db, req_id = _make_db_with_req(IMPLEMENTATION.IN_CODE, passed=True, with_annotation=False)
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["meets_requirements"] is False
+    db.close()
 
-    for impl_type in NON_CODE_IMPLEMENTATIONS:
-        db = RequirementsDatabase()
-        db.set_metadata("initial_urn", "ms-001")
-        req_id = UrnId(urn="ms-001", id="REQ_NC")
-        svc_id = UrnId(urn="ms-001", id="SVC_NC")
+
+@pytest.mark.parametrize(
+    "impl_type",
+    [
+        IMPLEMENTATION.NOT_APPLICABLE,
+        IMPLEMENTATION.CONFIGURATION,
+        IMPLEMENTATION.PLATFORM,
+        IMPLEMENTATION.FRAMEWORK,
+    ],
+)
+def test_meets_requirements_non_code_type_passing_tests_true(impl_type):
+    db, req_id = _make_db_with_req(impl_type, passed=True, with_annotation=False)
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["implementation"] == impl_type.value
+    assert result["meets_requirements"] is True
+    db.close()
+
+
+@pytest.mark.parametrize(
+    "impl_type",
+    [
+        IMPLEMENTATION.NOT_APPLICABLE,
+        IMPLEMENTATION.CONFIGURATION,
+        IMPLEMENTATION.PLATFORM,
+        IMPLEMENTATION.FRAMEWORK,
+    ],
+)
+def test_meets_requirements_non_code_type_failing_tests_false(impl_type):
+    db, req_id = _make_db_with_req(impl_type, passed=False, with_annotation=False)
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["meets_requirements"] is False
+    db.close()
+
+
+def test_get_requirements_status_all_mixed_types():
+    """get_requirements_status_all returns correct meets_requirements for each impl type."""
+    db = RequirementsDatabase()
+    db.set_metadata("initial_urn", "ms-001")
+    URN = "ms-001"
+
+    in_code_id = UrnId(urn=URN, id="REQ_CODE")
+    cfg_id = UrnId(urn=URN, id="REQ_CFG")
+    svc_code = UrnId(urn=URN, id="SVC_CODE")
+    svc_cfg = UrnId(urn=URN, id="SVC_CFG")
+
+    for req_id, impl_type in [(in_code_id, IMPLEMENTATION.IN_CODE), (cfg_id, IMPLEMENTATION.CONFIGURATION)]:
         req = RequirementData(
-            id=req_id, title="T", significance=SIGNIFICANCETYPES.SHALL,
-            description="D", implementation=impl_type,
-            categories=[CATEGORIES.FUNCTIONAL_SUITABILITY], revision="1.0.0",
+            id=req_id,
+            title="T",
+            significance=SIGNIFICANCETYPES.SHALL,
+            description="D",
+            implementation=impl_type,
+            categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+            revision="1.0.0",
         )
-        svc = SVCData(id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST,
-                      revision="1.0.0", requirement_ids=[req_id])
         db.insert_requirement(req_id.urn, req)
-        db.insert_svc(svc_id.urn, svc)
-        db.insert_test_result("ms-001", "manual_check", TEST_RUN_STATUS.PASSED)
-        db.commit()
 
-        repo = RequirementsRepository(db)
-        result = get_requirement_status(req_id.id, repo)
-        assert result is not None, f"No result for {impl_type}"
-        assert result["implementation"] == impl_type.value
-        # No annotation inserted — non-code types must not require one
-        assert isinstance(result["meets_requirements"], bool)
-        db.close()
+    for svc_id, req_id in [(svc_code, in_code_id), (svc_cfg, cfg_id)]:
+        svc = SVCData(
+            id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST, revision="1.0.0", requirement_ids=[req_id]
+        )
+        db.insert_svc(svc_id.urn, svc)
+        ann = AnnotationData(element_kind="METHOD", fully_qualified_name=f"test_{svc_id.id}")
+        db.insert_annotation_test(svc_id, ann)
+        db.insert_test_result(URN, f"test_{svc_id.id}", TEST_RUN_STATUS.PASSED)
+
+    db.insert_annotation_impl(in_code_id, AnnotationData(element_kind="METHOD", fully_qualified_name="com.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    results = {r["id"]: r for r in get_requirements_status_all(repo)}
+
+    assert results["REQ_CODE"]["meets_requirements"] is True
+    assert results["REQ_CFG"]["meets_requirements"] is True
+    db.close()
+
+
+def test_get_requirements_status_all_in_code_without_annotation_false():
+    db = RequirementsDatabase()
+    db.set_metadata("initial_urn", "ms-001")
+    req_id = UrnId(urn="ms-001", id="REQ_NO_ANN")
+    req = RequirementData(
+        id=req_id,
+        title="T",
+        significance=SIGNIFICANCETYPES.SHALL,
+        description="D",
+        implementation=IMPLEMENTATION.IN_CODE,
+        categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+        revision="1.0.0",
+    )
+    svc_id = UrnId(urn="ms-001", id="SVC_T")
+    svc = SVCData(
+        id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST, revision="1.0.0", requirement_ids=[req_id]
+    )
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="test_m")
+    db.insert_requirement(req_id.urn, req)
+    db.insert_svc(svc_id.urn, svc)
+    db.insert_annotation_test(svc_id, ann)
+    db.insert_test_result("ms-001", "test_m", TEST_RUN_STATUS.PASSED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    results = {r["id"]: r for r in get_requirements_status_all(repo)}
+    assert results["REQ_NO_ANN"]["meets_requirements"] is False
+    db.close()

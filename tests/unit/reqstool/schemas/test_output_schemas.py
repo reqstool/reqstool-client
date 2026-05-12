@@ -34,8 +34,6 @@ def test_export_schema_is_valid_json_schema(export_schema):
 
 # ── Status schema: positive cases ─────────────────────────────────────────────
 
-_EMPTY_NON_CODE = {"total": 0, "completed": 0}
-
 MINIMAL_STATUS = {
     "metadata": {"initial_urn": "ms-001", "filtered": False},
     "requirements": {},
@@ -44,10 +42,10 @@ MINIMAL_STATUS = {
             "total": 0,
             "completed": 0,
             "with_implementation": 0,
-            "without_implementation": _EMPTY_NON_CODE,
-            "configuration": _EMPTY_NON_CODE,
-            "platform": _EMPTY_NON_CODE,
-            "framework": _EMPTY_NON_CODE,
+            "without_implementation": {"total": 0, "completed": 0},
+            "configuration": {"total": 0, "completed": 0},
+            "platform": {"total": 0, "completed": 0},
+            "framework": {"total": 0, "completed": 0},
         },
         "svcs": {"total": 0},
         "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "missing_automated": 0, "missing_manual": 0},
@@ -360,3 +358,25 @@ def test_export_invalid_category(export_schema):
     doc["requirements"]["ms-001:REQ_010"]["categories"] = ["unknown-category"]
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(doc, export_schema)
+
+
+def test_export_invalid_implementation_type(export_schema):
+    doc = json.loads(json.dumps(FULL_EXPORT))
+    doc["requirements"]["ms-001:REQ_010"]["implementation_type"] = "manual"
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(doc, export_schema)
+
+
+@pytest.mark.parametrize("impl_type", ["configuration", "platform", "framework", "N/A"])
+def test_export_valid_non_code_implementation_types(export_schema, impl_type):
+    doc = json.loads(json.dumps(FULL_EXPORT))
+    doc["requirements"]["ms-001:REQ_010"]["implementation_type"] = impl_type
+    jsonschema.validate(doc, export_schema)
+
+
+@pytest.mark.parametrize("field", ["configuration", "platform", "framework"])
+def test_status_missing_required_non_code_totals_field(status_schema, field):
+    doc = json.loads(json.dumps(FULL_STATUS))
+    del doc["totals"]["requirements"][field]
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(doc, status_schema)
