@@ -73,8 +73,12 @@ The requirements table shows for each requirement:
 * *Manual Tests* -- manual verification results: T=total, P=passed, F=failed, M=missing
 
 The summary panels below the table break down requirements by implementation type.
-The `In Code` panel shows total, verified, annotated-not-verified, and missing-annotation counts.
-The `N/A`, `Configuration`, `Platform`, and `Framework` panels each show total, verified, and not-verified counts.
+The `In Code` panel shows total, verified, annotated-not-verified, and missing-annotation counts (all percentages relative to in-code requirements).
+The `N/A`, `Configuration`, `Platform`, and `Framework` panels each show three columns:
+
+* *Total (% of all)* -- count of this type, as a percentage of _all_ requirements; shows the type's share of the full requirement set
+* *Verified* -- count verified, as a percentage of _this type_
+* *Not Verified* -- count not yet verified, as a percentage of _this type_
 
 The exit code equals the number of unmet requirements, making it suitable for CI/CD gates (`exit 0` = all requirements met).
 

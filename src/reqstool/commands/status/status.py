@@ -228,7 +228,8 @@ def _summarize_statistics(ts: TotalStats) -> str:
 
     def _non_code_table(title: Text, total: int, completed: int, overall_total: int) -> Table:
         t = Table(box=box.DOUBLE_EDGE, show_header=True, title=title, title_justify="center")
-        t.add_column("Total", justify="center")
+        # "Total" % = share of all requirements; "Verified"/"Not Verified" % = share of this type
+        t.add_column("Total (% of all)", justify="center")
         t.add_column("Verified", justify="center")
         t.add_column("Not Verified", justify="center")
         t.add_row(
