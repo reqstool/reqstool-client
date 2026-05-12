@@ -5,4 +5,4 @@ on:
 
 jobs:
   check:
-    uses: reqstool/.github/.github/workflows/check-semantic-pr.yml@main
+    uses: reqstool/.github/.github/workflows/common-check-semantic-pr.yml@main
