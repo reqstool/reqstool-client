@@ -1,15 +1,13 @@
 
-{% set code_reqs = data.total_requirements - data.non_code_total %}
-{% set code_completed = data.completed_requirements - data.non_code_completed %}
 
 
 ## TOTAL STATISTICS
 
-**In Code Requirements: {{code_reqs}}**
+**In Code Requirements: {{data.code_reqs}}**
 
 | Verified | Annotated, not verified | Missing annotation |
 |---|---|---|
-| {{code_completed}} | {{data.with_implementation - code_completed}} | {{code_reqs - data.with_implementation}} |
+| {{data.code_completed}} | {{data.with_implementation - data.code_completed}} | {{data.code_reqs - data.with_implementation}} |
 
 **Non-code Requirements: {{data.non_code_total}}**
 

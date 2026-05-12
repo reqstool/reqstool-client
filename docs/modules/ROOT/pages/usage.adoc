@@ -65,7 +65,7 @@ The requirements table shows for each requirement:
 * *ID* -- the requirement identifier
 * *Implementation* -- how the requirement is fulfilled, determined by the `implementation` field in `requirements.yml`:
 ** a number (green/red) -- `in-code` (default): count of `@Requirements` annotations found; red means none found
-** `config` -- `configuration`: fulfilled by application config (YAML properties, env vars); no annotation required
+** `configuration` -- `configuration`: fulfilled by application config (YAML properties, env vars); no annotation required
 ** `platform` -- `platform`: fulfilled by infrastructure or platform layer (Kubernetes, load balancing, network policies); no annotation required
 ** `framework` -- `framework`: fulfilled by framework auto-configuration (Spring Boot starters, OTel agents); no annotation required
 ** `N/A` -- not applicable, intentionally deferred, or out of scope; no annotation required

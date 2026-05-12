@@ -128,7 +128,6 @@ def _make_db_with_req(impl_type, passed: bool, with_annotation: bool = False):
     db.set_metadata("initial_urn", "ms-001")
     req_id = UrnId(urn="ms-001", id="REQ_T")
     svc_id = UrnId(urn="ms-001", id="SVC_T")
-    ann_fqn = "com.example.Foo.bar"
     req = RequirementData(
         id=req_id,
         title="T",
@@ -144,7 +143,9 @@ def _make_db_with_req(impl_type, passed: bool, with_annotation: bool = False):
     db.insert_requirement(req_id.urn, req)
     db.insert_svc(svc_id.urn, svc)
     if with_annotation:
-        db.insert_annotation_impl(req_id, AnnotationData(element_kind="METHOD", fully_qualified_name=ann_fqn))
+        db.insert_annotation_impl(
+            req_id, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar")
+        )
     ann = AnnotationData(element_kind="METHOD", fully_qualified_name="test_method")
     db.insert_annotation_test(svc_id, ann)
     status = TEST_RUN_STATUS.PASSED if passed else TEST_RUN_STATUS.FAILED
@@ -279,4 +280,31 @@ def test_get_requirements_status_all_in_code_without_annotation_false():
     repo = RequirementsRepository(db)
     results = {r["id"]: r for r in get_requirements_status_all(repo)}
     assert results["REQ_NO_ANN"]["meets_requirements"] is False
+    db.close()
+
+
+def test_get_requirements_status_all_urn_scoping():
+    """get_requirements_status_all scoped to a URN excludes other URNs."""
+    db = RequirementsDatabase()
+    db.set_metadata("initial_urn", "ms-001")
+
+    for urn, req_id_str in [("ms-001", "REQ_A"), ("ms-002", "REQ_B")]:
+        req_id = UrnId(urn=urn, id=req_id_str)
+        req = RequirementData(
+            id=req_id,
+            title="T",
+            significance=SIGNIFICANCETYPES.SHALL,
+            description="D",
+            implementation=IMPLEMENTATION.IN_CODE,
+            categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+            revision="1.0.0",
+        )
+        db.insert_requirement(req_id.urn, req)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    scoped = get_requirements_status_all(repo, urn="ms-001")
+    ids = {r["id"] for r in scoped}
+    assert "REQ_A" in ids
+    assert "REQ_B" not in ids
     db.close()

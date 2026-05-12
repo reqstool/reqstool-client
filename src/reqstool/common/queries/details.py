@@ -2,22 +2,24 @@
 
 
 from reqstool.common.models.urn_id import UrnId
-from reqstool.models.requirements import IMPLEMENTATION
+from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
 def _compute_meets(req, repo: RequirementsRepository, svc_urn_ids: list, all_passing: bool) -> bool:
     """Return whether a requirement is considered met by this lightweight check.
 
-    Mirrors StatisticsService semantics: IN_CODE requires at least one annotation;
-    non-code types require only passing tests. Both require at least one SVC to exist,
-    matching StatisticsService's (should_have_mvrs or should_have_automated_tests) guard.
+    For IN_CODE: requires at least one @Requirements annotation and all tests passing.
+    For non-code types: requires at least one SVC and all automated tests passing.
+    Note: this checks automated test results only, not MVR pass/fail.
     """
     if not svc_urn_ids:
         return False
     if req.implementation == IMPLEMENTATION.IN_CODE:
         return len(repo.get_annotations_impls_for_req(req.id)) > 0 and all_passing
-    return all_passing
+    if req.implementation in NON_CODE_IMPLEMENTATIONS:
+        return all_passing
+    raise ValueError(f"Unhandled IMPLEMENTATION value: {req.implementation}")
 
 
 def _svc_test_summary(svc_urn_id: UrnId, repo: RequirementsRepository) -> dict:

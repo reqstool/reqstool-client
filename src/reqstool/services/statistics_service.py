@@ -74,6 +74,14 @@ class TotalStats:
             + self.framework_completed
         )
 
+    @property
+    def code_reqs(self) -> int:
+        return self.total_requirements - self.non_code_total
+
+    @property
+    def code_completed(self) -> int:
+        return self.completed_requirements - self.non_code_completed
+
     total_tests: int = 0
     passed_tests: int = 0
     failed_tests: int = 0

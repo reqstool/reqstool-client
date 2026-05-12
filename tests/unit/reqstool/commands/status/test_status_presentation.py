@@ -4,8 +4,8 @@ from rich.console import Console
 
 import pytest
 
-from reqstool.commands.status.status import _build_table, _format_test_cell, _summarize_statistics
-from reqstool.models.requirements import IMPLEMENTATION
+from reqstool.commands.status.status import _NON_CODE_LABELS, _build_table, _format_test_cell, _summarize_statistics
+from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
 from reqstool.services.statistics_service import TestStats, TotalStats
 
 
@@ -285,3 +285,8 @@ def test_summarize_statistics_non_zero_non_code_counts_show_percentages():
     assert "Configuration" in result
     assert "Platform" in result
     assert "Framework" in result
+
+
+def test_non_code_labels_covers_all_non_code_implementations():
+    """_NON_CODE_LABELS must stay in sync with NON_CODE_IMPLEMENTATIONS."""
+    assert set(_NON_CODE_LABELS.keys()) == NON_CODE_IMPLEMENTATIONS

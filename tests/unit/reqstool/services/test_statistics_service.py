@@ -6,6 +6,7 @@ from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import (
     CATEGORIES,
     IMPLEMENTATION,
+    NON_CODE_IMPLEMENTATIONS,
     SIGNIFICANCETYPES,
     RequirementData,
 )
@@ -176,12 +177,7 @@ def test_non_code_implementation_type_completed(db, impl_type, total_attr, compl
     assert stats.requirement_statistics[req_id].completed is True
 
 
-_ALL_NON_CODE = [
-    IMPLEMENTATION.NOT_APPLICABLE,
-    IMPLEMENTATION.CONFIGURATION,
-    IMPLEMENTATION.PLATFORM,
-    IMPLEMENTATION.FRAMEWORK,
-]
+_ALL_NON_CODE = sorted(NON_CODE_IMPLEMENTATIONS, key=lambda x: x.value)
 
 
 @pytest.mark.parametrize(
@@ -308,3 +304,36 @@ def test_to_status_dict_structure(db):
     assert "tests" in d["totals"]
     assert "automated_tests" in d["totals"]
     assert "manual_tests" in d["totals"]
+    reqs_totals = d["totals"]["requirements"]
+    assert "configuration" in reqs_totals
+    assert "platform" in reqs_totals
+    assert "framework" in reqs_totals
+    assert "without_implementation" in reqs_totals
+    for key in ("configuration", "platform", "framework", "without_implementation"):
+        assert "total" in reqs_totals[key]
+        assert "completed" in reqs_totals[key]
+
+
+def test_total_stats_non_code_properties():
+    from reqstool.services.statistics_service import TotalStats
+
+    ts = TotalStats(
+        without_implementation_total=1,
+        without_implementation_completed=1,
+        configuration_total=2,
+        configuration_completed=1,
+        platform_total=3,
+        platform_completed=2,
+        framework_total=4,
+        framework_completed=0,
+    )
+    assert ts.non_code_total == 10
+    assert ts.non_code_completed == 4
+
+
+def test_total_stats_non_code_properties_all_zero():
+    from reqstool.services.statistics_service import TotalStats
+
+    ts = TotalStats()
+    assert ts.non_code_total == 0
+    assert ts.non_code_completed == 0
