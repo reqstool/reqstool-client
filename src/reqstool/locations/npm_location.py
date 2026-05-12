@@ -4,6 +4,7 @@ import logging
 import os
 import tarfile
 from typing import Optional
+from urllib.parse import quote, urlparse
 
 import requests
 
@@ -13,13 +14,6 @@ from reqstool.locations.location import LocationInterface
 
 
 class NpmLocation(LocationInterface):
-    """Download a reqstool dataset package from any npm-compatible registry.
-
-    The package is expected to be a standard npm tarball whose top-level
-    directory is ``package/`` (the npm convention).  The ``-reqstool`` naming
-    suffix is a convention, not enforced here.
-    """
-
     url: str = "https://registry.npmjs.org"
     package: str
     version: str
@@ -31,7 +25,18 @@ class NpmLocation(LocationInterface):
         try:
             tarball_url = self._get_tarball_url(token)
             logging.debug(f"Downloading npm package {self.package}@{self.version} from {tarball_url} to {dst_path}")
-            downloaded_file = Utils.download_file(url=tarball_url, dst_path=dst_path, token=token)
+
+            # Only forward the Bearer token if the tarball is served from the same host as the registry
+            registry_host = urlparse(self.url).netloc
+            tarball_host = urlparse(tarball_url).netloc
+            tarball_token = token if tarball_host == registry_host else None
+            if token and tarball_token is None:
+                logging.warning(
+                    f"npm tarball host ({tarball_host}) differs from registry host ({registry_host}); "
+                    "not forwarding auth token to prevent credential leakage"
+                )
+
+            downloaded_file = Utils.download_file(url=tarball_url, dst_path=dst_path, token=tarball_token)
             logging.debug(f"Extracting {downloaded_file} to {dst_path}")
             return Utils.extract_targz(str(downloaded_file), dst_path)
         except (ValueError, tarfile.TarError) as e:
@@ -47,7 +52,9 @@ class NpmLocation(LocationInterface):
     def _get_tarball_url(self, token: Optional[str]) -> str:
         """Fetch package metadata from the registry and return the tarball URL."""
         registry = self.url.rstrip("/")
-        metadata_url = f"{registry}/{self.package}/{self.version}"
+        # URL-encode the package name: keep @ (valid in path), encode / (scope separator)
+        encoded_pkg = quote(self.package, safe="@")
+        metadata_url = f"{registry}/{encoded_pkg}/{self.version}"
 
         headers = {"Accept": "application/json"}
         if token:
