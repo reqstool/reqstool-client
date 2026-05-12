@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.locations.npm_location import NpmLocation
 
 
@@ -65,6 +66,38 @@ def test_npm_location_raises_when_tarball_missing(tmp_path):
 
     with (
         patch("reqstool.locations.npm_location.requests.get", return_value=mock_response),
-        pytest.raises(Exception, match="dist.tarball"),
+        pytest.raises(ArtifactDownloadError, match="dist.tarball"),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
+
+
+def test_npm_location_raises_on_http_error(tmp_path):
+    import requests as req
+
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0")
+
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = req.exceptions.HTTPError("404 Not Found")
+
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response),
+        pytest.raises(ArtifactDownloadError),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
+
+
+def test_npm_location_raises_on_extraction_error(tmp_path):
+    import tarfile
+
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0")
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"dist": {"tarball": "https://registry.npmjs.org/tarball.tgz"}}
+
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response),
+        patch("reqstool.locations.npm_location.Utils.download_file", return_value=tmp_path / "tarball.tgz"),
+        patch("reqstool.locations.npm_location.Utils.extract_targz", side_effect=tarfile.TarError("bad tar")),
+        pytest.raises(ArtifactExtractionError),
     ):
         loc._make_available_on_localdisk(str(tmp_path))

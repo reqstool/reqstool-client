@@ -5,6 +5,7 @@ from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
+from reqstool.locations.npm_location import NpmLocation
 from reqstool.model_generators.requirements_model_generator import RequirementsModelGenerator
 from reqstool.models.requirements import CATEGORIES, SIGNIFICANCETYPES, VARIANTS
 
@@ -256,3 +257,39 @@ def test_lifecycle_variable_model_generator(resource_funcname_rootdir_w_path):
     assert requirements[UrnId(urn="ms-001", id="REQ_003")].lifecycle.reason == "Reason for being obsolete"
     assert requirements[UrnId(urn="ms-001", id="REQ_004")].lifecycle.state == LIFECYCLESTATE.DRAFT
     assert requirements[UrnId(urn="ms-001", id="REQ_004")].lifecycle.reason == "Unnecessary reason"
+
+
+def test_npm_requirements_model_generator(resource_funcname_rootdir_w_path):
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    rmg = RequirementsModelGenerator(
+        parent=None,
+        filename=resource_funcname_rootdir_w_path(REQUIREMENTS_YML_FILE),
+        semantic_validator=semantic_validator,
+    )
+
+    model = rmg.requirements_data
+
+    assert len(model.imports) == 2
+    assert len(model.implementations) == 1
+
+    # npm import #1 — with token and custom registry
+    npm_import_1 = model.imports[0].current_unresolved
+    assert isinstance(npm_import_1, NpmLocation)
+    assert npm_import_1.env_token == "NPM_TOKEN"
+    assert str(npm_import_1.url) == "https://my.registry.example.com"
+    assert npm_import_1.package == "@my-org/my-service-reqstool"
+    assert npm_import_1.version == "1.2.3"
+
+    # npm import #2 — default registry, no token
+    npm_import_2 = model.imports[1].current_unresolved
+    assert isinstance(npm_import_2, NpmLocation)
+    assert npm_import_2.env_token is None
+    assert npm_import_2.url == "https://registry.npmjs.org"
+    assert npm_import_2.package == "my-lib-reqstool"
+    assert npm_import_2.version == "0.5.0"
+
+    # npm implementation
+    npm_impl = model.implementations[0].current_unresolved
+    assert isinstance(npm_impl, NpmLocation)
+    assert npm_impl.package == "@my-org/my-impl-reqstool"
+    assert npm_impl.version == "2.0.0"
