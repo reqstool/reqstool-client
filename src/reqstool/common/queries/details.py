@@ -9,17 +9,29 @@ from reqstool.storage.requirements_repository import RequirementsRepository
 def _compute_meets(req, repo: RequirementsRepository, svc_urn_ids: list, all_passing: bool) -> bool:
     """Return whether a requirement is considered met by this lightweight check.
 
-    For IN_CODE: requires at least one @Requirements annotation and all tests passing.
-    For non-code types: requires at least one SVC and all automated tests passing.
-    Note: this checks automated test results only, not MVR pass/fail.
+    For IN_CODE: requires at least one @Requirements annotation, all automated tests
+    passing, and no failing MVRs.
+    For non-code types: requires at least one SVC, all automated tests passing, and
+    no failing MVRs.
     """
     if not svc_urn_ids:
         return False
     if req.implementation == IMPLEMENTATION.IN_CODE:
-        return len(repo.get_annotations_impls_for_req(req.id)) > 0 and all_passing
-    if req.implementation in NON_CODE_IMPLEMENTATIONS:
-        return all_passing
-    raise ValueError(f"Unhandled IMPLEMENTATION value: {req.implementation}")
+        if not (len(repo.get_annotations_impls_for_req(req.id)) > 0 and all_passing):
+            return False
+    elif req.implementation in NON_CODE_IMPLEMENTATIONS:
+        if not all_passing:
+            return False
+    else:
+        raise ValueError(f"Unhandled IMPLEMENTATION value: {req.implementation}")
+    # Check MVR results — automated test_summary misses manual verification outcomes
+    all_mvrs = repo.get_all_mvrs()
+    for svc_uid in svc_urn_ids:
+        for mvr_id in repo.get_mvrs_for_svc(svc_uid):
+            mvr = all_mvrs.get(mvr_id)
+            if mvr is not None and not mvr.passed:
+                return False
+    return True
 
 
 def _svc_test_summary(svc_urn_id: UrnId, repo: RequirementsRepository) -> dict:

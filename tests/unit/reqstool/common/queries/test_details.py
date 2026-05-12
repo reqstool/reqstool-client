@@ -308,3 +308,108 @@ def test_get_requirements_status_all_urn_scoping():
     assert "REQ_A" in ids
     assert "REQ_B" not in ids
     db.close()
+
+
+# -- F1: MVR blind spot tests (TDD — write red first, then fix) --
+
+
+def _make_db_with_mvr(impl_type, mvr_passed: bool):
+    """DB with one requirement + manual-test SVC + MVR. No automated tests."""
+    from reqstool.models.mvrs import MVRData
+
+    db = RequirementsDatabase()
+    db.set_metadata("initial_urn", "ms-001")
+    req_id = UrnId(urn="ms-001", id="REQ_MVR")
+    svc_id = UrnId(urn="ms-001", id="SVC_MVR")
+    mvr_id = UrnId(urn="ms-001", id="MVR_001")
+    req = RequirementData(
+        id=req_id,
+        title="T",
+        significance=SIGNIFICANCETYPES.SHALL,
+        description="D",
+        implementation=impl_type,
+        categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+        revision="1.0.0",
+    )
+    svc = SVCData(
+        id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST, revision="1.0.0", requirement_ids=[req_id]
+    )
+    mvr = MVRData(id=mvr_id, passed=mvr_passed, comment="", svc_ids=[svc_id])
+    db.insert_requirement(req_id.urn, req)
+    db.insert_svc(svc_id.urn, svc)
+    db.insert_mvr(mvr_id.urn, mvr)
+    db.commit()
+    return db, req_id
+
+
+@pytest.mark.parametrize(
+    "impl_type",
+    [
+        IMPLEMENTATION.NOT_APPLICABLE,
+        IMPLEMENTATION.CONFIGURATION,
+        IMPLEMENTATION.PLATFORM,
+        IMPLEMENTATION.FRAMEWORK,
+    ],
+)
+def test_meets_requirements_non_code_failing_mvr_is_false(impl_type):
+    """Non-code req with a failing MVR must not be considered met."""
+    db, req_id = _make_db_with_mvr(impl_type, mvr_passed=False)
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["meets_requirements"] is False, f"{impl_type}: failing MVR should make meets_requirements False"
+    db.close()
+
+
+@pytest.mark.parametrize(
+    "impl_type",
+    [
+        IMPLEMENTATION.NOT_APPLICABLE,
+        IMPLEMENTATION.CONFIGURATION,
+        IMPLEMENTATION.PLATFORM,
+        IMPLEMENTATION.FRAMEWORK,
+    ],
+)
+def test_meets_requirements_non_code_passing_mvr_is_true(impl_type):
+    """Non-code req with a passing MVR and no failing automated tests is met."""
+    db, req_id = _make_db_with_mvr(impl_type, mvr_passed=True)
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["meets_requirements"] is True
+    db.close()
+
+
+def test_meets_requirements_in_code_failing_mvr_is_false():
+    """IN_CODE req with annotation + passing auto-test but failing MVR must not be met."""
+    from reqstool.models.mvrs import MVRData
+
+    db = RequirementsDatabase()
+    db.set_metadata("initial_urn", "ms-001")
+    req_id = UrnId(urn="ms-001", id="REQ_IC")
+    svc_id = UrnId(urn="ms-001", id="SVC_IC")
+    mvr_id = UrnId(urn="ms-001", id="MVR_IC")
+    req = RequirementData(
+        id=req_id,
+        title="T",
+        significance=SIGNIFICANCETYPES.SHALL,
+        description="D",
+        implementation=IMPLEMENTATION.IN_CODE,
+        categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+        revision="1.0.0",
+    )
+    svc = SVCData(
+        id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST, revision="1.0.0", requirement_ids=[req_id]
+    )
+    mvr = MVRData(id=mvr_id, passed=False, comment="", svc_ids=[svc_id])
+    db.insert_requirement(req_id.urn, req)
+    db.insert_svc(svc_id.urn, svc)
+    db.insert_annotation_impl(req_id, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.insert_mvr(mvr_id.urn, mvr)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["meets_requirements"] is False, "failing MVR should make IN_CODE meets_requirements False"
+    db.close()
