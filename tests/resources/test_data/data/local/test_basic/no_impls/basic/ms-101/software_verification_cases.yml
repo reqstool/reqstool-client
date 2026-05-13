@@ -26,3 +26,24 @@ cases:
     title: "Some Title SVC_1339"
     verification: manual-test
     revision: "0.0.1"
+
+  - id: SVC_CFG
+    requirement_ids: ["REQ_CFG"]
+    title: "Verify management port is reachable on 8079"
+    description: "Integration test confirming the config is effective"
+    verification: manual-test
+    revision: "0.0.1"
+
+  - id: SVC_PLT
+    requirement_ids: ["REQ_PLT"]
+    title: "Verify platform HA via review"
+    description: "Platform review confirming load balancing is in place"
+    verification: review
+    revision: "0.0.1"
+
+  - id: SVC_FWK
+    requirement_ids: ["REQ_FWK"]
+    title: "Verify tracing headers on outbound calls"
+    description: "Manual check that OTel traces are present"
+    verification: manual-test
+    revision: "0.0.1"

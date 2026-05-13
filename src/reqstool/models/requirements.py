@@ -68,7 +68,20 @@ class CATEGORIES(Enum):
 @unique
 class IMPLEMENTATION(Enum):
     IN_CODE = "in-code"
+    CONFIGURATION = "configuration"
+    PLATFORM = "platform"
+    FRAMEWORK = "framework"
     NOT_APPLICABLE = "N/A"
+
+
+NON_CODE_IMPLEMENTATIONS: frozenset["IMPLEMENTATION"] = frozenset(
+    {
+        IMPLEMENTATION.NOT_APPLICABLE,
+        IMPLEMENTATION.CONFIGURATION,
+        IMPLEMENTATION.PLATFORM,
+        IMPLEMENTATION.FRAMEWORK,
+    }
+)
 
 
 class ReferenceData(BaseModel):

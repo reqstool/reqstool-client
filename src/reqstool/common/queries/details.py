@@ -2,7 +2,36 @@
 
 
 from reqstool.common.models.urn_id import UrnId
+from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
 from reqstool.storage.requirements_repository import RequirementsRepository
+
+
+def _compute_meets(req, repo: RequirementsRepository, svc_urn_ids: list, all_passing: bool) -> bool:
+    """Return whether a requirement is considered met by this lightweight check.
+
+    For IN_CODE: requires at least one @Requirements annotation, all automated tests
+    passing, and no failing MVRs.
+    For non-code types: requires at least one SVC, all automated tests passing, and
+    no failing MVRs.
+    """
+    if not svc_urn_ids:
+        return False
+    if req.implementation == IMPLEMENTATION.IN_CODE:
+        if not (len(repo.get_annotations_impls_for_req(req.id)) > 0 and all_passing):
+            return False
+    elif req.implementation in NON_CODE_IMPLEMENTATIONS:
+        if not all_passing:
+            return False
+    else:
+        raise ValueError(f"Unhandled IMPLEMENTATION value: {req.implementation}")
+    # Check MVR results — automated test_summary misses manual verification outcomes
+    all_mvrs = repo.get_all_mvrs()
+    for svc_uid in svc_urn_ids:
+        for mvr_id in repo.get_mvrs_for_svc(svc_uid):
+            mvr = all_mvrs.get(mvr_id)
+            if mvr is not None and not mvr.passed:
+                return False
+    return True
 
 
 def _svc_test_summary(svc_urn_id: UrnId, repo: RequirementsRepository) -> dict:
@@ -202,15 +231,13 @@ def get_requirement_status(raw_id: str, repo: RequirementsRepository) -> dict | 
             if key in test_summary:
                 test_summary[key] += 1
 
-    # skipped tests are not counted as failures; a requirement only "meets" if
-    # it has at least one implementation and no failed or missing test results
     all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
     return {
         "id": req.id.id,
         "lifecycle_state": req.lifecycle.state.value,
         "implementation": req.implementation.value,
         "test_summary": test_summary,
-        "meets_requirements": req.implementation.value != "not_implemented" and all_passing,
+        "meets_requirements": _compute_meets(req, repo, svc_urn_ids, all_passing),
     }
 
 
@@ -234,7 +261,7 @@ def get_requirements_status_all(repo: RequirementsRepository, urn: str | None = 
                 "lifecycle_state": req.lifecycle.state.value,
                 "implementation": req.implementation.value,
                 "test_summary": test_summary,
-                "meets_requirements": req.implementation.value != "not_implemented" and all_passing,
+                "meets_requirements": _compute_meets(req, repo, svc_urn_ids, all_passing),
             }
         )
     return result

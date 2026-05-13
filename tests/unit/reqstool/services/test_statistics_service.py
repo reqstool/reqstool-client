@@ -6,6 +6,7 @@ from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import (
     CATEGORIES,
     IMPLEMENTATION,
+    NON_CODE_IMPLEMENTATIONS,
     SIGNIFICANCETYPES,
     RequirementData,
 )
@@ -132,7 +133,7 @@ def test_incomplete_requirement_no_implementations(db):
     assert stats.total_statistics.with_implementation == 0
 
 
-# -- Not-applicable implementation --
+# -- Non-code implementation types --
 
 
 def test_not_applicable_implementation(db):
@@ -149,6 +150,82 @@ def test_not_applicable_implementation(db):
 
     assert stats.total_statistics.without_implementation_total == 1
     assert stats.total_statistics.without_implementation_completed == 1
+
+
+@pytest.mark.parametrize(
+    "impl_type, total_attr, completed_attr",
+    [
+        (IMPLEMENTATION.CONFIGURATION, "configuration_total", "configuration_completed"),
+        (IMPLEMENTATION.PLATFORM, "platform_total", "platform_completed"),
+        (IMPLEMENTATION.FRAMEWORK, "framework_total", "framework_completed"),
+    ],
+)
+def test_non_code_implementation_type_completed(db, impl_type, total_attr, completed_attr):
+    req_id = UrnId(urn=URN, id="REQ_NC")
+    _insert_req(db, req_id=req_id, implementation=impl_type)
+    svc_id = UrnId(urn=URN, id="SVC_NC")
+    _insert_svc(db, svc_id=svc_id, req_ids=[req_id], verification=VERIFICATIONTYPES.MANUAL_TEST)
+    mvr_id = UrnId(urn=URN, id="MVR_NC")
+    _insert_mvr(db, mvr_id=mvr_id, svc_ids=[svc_id], passed=True)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+
+    assert getattr(stats.total_statistics, total_attr) == 1
+    assert getattr(stats.total_statistics, completed_attr) == 1
+    assert stats.requirement_statistics[req_id].completed is True
+
+
+_ALL_NON_CODE = sorted(NON_CODE_IMPLEMENTATIONS, key=lambda x: x.value)
+
+
+@pytest.mark.parametrize(
+    "impl_type, total_attr, completed_attr",
+    [
+        (IMPLEMENTATION.CONFIGURATION, "configuration_total", "configuration_completed"),
+        (IMPLEMENTATION.PLATFORM, "platform_total", "platform_completed"),
+        (IMPLEMENTATION.FRAMEWORK, "framework_total", "framework_completed"),
+    ],
+)
+def test_non_code_implementation_type_not_completed(db, impl_type, total_attr, completed_attr):
+    req_id = UrnId(urn=URN, id="REQ_NC")
+    _insert_req(db, req_id=req_id, implementation=impl_type)
+    svc_id = UrnId(urn=URN, id="SVC_NC")
+    _insert_svc(db, svc_id=svc_id, req_ids=[req_id], verification=VERIFICATIONTYPES.MANUAL_TEST)
+    mvr_id = UrnId(urn=URN, id="MVR_NC")
+    _insert_mvr(db, mvr_id=mvr_id, svc_ids=[svc_id], passed=False)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+
+    assert getattr(stats.total_statistics, total_attr) == 1
+    assert getattr(stats.total_statistics, completed_attr) == 0
+    assert stats.requirement_statistics[req_id].completed is False
+
+
+@pytest.mark.parametrize("impl_type", _ALL_NON_CODE)
+def test_non_code_implementation_with_annotation_raises(db, impl_type):
+    req_id = UrnId(urn=URN, id="REQ_ERR")
+    _insert_req(db, req_id=req_id, implementation=impl_type)
+    db.insert_annotation_impl(req_id, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    with pytest.raises(TypeError, match="should not have an implementation"):
+        StatisticsService(repo)
+
+
+@pytest.mark.parametrize("impl_type", _ALL_NON_CODE)
+def test_non_code_implementation_type_in_row(db, impl_type):
+    req_id = UrnId(urn=URN, id="REQ_TYPE")
+    _insert_req(db, req_id=req_id, implementation=impl_type)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+    assert stats.requirement_statistics[req_id].implementation_type is impl_type
 
 
 # -- MVR stats --
@@ -227,3 +304,36 @@ def test_to_status_dict_structure(db):
     assert "tests" in d["totals"]
     assert "automated_tests" in d["totals"]
     assert "manual_tests" in d["totals"]
+    reqs_totals = d["totals"]["requirements"]
+    assert "configuration" in reqs_totals
+    assert "platform" in reqs_totals
+    assert "framework" in reqs_totals
+    assert "without_implementation" in reqs_totals
+    for key in ("configuration", "platform", "framework", "without_implementation"):
+        assert "total" in reqs_totals[key]
+        assert "completed" in reqs_totals[key]
+
+
+def test_total_stats_non_code_properties():
+    from reqstool.services.statistics_service import TotalStats
+
+    ts = TotalStats(
+        without_implementation_total=1,
+        without_implementation_completed=1,
+        configuration_total=2,
+        configuration_completed=1,
+        platform_total=3,
+        platform_completed=2,
+        framework_total=4,
+        framework_completed=0,
+    )
+    assert ts.non_code_total == 10
+    assert ts.non_code_completed == 4
+
+
+def test_total_stats_non_code_properties_all_zero():
+    from reqstool.services.statistics_service import TotalStats
+
+    ts = TotalStats()
+    assert ts.non_code_total == 0
+    assert ts.non_code_completed == 0

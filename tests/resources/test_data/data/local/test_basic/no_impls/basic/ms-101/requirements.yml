@@ -43,3 +43,30 @@ requirements:
     implementation: N/A
     categories: ["maintainability", "functional-suitability"]
     revision: 0.0.1
+
+  - id: REQ_CFG
+    title: Service shall expose management endpoints on port 8079
+    description: Fulfilled by management.server.port=8079 in application config
+    rationale: Ops tooling relies on a fixed management port
+    significance: shall
+    implementation: configuration
+    categories: ["maintainability"]
+    revision: 0.0.1
+
+  - id: REQ_PLT
+    title: Service shall be highly available
+    description: Fulfilled by platform-level load balancing and redundancy
+    rationale: System uptime SLA requires platform HA
+    significance: shall
+    implementation: platform
+    categories: ["reliability"]
+    revision: 0.0.1
+
+  - id: REQ_FWK
+    title: Service shall have distributed tracing on all outbound calls
+    description: Fulfilled by OTel auto-configuration starter wiring traces automatically
+    rationale: Observability requirement across all services
+    significance: should
+    implementation: framework
+    categories: ["maintainability"]
+    revision: 0.0.1

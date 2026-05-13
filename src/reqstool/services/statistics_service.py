@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.models.urn_id import UrnId
-from reqstool.models.requirements import IMPLEMENTATION
+from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
 from reqstool.models.svcs import VERIFICATIONTYPES
 from reqstool.models.test_data import TEST_RUN_STATUS, TestData
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -53,6 +53,12 @@ class TotalStats:
     with_implementation: int = 0
     without_implementation_total: int = 0
     without_implementation_completed: int = 0
+    configuration_total: int = 0
+    configuration_completed: int = 0
+    platform_total: int = 0
+    platform_completed: int = 0
+    framework_total: int = 0
+    framework_completed: int = 0
     total_svcs: int = 0
     total_tests: int = 0
     passed_tests: int = 0
@@ -66,6 +72,27 @@ class TotalStats:
     failed_manual_tests: int = 0
     passed_automatic_tests: int = 0
     failed_automatic_tests: int = 0
+
+    @property
+    def non_code_total(self) -> int:
+        return self.without_implementation_total + self.configuration_total + self.platform_total + self.framework_total
+
+    @property
+    def non_code_completed(self) -> int:
+        return (
+            self.without_implementation_completed
+            + self.configuration_completed
+            + self.platform_completed
+            + self.framework_completed
+        )
+
+    @property
+    def code_reqs(self) -> int:
+        return self.total_requirements - self.non_code_total
+
+    @property
+    def code_completed(self) -> int:
+        return self.completed_requirements - self.non_code_completed
 
 
 @Requirements("REQ_028")
@@ -199,10 +226,27 @@ class StatisticsService:
         if nr_of_implementations > 0:
             self._totals.with_implementation += 1
 
-        if req_data.implementation == IMPLEMENTATION.NOT_APPLICABLE:
-            self._totals.without_implementation_total += 1
-            if completed:
-                self._totals.without_implementation_completed += 1
+        match req_data.implementation:
+            case IMPLEMENTATION.NOT_APPLICABLE:
+                self._totals.without_implementation_total += 1
+                if completed:
+                    self._totals.without_implementation_completed += 1
+            case IMPLEMENTATION.CONFIGURATION:
+                self._totals.configuration_total += 1
+                if completed:
+                    self._totals.configuration_completed += 1
+            case IMPLEMENTATION.PLATFORM:
+                self._totals.platform_total += 1
+                if completed:
+                    self._totals.platform_completed += 1
+            case IMPLEMENTATION.FRAMEWORK:
+                self._totals.framework_total += 1
+                if completed:
+                    self._totals.framework_completed += 1
+            case IMPLEMENTATION.IN_CODE:
+                pass  # tracked via with_implementation above
+            case _:
+                raise ValueError(f"Unhandled IMPLEMENTATION value: {req_data.implementation}")
 
         if completed:
             self._totals.completed_requirements += 1
@@ -213,13 +257,13 @@ class StatisticsService:
             self._totals.missing_manual_tests += mvr_stats.missing
 
     def _check_implementation(self, urn_id: UrnId, nr_of_implementations: int, implementation: IMPLEMENTATION) -> bool:
-        if nr_of_implementations > 0 and implementation == IMPLEMENTATION.IN_CODE:
+        if implementation == IMPLEMENTATION.IN_CODE:
+            return nr_of_implementations > 0
+        if implementation in NON_CODE_IMPLEMENTATIONS:
+            if nr_of_implementations > 0:
+                raise TypeError(f"Requirement {urn_id} should not have an implementation")
             return True
-        if nr_of_implementations == 0 and implementation == IMPLEMENTATION.NOT_APPLICABLE:
-            return True
-        if nr_of_implementations > 0 and implementation == IMPLEMENTATION.NOT_APPLICABLE:
-            raise TypeError(f"Requirement {urn_id} should not have an implementation")
-        return False
+        raise ValueError(f"Unhandled IMPLEMENTATION value: {implementation}")
 
     def _get_test_stats(self, tests: list[TestData], svcs) -> TestStats:
         if not tests:
@@ -316,6 +360,18 @@ class StatisticsService:
                 "without_implementation": {
                     "total": ts.without_implementation_total,
                     "completed": ts.without_implementation_completed,
+                },
+                "configuration": {
+                    "total": ts.configuration_total,
+                    "completed": ts.configuration_completed,
+                },
+                "platform": {
+                    "total": ts.platform_total,
+                    "completed": ts.platform_completed,
+                },
+                "framework": {
+                    "total": ts.framework_total,
+                    "completed": ts.framework_completed,
                 },
             },
             "svcs": {
