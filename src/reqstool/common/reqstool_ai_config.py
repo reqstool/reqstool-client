@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Optional
 
-import yaml
+from ruamel.yaml import YAML as _YAML
 
 CONFIG_FILENAME = ".reqstool-ai.yaml"
 
@@ -26,8 +26,9 @@ def resolve_system_path(config_path: Path) -> Path:
 
     Raises ValueError if `system` or `system.path` is missing or not a string.
     """
+    yaml = _YAML()
     with open(config_path) as f:
-        data = yaml.safe_load(f) or {}
+        data = yaml.load(f) or {}
 
     system = data.get("system")
     if not isinstance(system, dict):
