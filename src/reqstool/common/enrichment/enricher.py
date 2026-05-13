@@ -46,32 +46,34 @@ def _block_field(label: str, value: str) -> list:
     lines = value.splitlines()
     if not lines:
         return []
-    result = [f"> **{label}**: {lines[0]}"]
+    prefix = f"**{label}**: "
+    indent = " " * len(prefix)
+    result = [prefix + lines[0]]
     for line in lines[1:]:
-        result.append(f"> {line}" if line.strip() else ">")
+        result.append(indent + line if line.strip() else "")
     return result
 
 
 def _req_block_lines(req: RequirementData) -> list:
     lines = []
-    lines.append(f"> **Significance**: {_format_value(req.significance.value)}")
+    lines.append(f"**Significance**: {_format_value(req.significance.value)}")
     if req.description:
         lines.extend(_block_field("Description", req.description))
     if req.rationale:
         lines.extend(_block_field("Rationale", req.rationale))
     if req.categories:
         cats = ", ".join(sorted(_format_value(c.value) for c in req.categories))
-        lines.append(f"> **Categories**: {cats}")
+        lines.append(f"**Categories**: {cats}")
     if req.references:
         refs = []
         for ref_data in req.references:
             for uid in sorted(ref_data.requirement_ids, key=str):
                 refs.append(uid.id)
         if refs:
-            lines.append(f"> **References**: {', '.join(refs)}")
-    lines.append(f"> **Implementation**: {_format_value(req.implementation.value)}")
-    lines.append(f"> **Revision**: {req.revision}")
-    lines.append(f"> **Lifecycle**: {_format_value(req.lifecycle.state.value)}")
+            lines.append(f"**References**: {', '.join(refs)}")
+    lines.append(f"**Implementation**: {_format_value(req.implementation.value)}")
+    lines.append(f"**Revision**: {req.revision}")
+    lines.append(f"**Lifecycle**: {_format_value(req.lifecycle.state.value)}")
     return lines
 
 
@@ -79,14 +81,14 @@ def _svc_block_lines(svc: SVCData) -> list:
     lines = []
     if svc.description:
         lines.extend(_block_field("Description", svc.description))
-    lines.append(f"> **Verification**: {_format_value(svc.verification.value)}")
+    lines.append(f"**Verification**: {_format_value(svc.verification.value)}")
     if svc.instructions:
         lines.extend(_block_field("Instructions", svc.instructions))
     if svc.requirement_ids:
         reqs = ", ".join(uid.id for uid in svc.requirement_ids)
-        lines.append(f"> **Requirements**: {reqs}")
-    lines.append(f"> **Revision**: {svc.revision}")
-    lines.append(f"> **Lifecycle**: {_format_value(svc.lifecycle.state.value)}")
+        lines.append(f"**Requirements**: {reqs}")
+    lines.append(f"**Revision**: {svc.revision}")
+    lines.append(f"**Lifecycle**: {_format_value(svc.lifecycle.state.value)}")
     return lines
 
 
@@ -96,7 +98,7 @@ def _mvr_block_lines(mvr: MVRData) -> list:
         lines.extend(_block_field("Comment", mvr.comment))
     if mvr.svc_ids:
         svcs = ", ".join(uid.id for uid in mvr.svc_ids)
-        lines.append(f"> **SVCs**: {svcs}")
+        lines.append(f"**SVCs**: {svcs}")
     return lines
 
 
