@@ -288,10 +288,9 @@ export const onReadDocument: OnReadDocumentHookV1 = async (ctx, read) => {
     ctx.lifecycle.onDispose(async () => { await client?.close(); client = null })
   }
   const result = await read()
-  const kind = ctx.document.kind === 'delta-spec' ? 'spec' : ctx.document.kind
   const enriched = await client.callTool('enrich_document', {
     content: result.markdown,
-    preset: `openspec:${kind}`,
+    preset: `openspec:${ctx.document.kind}`,
   })
   return { ...result, markdown: enriched.content[0].text }
 }
