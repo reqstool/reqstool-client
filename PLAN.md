@@ -2,11 +2,11 @@
 
 ## Context
 
-Reqstool spec files use opaque IDs (e.g. `CLI_0003`, `SVC_CLI_0003`) to reference
-requirements, keeping specs DRY. In a plain-text viewer these IDs are unreadable
-without context. The `render` command resolves those IDs from the loaded requirements
-database and injects title + description inline, making specs human-readable while
-reqstool remains the single source of truth.
+OpenSpec files using the reqstool integration reference requirements via opaque IDs
+(e.g. `CLI_0003`, `SVC_CLI_0003`), keeping specs DRY. In a plain-text viewer these
+IDs are unreadable without context. The `render` command resolves those IDs from the
+loaded requirements database and injects title + description inline, making specs
+human-readable while reqstool remains the single source of truth.
 
 **Scope**: One-shot mode only. Daemon mode (`--stdio`) is deferred to a follow-up.
 
