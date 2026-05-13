@@ -32,7 +32,9 @@ from reqstool.commands.generate_json.generate_json import GenerateJsonCommand
 from reqstool.commands.report import report
 from reqstool.commands.report.criterias.group_by import GroupbyOptions
 from reqstool.commands.report.criterias.sort_by import SortByOptions
+from reqstool.commands.enrich.enrich import EnrichCommand
 from reqstool.commands.status.status import StatusCommand
+from reqstool.common.enrichment.enricher import BUILT_IN_PRESETS
 from reqstool.common.utils import Utils
 from reqstool.common.validators.syntax_validator import JsonSchemaItem
 from reqstool.locations.git_location import GitLocation
@@ -293,6 +295,31 @@ class Command:
         status_source_subparsers = status_parser.add_subparsers(dest="source", required=True)
         self._add_subparsers_source(status_source_subparsers)
 
+        # command: enrich
+        enrich_parser = subparsers.add_parser(
+            "enrich",
+            help=(
+                "Enrich a document with requirement/SVC/MVR titles and descriptions. "
+                "Auto-detects dataset from .reqstool-ai.yaml if no source is given."
+            ),
+        )
+        enrich_parser.add_argument(
+            "--preset",
+            required=True,
+            choices=sorted(BUILT_IN_PRESETS),
+            help="Enrichment preset (e.g. openspec:spec, openspec:design)",
+        )
+        enrich_parser.add_argument(
+            "--input",
+            "-i",
+            metavar="FILE",
+            default=None,
+            help="Input file to enrich (default: stdin)",
+        )
+        self._add_argument_output(enrich_parser)
+        enrich_source_subparsers = enrich_parser.add_subparsers(dest="source", required=False)
+        self._add_subparsers_source(enrich_source_subparsers, include_report_options=False, include_filter_options=False)
+
         # command: lsp
         lsp_parser = subparsers.add_parser(
             "lsp", help="Start the Language Server Protocol server (requires reqstool[lsp])"
@@ -487,6 +514,42 @@ class Command:
             logging.fatal("reqstool MCP server crashed: %s", exc)
             sys.exit(1)
 
+    @Requirements("REQ_039")
+    def command_enrich(self, enrich_args: argparse.Namespace):
+        if getattr(enrich_args, "source", None) is None:
+            from pathlib import Path
+
+            from reqstool.common.reqstool_ai_config import CONFIG_FILENAME, find_config, resolve_system_path
+
+            config_path = find_config()
+            if config_path is None:
+                print(
+                    f"reqstool enrich: no {CONFIG_FILENAME} found from {Path.cwd()} upward; "
+                    f"either run from a project containing {CONFIG_FILENAME} or specify an explicit source "
+                    f"(e.g. `reqstool enrich --preset openspec:spec --input foo.md local -p <path>`).",
+                    file=sys.stderr,
+                )
+                sys.exit(2)
+            try:
+                resolved = resolve_system_path(config_path)
+            except ValueError as exc:
+                print(f"reqstool enrich: {exc}", file=sys.stderr)
+                sys.exit(2)
+            location: LocationInterface = LocalLocation(path=str(resolved))
+        else:
+            location = self._get_initial_source(enrich_args)
+
+        input_file = getattr(enrich_args, "input", None)
+        if input_file is None:
+            input_content = sys.stdin.read()
+        else:
+            with open(input_file, encoding="utf-8") as f:
+                input_content = f.read()
+
+        config = BUILT_IN_PRESETS[enrich_args.preset]
+        result = EnrichCommand(location=location, input_content=input_content, config=config)
+        enrich_args.output.write(result.result)
+
     def print_help(self):
         self.__parser.print_help(sys.stderr)
 
@@ -523,6 +586,8 @@ def main():  # noqa: C901
             command.command_lsp(lsp_args=args)
         elif args.command == "mcp":
             command.command_mcp(mcp_args=args)
+        elif args.command == "enrich":
+            command.command_enrich(enrich_args=args)
         else:
             command.print_help()
     except MissingRequirementsFileError as exc:

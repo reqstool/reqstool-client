@@ -4,6 +4,7 @@
 import logging
 
 from reqstool.common.project_session import ProjectSession
+from reqstool.common.enrichment.enricher import BUILT_IN_PRESETS, enrich_text
 from reqstool.common.queries.details import (
     get_mvr_details,
     get_requirement_details,
@@ -129,6 +130,21 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
         if result is None:
             raise ValueError(f"URN {urn!r} not found")
         return result
+
+    @mcp.tool()
+    def enrich_document(content: str, preset: str) -> str:
+        """Enrich an OpenSpec document by resolving requirement/SVC/MVR IDs.
+
+        Injects titles and further fields next to each known ID according to the
+        named preset. Both arguments are required.
+
+        Presets: openspec:spec, openspec:delta-spec, openspec:design,
+                 openspec:proposal, openspec:tasks
+        """
+        if preset not in BUILT_IN_PRESETS:
+            raise ValueError(f"Unknown preset {preset!r}. Valid: {sorted(BUILT_IN_PRESETS)}")
+        config = BUILT_IN_PRESETS[preset]
+        return enrich_text(content, repo.get_all_requirements(), repo.get_all_svcs(), repo.get_all_mvrs(), config)
 
     try:
         mcp.run()
