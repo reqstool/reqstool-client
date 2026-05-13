@@ -273,6 +273,9 @@
                     "type": "string",
                     "enum": [
                         "in-code",
+                        "configuration",
+                        "platform",
+                        "framework",
                         "N/A"
                     ],
                     "description": "Enum value to describe how the requirement is implemented. Defaults to 'in-code' if omitted"

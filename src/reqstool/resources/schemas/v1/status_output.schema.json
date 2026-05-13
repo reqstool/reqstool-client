@@ -58,7 +58,7 @@
                 },
                 "implementation_type": {
                     "type": "string",
-                    "enum": ["in-code", "N/A"],
+                    "enum": ["in-code", "configuration", "platform", "framework", "N/A"],
                     "description": "How the requirement is implemented"
                 },
                 "automated_tests": {
@@ -129,11 +129,29 @@
                 }
             }
         },
+        "non_code_type_totals": {
+            "type": "object",
+            "description": "Totals for a non-code implementation type",
+            "additionalProperties": false,
+            "required": ["total", "completed"],
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total requirements of this implementation type"
+                },
+                "completed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Completed requirements of this implementation type"
+                }
+            }
+        },
         "requirements_totals": {
             "type": "object",
             "description": "Aggregate requirement totals",
             "additionalProperties": false,
-            "required": ["total", "completed", "with_implementation", "without_implementation"],
+            "required": ["total", "completed", "with_implementation", "without_implementation", "configuration", "platform", "framework"],
             "properties": {
                 "total": {
                     "type": "integer",
@@ -151,22 +169,20 @@
                     "description": "Number of requirements with implementation_type in-code"
                 },
                 "without_implementation": {
-                    "type": "object",
-                    "description": "Requirements without in-code implementation (N/A)",
-                    "additionalProperties": false,
-                    "required": ["total", "completed"],
-                    "properties": {
-                        "total": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Total requirements without implementation"
-                        },
-                        "completed": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Completed requirements without implementation"
-                        }
-                    }
+                    "$ref": "#/$defs/non_code_type_totals",
+                    "description": "Requirements with implementation_type N/A"
+                },
+                "configuration": {
+                    "$ref": "#/$defs/non_code_type_totals",
+                    "description": "Requirements with implementation_type configuration"
+                },
+                "platform": {
+                    "$ref": "#/$defs/non_code_type_totals",
+                    "description": "Requirements with implementation_type platform"
+                },
+                "framework": {
+                    "$ref": "#/$defs/non_code_type_totals",
+                    "description": "Requirements with implementation_type framework"
                 }
             }
         },

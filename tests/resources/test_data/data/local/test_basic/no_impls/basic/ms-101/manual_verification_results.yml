@@ -14,3 +14,13 @@ results:
     svc_ids: ["SVC_033"]
     comment: failing
     pass: false
+
+  - id: MVR_CFG
+    svc_ids: ["SVC_CFG"]
+    comment: Confirmed management endpoint responds on port 8079
+    pass: true
+
+  - id: MVR_PLT
+    svc_ids: ["SVC_PLT"]
+    comment: Platform HA confirmed by ops review
+    pass: true

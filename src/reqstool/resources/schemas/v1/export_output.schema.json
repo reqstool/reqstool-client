@@ -167,7 +167,7 @@
                 },
                 "implementation_type": {
                     "type": "string",
-                    "enum": ["in-code", "N/A"],
+                    "enum": ["in-code", "configuration", "platform", "framework", "N/A"],
                     "description": "How the requirement is implemented"
                 },
                 "categories": {
