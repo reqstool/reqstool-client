@@ -9,8 +9,7 @@ resolves those IDs from the loaded requirements database and injects titles and
 optionally further fields inline, making specs human-readable while reqstool remains
 the single source of truth.
 
-**Scope**: one-shot CLI command + MCP tool. MVR IDs do not appear in OpenSpec files
-and are out of scope. Daemon mode (`--stdio`) is deferred to a follow-up.
+**Scope**: one-shot CLI command + MCP tool. Daemon mode (`--stdio`) is deferred to a follow-up.
 
 ---
 
@@ -54,6 +53,16 @@ reqstool enrich [--input <file>] [-o <file>] [--fields <field,...>] [source]
 | `requirement_ids` | Requirements this SVC covers |
 | `revision` | Semver string |
 | `lifecycle` | State |
+
+**MVRs**
+
+MVR has no `title` field. The inline slot uses pass/fail status instead: `MVR_001 — PASSED` / `MVR_001 — FAILED`.
+
+| Field | Description |
+|-------|-------------|
+| `passed` | Injected inline: `PASSED` or `FAILED` |
+| `comment` | Free-text verification comment |
+| `svc_ids` | SVCs covered by this MVR |
 
 `--fields all` includes every field above that has a non-null value.
 
@@ -289,7 +298,7 @@ echo "### Requirement: REQ_101" | \
 ## Notes
 
 - `REQ_XXX` placeholder: verify next available REQ number in `docs/reqstool/requirements.yml`.
-- MVR IDs do not appear in OpenSpec files — MVR enrichment is out of scope.
+- MVR enrichment is supported. Inline slot uses `PASSED`/`FAILED` (no title field). Requires `repo.get_all_mvrs()` in the lookup build.
 - Daemon mode (`--stdio`) is out of scope for this PR.
 - The `enrich_text` function in `enricher.py` is the single implementation used by
   both `EnrichCommand` and the MCP `enrich_document` tool.
