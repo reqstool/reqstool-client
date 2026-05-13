@@ -70,7 +70,9 @@ class RequirementsIndata(BaseModel):
                 RequirementsIndata._ensure_absolute_path_and_check_existance(
                     paths=[self.dst_path, self.location.path], original=original
                 )
-            elif isinstance(self.location, (MavenLocation, LocalMavenLocation, NpmLocation, PypiLocation, LocalPypiLocation)):
+            elif isinstance(
+                self.location, (MavenLocation, LocalMavenLocation, NpmLocation, PypiLocation, LocalPypiLocation)
+            ):
                 RequirementsIndata._ensure_absolute_path_and_check_existance(paths=[self.dst_path], original=original)
             elif isinstance(self.location, LocalLocation):
                 # resolve soft link
