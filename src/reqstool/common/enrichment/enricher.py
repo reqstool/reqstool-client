@@ -203,7 +203,7 @@ def enrich_text(  # noqa: C901
                     info = lookup[id_str]
                     output.append(stripped + f" — {info.inline_text}" + trailing)
                     for bl in info.block_lines:
-                        output.append(bl + "\n")
+                        output.append(bl + "  \n")  # trailing spaces = Markdown hard line break
                     last_enriched_id = id_str
                     continue
 
