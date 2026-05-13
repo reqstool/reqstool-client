@@ -111,6 +111,14 @@ A stub matches: `^\s*The system SHALL (implement|pass)\s+<ID>\.?\s*$`
 > **Lifecycle**: effective
 ```
 
+For MVRs:
+
+```
+#### Result: MVR_001 — PASSED
+> **Comment**: Verified manually on 2026-01-15
+> **SVCs**: SVC_CORE_0001, SVC_CORE_0002
+```
+
 Fields with null/empty values are omitted silently.
 
 ---
