@@ -2,7 +2,6 @@
 
 
 import json
-import re
 import shutil
 
 from rich.columns import Columns
@@ -22,7 +21,7 @@ from reqstool.storage.requirements_repository import RequirementsRepository
 
 _ORANGE = "dark_orange"
 _DIM = "dim"
-_ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+_MIN_CONSOLE_WIDTH = 80
 
 # Labels shown in the per-row Implementation cell for non-code types.
 _NON_CODE_LABELS: dict[IMPLEMENTATION, str] = {
@@ -37,7 +36,7 @@ assert (
 
 
 def _make_console() -> Console:
-    width = max(80, shutil.get_terminal_size((120, 24)).columns)
+    width = max(_MIN_CONSOLE_WIDTH, shutil.get_terminal_size((120, 24)).columns)
     return Console(highlight=False, force_terminal=True, color_system="standard", width=width)
 
 
@@ -267,13 +266,9 @@ def _summarize_statistics(ts: TotalStats) -> str:
         + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
     )
 
-    stacked_tables = [code_table, config_table, platform_table, framework_table, na_table]
-    stacked_rendered = "".join(_render(t) for t in stacked_tables)
-    stacked_width = max(
-        (len(_ANSI_ESCAPE.sub("", line)) for line in stacked_rendered.split("\n") if line.strip()),
-        default=80,
-    )
-    impl_console = Console(highlight=False, force_terminal=True, color_system="standard", width=stacked_width)
+    impl_tables = [code_table, config_table, platform_table, framework_table, na_table]  # na_table intentionally last
+    stacked_rendered = "".join(_render(t) for t in impl_tables)
+    impl_console = _make_console()
     with impl_console.capture() as cap:
         impl_console.print(IMPLEMENTATIONS, justify="center")
     impl_header = cap.get()
