@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -253,7 +254,9 @@ class CombinedRawDatasetsGenerator:
         mvrs_data = None
         automated_tests = None
 
-        tmp_path = self._tmpdir_manager.get_suffix_path("can_we_use_urn_here").absolute()
+        location_type, location_uri = self.__extract_location_provenance(current_location_handler.current)
+        safe_suffix = f"{location_type}_" + re.sub(r"[^a-zA-Z0-9._-]", "_", location_uri or "")[:80]
+        tmp_path = self._tmpdir_manager.get_suffix_path(safe_suffix).absolute()
 
         actual_tmp_path = current_location_handler.make_available_on_localdisk(dst_path=tmp_path)
 
@@ -279,9 +282,6 @@ class CombinedRawDatasetsGenerator:
         annotations_data, svcs_data, automated_tests, mvrs_data = self.__parse_source_other(
             actual_tmp_path, requirements_indata, rmg
         )
-
-        # Capture location provenance
-        location_type, location_uri = self.__extract_location_provenance(current_location_handler.current)
 
         # Capture resolved file paths for LocalLocation only
         source_paths = self.__extract_source_paths(current_location_handler.current, requirements_indata)
