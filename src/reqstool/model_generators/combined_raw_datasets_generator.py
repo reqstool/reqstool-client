@@ -4,6 +4,9 @@ import logging
 import os
 import re
 from collections import defaultdict
+
+_SUFFIX_MAX_LEN = 80
+_UNSAFE_PATH_CHARS = re.compile(r"[^a-zA-Z0-9._-]")
 from typing import Dict, List, Optional, Set, Tuple
 
 from reqstool_python_decorators.decorators.decorators import Requirements
@@ -255,7 +258,9 @@ class CombinedRawDatasetsGenerator:
         automated_tests = None
 
         location_type, location_uri = self.__extract_location_provenance(current_location_handler.current)
-        safe_suffix = f"{location_type}_" + re.sub(r"[^a-zA-Z0-9._-]", "_", location_uri or "")[:80]
+        type_prefix = location_type or "unknown"
+        sanitized_uri = re.sub(r"\.{2,}", "_", _UNSAFE_PATH_CHARS.sub("_", location_uri or ""))
+        safe_suffix = f"{type_prefix}_{sanitized_uri}"[:_SUFFIX_MAX_LEN]
         tmp_path = self._tmpdir_manager.get_suffix_path(safe_suffix).absolute()
 
         actual_tmp_path = current_location_handler.make_available_on_localdisk(dst_path=tmp_path)
@@ -302,19 +307,31 @@ class CombinedRawDatasetsGenerator:
     @staticmethod
     def __extract_location_provenance(location: LocationInterface) -> tuple:
         """Extract location_type and location_uri from a resolved location."""
+        from urllib.parse import urlparse, urlunparse
+
         from reqstool.locations.git_location import GitLocation
+        from reqstool.locations.local_maven_location import LocalMavenLocation
+        from reqstool.locations.local_pypi_location import LocalPypiLocation
         from reqstool.locations.maven_location import MavenLocation
         from reqstool.locations.pypi_location import PypiLocation
 
         if isinstance(location, LocalLocation):
             return "local", f"file://{os.path.abspath(location.path)}"
         elif isinstance(location, GitLocation):
-            return "git", location.url
+            parsed = urlparse(location.url)
+            if parsed.username or parsed.password:
+                parsed = parsed._replace(netloc=parsed.hostname + (f":{parsed.port}" if parsed.port else ""))
+            return "git", urlunparse(parsed)
         elif isinstance(location, MavenLocation):
             return "maven", f"{location.group_id}:{location.artifact_id}:{location.version}"
         elif isinstance(location, PypiLocation):
             return "pypi", f"{location.package}=={location.version}"
-        return None, None
+        elif isinstance(location, LocalMavenLocation):
+            return "local_maven", f"file://{os.path.abspath(location.path)}"
+        elif isinstance(location, LocalPypiLocation):
+            return "local_pypi", f"file://{os.path.abspath(location.path)}"
+        logging.warning("Unknown location type %s; using 'unknown' prefix for tmp dir", type(location).__name__)
+        return "unknown", None
 
     @staticmethod
     def __extract_source_paths(location: LocationInterface, requirements_indata: RequirementsIndata) -> Dict[str, str]:

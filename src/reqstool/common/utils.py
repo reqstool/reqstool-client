@@ -213,6 +213,9 @@ class TempDirectoryManager:
 
     def get_suffix_path(self, suffix: str) -> Path:
         new_path = Path(self._tmpdir.name) / str(self._count) / suffix
+        root = Path(self._tmpdir.name).resolve()
+        if not new_path.resolve().is_relative_to(root):
+            raise ValueError(f"suffix {suffix!r} would escape the managed temp directory")
         new_path.mkdir(parents=True, exist_ok=True)
         self._count += 1
         return new_path
