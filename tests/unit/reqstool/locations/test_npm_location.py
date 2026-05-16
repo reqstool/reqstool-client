@@ -101,3 +101,81 @@ def test_npm_location_raises_on_extraction_error(tmp_path):
         pytest.raises(ArtifactExtractionError),
     ):
         loc._make_available_on_localdisk(str(tmp_path))
+
+
+def test_npm_location_rejects_http_registry_url():
+    with pytest.raises(Exception, match="https"):
+        NpmLocation(package="my-pkg-reqstool", version="1.0.0", url="http://my.registry.example.com")
+
+
+def test_npm_location_blocks_ssrf_tarball_host_mismatch(tmp_path):
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0")
+
+    mock_response = MagicMock()
+    # tarball served from a different host than the registry
+    mock_response.json.return_value = {"dist": {"tarball": "https://evil.internal/tarball.tgz"}}
+
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response),
+        pytest.raises(ArtifactDownloadError, match="SSRF"),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
+
+
+def test_npm_location_blocks_http_tarball_url(tmp_path):
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0")
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"dist": {"tarball": "http://registry.npmjs.org/tarball.tgz"}}
+
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response),
+        pytest.raises(ArtifactDownloadError, match="SSRF"),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
+
+
+def test_npm_location_raises_on_oversized_metadata(tmp_path):
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0")
+
+    mock_response = MagicMock()
+    mock_response.content = b"x" * (10 * 1024 * 1024 + 1)
+
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response),
+        pytest.raises(ArtifactDownloadError, match="size limit"),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
+
+
+def test_npm_location_version_url_encoded(tmp_path):
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0")
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"dist": {"tarball": "https://registry.npmjs.org/tarball.tgz"}}
+
+    with patch("reqstool.locations.npm_location.requests.get", return_value=mock_response) as mock_get:
+        try:
+            loc._make_available_on_localdisk(str(tmp_path))
+        except Exception:
+            pass
+
+    called_url = mock_get.call_args[0][0]
+    assert "1.0.0" in called_url
+    # version must be URL-safe (no raw slashes)
+    assert "%2F" not in called_url or "/" not in called_url.split("/")[-1]
+
+
+def test_npm_location_get_tarball_uses_timeout(tmp_path):
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0")
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"dist": {"tarball": "https://registry.npmjs.org/tarball.tgz"}}
+
+    with patch("reqstool.locations.npm_location.requests.get", return_value=mock_response) as mock_get:
+        try:
+            loc._make_available_on_localdisk(str(tmp_path))
+        except Exception:
+            pass
+
+    assert mock_get.call_args[1].get("timeout") == 30

@@ -238,16 +238,13 @@ class RequirementsModelGenerator:
 
     def __parse_location_npm(self, locations_obj, instance_type, locations):
         if locations_obj.npm is not None:
-            NPM_REGISTRY_URL: str = "https://registry.npmjs.org"
             for npm in locations_obj.npm:
+                npm_kwargs = {"env_token": npm.env_token, "package": npm.package, "version": npm.version}
+                if npm.url:
+                    npm_kwargs["url"] = npm.url.root
                 npm_location = instance_type(
                     parent=self.parent,
-                    current_unresolved=NpmLocation(
-                        env_token=npm.env_token,
-                        url=npm.url.root if npm.url else NPM_REGISTRY_URL,
-                        package=npm.package,
-                        version=npm.version,
-                    ),
+                    current_unresolved=NpmLocation(**npm_kwargs),
                 )
 
                 locations.append(npm_location)
