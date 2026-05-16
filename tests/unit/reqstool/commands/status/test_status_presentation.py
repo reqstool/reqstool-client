@@ -290,3 +290,48 @@ def test_summarize_statistics_non_zero_non_code_counts_show_percentages():
 def test_non_code_labels_covers_all_non_code_implementations():
     """_NON_CODE_LABELS must stay in sync with NON_CODE_IMPLEMENTATIONS."""
     assert set(_NON_CODE_LABELS.keys()) == NON_CODE_IMPLEMENTATIONS
+
+
+def test_summarize_statistics_na_appears_after_framework():
+    """N/A section must appear after the Framework section (stacked layout, N/A last)."""
+    result = _summarize_statistics(
+        TotalStats(
+            total_requirements=7,
+            without_implementation_total=1,
+            without_implementation_completed=0,
+            configuration_total=2,
+            platform_total=1,
+            framework_total=1,
+        )
+    )
+    framework_pos = result.find("Framework")
+    na_pos = result.find("N/A")
+    assert framework_pos != -1, "Framework section must be present"
+    assert na_pos != -1, "N/A section must be present"
+    assert na_pos > framework_pos, "N/A must appear after Framework (stacked, N/A last)"
+
+
+def test_summarize_statistics_section_order():
+    """Implementation sections must appear in order: In Code, Configuration, Platform, Framework, N/A."""
+    result = _summarize_statistics(
+        TotalStats(
+            total_requirements=10,
+            with_implementation=4,
+            without_implementation_total=2,
+            configuration_total=2,
+            platform_total=1,
+            framework_total=1,
+        )
+    )
+    positions = {
+        "In Code": result.find("In Code"),
+        "Configuration": result.find("Configuration"),
+        "Platform": result.find("Platform"),
+        "Framework": result.find("Framework"),
+        "N/A": result.find("N/A"),
+    }
+    assert all(p != -1 for p in positions.values()), f"Missing sections: {positions}"
+    assert positions["In Code"] < positions["Configuration"]
+    assert positions["Configuration"] < positions["Platform"]
+    assert positions["Platform"] < positions["Framework"]
+    assert positions["Framework"] < positions["N/A"]
