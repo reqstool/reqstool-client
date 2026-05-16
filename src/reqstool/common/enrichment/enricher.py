@@ -174,7 +174,7 @@ def enrich_text(  # noqa: C901
 
     for line in text.splitlines(keepends=True):
         stripped = line.rstrip("\n\r")
-        trailing = line[len(stripped):]  # noqa: E203
+        trailing = line[len(stripped) :]  # noqa: E203
 
         # Fenced block state machine
         if stripped.strip().startswith("```") or stripped.strip().startswith("~~~"):
@@ -200,7 +200,7 @@ def enrich_text(  # noqa: C901
                 last_match = matches[-1]
                 id_str = last_match.group(0)
                 before = stripped[: last_match.start()]  # noqa: E203
-                after = stripped[last_match.end():].rstrip()
+                after = stripped[last_match.end() :].rstrip()  # noqa: E203
                 if ":" in before and not after:
                     info = lookup[id_str]
                     output.append(stripped + f" — {info.inline_text}" + trailing)
@@ -222,7 +222,7 @@ def enrich_text(  # noqa: C901
             for m in reversed(matches):
                 id_str = m.group(0)
                 info = lookup[id_str]
-                result = result[: m.end()] + f" — {info.inline_text}" + result[m.end():]  # noqa: E203
+                result = result[: m.end()] + f" — {info.inline_text}" + result[m.end() :]  # noqa: E203
             output.append(result + trailing)
 
     return "".join(output)

@@ -318,7 +318,9 @@ class Command:
         )
         self._add_argument_output(enrich_parser)
         enrich_source_subparsers = enrich_parser.add_subparsers(dest="source", required=False)
-        self._add_subparsers_source(enrich_source_subparsers, include_report_options=False, include_filter_options=False)
+        self._add_subparsers_source(
+            enrich_source_subparsers, include_report_options=False, include_filter_options=False
+        )
 
         # command: lsp
         lsp_parser = subparsers.add_parser(
