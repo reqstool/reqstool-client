@@ -125,6 +125,9 @@ class Implementation(StrEnum):
     """
 
     in_code = 'in-code'
+    configuration = 'configuration'
+    platform = 'platform'
+    framework = 'framework'
     N_A = 'N/A'
 
 

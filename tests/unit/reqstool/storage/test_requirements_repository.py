@@ -6,6 +6,7 @@ from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import (
     CATEGORIES,
     IMPLEMENTATION,
+    NON_CODE_IMPLEMENTATIONS,
     SIGNIFICANCETYPES,
     RequirementData,
     MetaData,
@@ -392,3 +393,26 @@ def test_get_urn_location_no_values(db):
 def test_get_urn_location_unknown_urn(db):
     repo = RequirementsRepository(db)
     assert repo.get_urn_location("nonexistent") is None
+
+
+# -- Non-code implementation type round-trips --
+
+
+@pytest.mark.parametrize("impl_type", list(NON_CODE_IMPLEMENTATIONS))
+def test_non_code_implementation_round_trip(db, impl_type):
+    req_id = UrnId(urn=URN, id="REQ_NC")
+    req = RequirementData(
+        id=req_id,
+        title="Non-code req",
+        significance=SIGNIFICANCETYPES.SHALL,
+        description="Desc",
+        implementation=impl_type,
+        categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+        revision="1.0.0",
+    )
+    db.insert_requirement(req_id.urn, req)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    reqs = repo.get_all_requirements()
+    assert reqs[req_id].implementation is impl_type

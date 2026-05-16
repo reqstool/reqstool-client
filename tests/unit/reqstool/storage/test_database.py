@@ -473,3 +473,24 @@ def test_full_cascade_chain(db, sample_requirement, sample_svc, sample_mvr):
     # SVCs and MVRs themselves remain — only their links to the deleted requirement are gone
     assert db.connection.execute("SELECT COUNT(*) FROM svcs").fetchone()[0] == 1
     assert db.connection.execute("SELECT COUNT(*) FROM mvrs").fetchone()[0] == 1
+
+
+# -- New implementation type CHECK constraint --
+
+
+@pytest.mark.parametrize("impl_type", ["configuration", "platform", "framework"])
+def test_insert_requirement_new_implementation_type_accepted(db, impl_type):
+    """SQLite CHECK constraint accepts the new non-code implementation values."""
+    req = RequirementData(
+        id=UrnId(urn="ms-001", id="REQ_NC"),
+        title="Non-code requirement",
+        significance=SIGNIFICANCETYPES.SHALL,
+        description="Test",
+        implementation=IMPLEMENTATION(impl_type),
+        categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+        revision="1.0.0",
+    )
+    db.insert_requirement("ms-001", req)
+    db.commit()
+    row = db.connection.execute("SELECT implementation FROM requirements WHERE urn='ms-001' AND id='REQ_NC'").fetchone()
+    assert row[0] == impl_type
