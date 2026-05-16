@@ -267,17 +267,18 @@ def _summarize_statistics(ts: TotalStats) -> str:
         + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
     )
 
-    cols_rendered = _render(Columns([code_table, na_table, config_table, platform_table, framework_table]))
-    cols_width = max(
-        (len(_ANSI_ESCAPE.sub("", line)) for line in cols_rendered.split("\n") if line.strip()),
+    stacked_tables = [code_table, config_table, platform_table, framework_table, na_table]
+    stacked_rendered = "".join(_render(t) for t in stacked_tables)
+    stacked_width = max(
+        (len(_ANSI_ESCAPE.sub("", line)) for line in stacked_rendered.split("\n") if line.strip()),
         default=80,
     )
-    impl_console = Console(highlight=False, force_terminal=True, color_system="standard", width=cols_width)
+    impl_console = Console(highlight=False, force_terminal=True, color_system="standard", width=stacked_width)
     with impl_console.capture() as cap:
         impl_console.print(IMPLEMENTATIONS, justify="center")
     impl_header = cap.get()
 
-    return "\n" + impl_header + cols_rendered + _render(Columns([tests_table, svcs_table]))
+    return "\n" + impl_header + stacked_rendered + _render(Columns([tests_table, svcs_table]))
 
 
 def __numbers_as_percentage(numerator: int, denominator: int) -> str:
