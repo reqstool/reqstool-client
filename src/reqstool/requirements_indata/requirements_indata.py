@@ -16,6 +16,7 @@ from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxV
 from reqstool.locations.git_location import GitLocation
 from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.local_maven_location import LocalMavenLocation
+from reqstool.locations.local_npm_location import LocalNpmLocation
 from reqstool.locations.local_pypi_location import LocalPypiLocation
 from reqstool.locations.location import LocationInterface
 from reqstool.locations.maven_location import MavenLocation
@@ -71,7 +72,8 @@ class RequirementsIndata(BaseModel):
                     paths=[self.dst_path, self.location.path], original=original
                 )
             elif isinstance(
-                self.location, (MavenLocation, LocalMavenLocation, NpmLocation, PypiLocation, LocalPypiLocation)
+                self.location,
+                (MavenLocation, LocalMavenLocation, NpmLocation, LocalNpmLocation, PypiLocation, LocalPypiLocation),
             ):
                 RequirementsIndata._ensure_absolute_path_and_check_existance(paths=[self.dst_path], original=original)
             elif isinstance(self.location, LocalLocation):

@@ -172,6 +172,40 @@ def test_pypi_source_parser_requires_package_and_version():
     assert args.version == "2.3.4"
 
 
+def test_npm_source_parser_requires_package_and_version():
+    args = _make_command_and_parse(["reqstool", "report", "npm", "--package", "@scope/my-pkg", "--version", "1.2.3"])
+    assert args.command == "report"
+    assert args.source == "npm"
+    assert args.package == "@scope/my-pkg"
+    assert args.version == "1.2.3"
+
+
+def test_npm_source_parser_accepts_custom_url_and_token():
+    args = _make_command_and_parse(
+        [
+            "reqstool",
+            "report",
+            "npm",
+            "--package",
+            "my-pkg",
+            "--version",
+            "1.0.0",
+            "--url",
+            "https://my.registry.example.com",
+            "--env_token",
+            "NPM_TOKEN",
+        ]
+    )
+    assert args.url == "https://my.registry.example.com"
+    assert args.env_token == "NPM_TOKEN"
+
+
+def test_local_source_parser_accepts_npm_path_arg():
+    args = _make_command_and_parse(["reqstool", "report", "local", "--npm", "path/to/pkg.tgz"])
+    assert args.source == "local"
+    assert args.npm == "path/to/pkg.tgz"
+
+
 def test_mcp_parses_without_source():
     args = _make_command_and_parse(["reqstool", "mcp"])
     assert args.command == "mcp"

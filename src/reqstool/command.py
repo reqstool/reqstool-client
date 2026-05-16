@@ -38,9 +38,11 @@ from reqstool.common.validators.syntax_validator import JsonSchemaItem
 from reqstool.locations.git_location import GitLocation
 from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.local_maven_location import LocalMavenLocation
+from reqstool.locations.local_npm_location import LocalNpmLocation
 from reqstool.locations.local_pypi_location import LocalPypiLocation
 from reqstool.locations.location import LocationInterface
 from reqstool.locations.maven_location import MavenLocation
+from reqstool.locations.npm_location import NpmLocation
 from reqstool.locations.pypi_location import PypiLocation
 
 
@@ -52,6 +54,10 @@ _LOCATION_DEFS = [
         "args": [
             {"flags": ["-p", "--path"], "kwargs": {"help": "path to a local directory"}},
             {"flags": ["--maven"], "kwargs": {"metavar": "PATH", "help": "path to a local Maven ZIP artifact (.zip)"}},
+            {
+                "flags": ["--npm"],
+                "kwargs": {"metavar": "PATH", "help": "path to a local npm tarball (.tgz)"},
+            },
             {
                 "flags": ["--pypi"],
                 "kwargs": {"metavar": "PATH", "help": "path to a local PyPI sdist tarball (.tar.gz)"},
@@ -78,6 +84,16 @@ _LOCATION_DEFS = [
             {"flags": ["--artifact_id"], "kwargs": {"help": "artifact_id description", "required": True}},
             {"flags": ["--version"], "kwargs": {"help": "version description", "required": True}},
             {"flags": ["--classifier"], "kwargs": {"help": "classifier description"}},
+        ],
+    },
+    {
+        "name": "npm",
+        "help": "npm source",
+        "args": [
+            {"flags": ["-u", "--url"], "kwargs": {"help": "url description", "required": False}},
+            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env_token description"}},
+            {"flags": ["--package"], "kwargs": {"help": "npm package name (e.g. @scope/package)", "required": True}},
+            {"flags": ["--version"], "kwargs": {"help": "version description", "required": True}},
         ],
     },
     {
@@ -354,6 +370,13 @@ class Command:
                 classifier=args_source.classifier if args_source.classifier else None,
                 env_token=args_source.env_token if args_source.env_token else None,
             )
+        elif "npm" in args_source.source:
+            npm_kwargs = {"package": args_source.package, "version": args_source.version}
+            if args_source.url:
+                npm_kwargs["url"] = args_source.url
+            if args_source.env_token:
+                npm_kwargs["env_token"] = args_source.env_token
+            location = NpmLocation(**npm_kwargs)
         elif "pypi" in args_source.source:  # TODO $$$
             location = PypiLocation(
                 url=args_source.url if args_source.url else None,
@@ -371,6 +394,8 @@ class Command:
         elif "local" in args_source.source:
             if args_source.maven:
                 location = LocalMavenLocation(path=args_source.maven)
+            elif args_source.npm:
+                location = LocalNpmLocation(path=args_source.npm)
             elif args_source.pypi:
                 location = LocalPypiLocation(path=args_source.pypi)
             else:
