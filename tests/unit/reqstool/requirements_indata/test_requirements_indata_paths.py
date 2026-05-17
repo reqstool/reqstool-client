@@ -40,14 +40,7 @@ def test_npm_location_path_resolution(tmp_path):
 
     # Patch _make_available_on_localdisk so RequirementsIndata can be constructed without a real download
     # Also patch _handle_requirements_config to skip YAML parsing
-    with (
-        patch.object(NpmLocation, "_make_available_on_localdisk"),
-        patch.object(
-            type(loc),
-            "__init__",
-            lambda self, **kw: object.__setattr__(self, "__dict__", kw) or None,
-        ),
-    ):
+    with patch.object(NpmLocation, "_make_available_on_localdisk"):
         indata = RequirementsIndata.__new__(RequirementsIndata)
         object.__setattr__(indata, "dst_path", str(tmp_path))
         object.__setattr__(indata, "location", loc)

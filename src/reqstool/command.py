@@ -68,42 +68,42 @@ _LOCATION_DEFS = [
         "name": "git",
         "help": "git source",
         "args": [
-            {"flags": ["-u", "--url"], "kwargs": {"help": "url description", "required": True}},
-            {"flags": ["-p", "--path"], "kwargs": {"help": "path description", "required": True}},
-            {"flags": ["-b", "--branch"], "kwargs": {"help": "branch description"}},
-            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env_token description"}},
+            {"flags": ["-u", "--url"], "kwargs": {"help": "git repository URL", "required": True}},
+            {"flags": ["-p", "--path"], "kwargs": {"help": "path within the repository", "required": True}},
+            {"flags": ["-b", "--branch"], "kwargs": {"help": "branch name"}},
+            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the access token"}},
         ],
     },
     {
         "name": "maven",
         "help": "maven source",
         "args": [
-            {"flags": ["-u", "--url"], "kwargs": {"help": "url description", "required": False}},
-            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env_token description"}},
-            {"flags": ["--group_id"], "kwargs": {"help": "group_id description", "required": True}},
-            {"flags": ["--artifact_id"], "kwargs": {"help": "artifact_id description", "required": True}},
-            {"flags": ["--version"], "kwargs": {"help": "version description", "required": True}},
-            {"flags": ["--classifier"], "kwargs": {"help": "classifier description"}},
+            {"flags": ["-u", "--url"], "kwargs": {"help": "Maven repository URL", "required": False}},
+            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the access token"}},
+            {"flags": ["--group_id"], "kwargs": {"help": "Maven group ID", "required": True}},
+            {"flags": ["--artifact_id"], "kwargs": {"help": "Maven artifact ID", "required": True}},
+            {"flags": ["--version"], "kwargs": {"help": "artifact version (e.g. 1.2.3)", "required": True}},
+            {"flags": ["--classifier"], "kwargs": {"help": "Maven classifier"}},
         ],
     },
     {
         "name": "npm",
         "help": "npm source",
         "args": [
-            {"flags": ["-u", "--url"], "kwargs": {"help": "url description", "required": False}},
-            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env_token description"}},
+            {"flags": ["-u", "--url"], "kwargs": {"help": "npm-compatible registry URL (default: https://registry.npmjs.org)", "required": False}},
+            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the Bearer token"}},
             {"flags": ["--package"], "kwargs": {"help": "npm package name (e.g. @scope/package)", "required": True}},
-            {"flags": ["--version"], "kwargs": {"help": "version description", "required": True}},
+            {"flags": ["--version"], "kwargs": {"help": "package version (e.g. 1.2.3)", "required": True}},
         ],
     },
     {
         "name": "pypi",
         "help": "pypi source",
         "args": [
-            {"flags": ["-u", "--url"], "kwargs": {"help": "url description", "required": False}},
-            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env_token description"}},
-            {"flags": ["--package"], "kwargs": {"help": "package", "required": True}},
-            {"flags": ["--version"], "kwargs": {"help": "version description", "required": True}},
+            {"flags": ["-u", "--url"], "kwargs": {"help": "PyPI index URL", "required": False}},
+            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the access token"}},
+            {"flags": ["--package"], "kwargs": {"help": "PyPI package name", "required": True}},
+            {"flags": ["--version"], "kwargs": {"help": "package version (e.g. 1.2.3)", "required": True}},
         ],
     },
 ]
@@ -361,7 +361,7 @@ class Command:
     def _get_initial_source(self, args_source: argparse.Namespace) -> LocationInterface:
         location: Optional[LocationInterface] = None
 
-        if "maven" in args_source.source:
+        if args_source.source == "maven":
             location = MavenLocation(
                 url=args_source.url if args_source.url else None,
                 group_id=args_source.group_id,
@@ -370,28 +370,28 @@ class Command:
                 classifier=args_source.classifier if args_source.classifier else None,
                 env_token=args_source.env_token if args_source.env_token else None,
             )
-        elif "npm" in args_source.source:
-            npm_kwargs = {"package": args_source.package, "version": args_source.version}
-            if args_source.url:
-                npm_kwargs["url"] = args_source.url
-            if args_source.env_token:
-                npm_kwargs["env_token"] = args_source.env_token
-            location = NpmLocation(**npm_kwargs)
-        elif "pypi" in args_source.source:  # TODO $$$
+        elif args_source.source == "npm":
+            location = NpmLocation(
+                url=args_source.url if args_source.url else "https://registry.npmjs.org",
+                package=args_source.package,
+                version=args_source.version,
+                env_token=args_source.env_token if args_source.env_token else None,
+            )
+        elif args_source.source == "pypi":
             location = PypiLocation(
                 url=args_source.url if args_source.url else None,
                 package=args_source.package,
                 version=args_source.version,
                 env_token=args_source.env_token if args_source.env_token else None,
             )
-        elif "git" in args_source.source:
+        elif args_source.source == "git":
             location = GitLocation(
                 url=args_source.url,
                 path=args_source.path,
                 branch=args_source.branch if args_source.branch else None,
                 env_token=args_source.env_token if args_source.env_token else None,
             )
-        elif "local" in args_source.source:
+        elif args_source.source == "local":
             if args_source.maven:
                 location = LocalMavenLocation(path=args_source.maven)
             elif args_source.npm:

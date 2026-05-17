@@ -148,22 +148,43 @@ def test_npm_location_raises_on_oversized_metadata(tmp_path):
         loc._make_available_on_localdisk(str(tmp_path))
 
 
+def test_npm_location_scoped_package_slash_is_percent_encoded(tmp_path):
+    loc = NpmLocation(package="@scope/my-pkg-reqstool", version="1.2.3")
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"dist": {"tarball": "https://registry.npmjs.org/tarball.tgz"}}
+
+    extracted = str(tmp_path / "package")
+
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response) as mock_get,
+        patch("reqstool.locations.npm_location.Utils.download_file", return_value=tmp_path / "tarball.tgz"),
+        patch("reqstool.locations.npm_location.Utils.extract_targz", return_value=extracted),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
+
+    called_url = mock_get.call_args[0][0]
+    assert "@scope%2Fmy-pkg-reqstool" in called_url
+    assert "/@scope/" not in called_url  # raw slash must not appear in the package segment
+
+
 def test_npm_location_version_url_encoded(tmp_path):
     loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0")
 
     mock_response = MagicMock()
     mock_response.json.return_value = {"dist": {"tarball": "https://registry.npmjs.org/tarball.tgz"}}
 
-    with patch("reqstool.locations.npm_location.requests.get", return_value=mock_response) as mock_get:
-        try:
-            loc._make_available_on_localdisk(str(tmp_path))
-        except Exception:
-            pass
+    extracted = str(tmp_path / "package")
+
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response) as mock_get,
+        patch("reqstool.locations.npm_location.Utils.download_file", return_value=tmp_path / "tarball.tgz"),
+        patch("reqstool.locations.npm_location.Utils.extract_targz", return_value=extracted),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
 
     called_url = mock_get.call_args[0][0]
-    assert "1.0.0" in called_url
-    # version must be URL-safe (no raw slashes)
-    assert "%2F" not in called_url or "/" not in called_url.split("/")[-1]
+    assert called_url.endswith("/1.0.0")
 
 
 def test_npm_location_get_tarball_uses_timeout(tmp_path):
@@ -172,10 +193,32 @@ def test_npm_location_get_tarball_uses_timeout(tmp_path):
     mock_response = MagicMock()
     mock_response.json.return_value = {"dist": {"tarball": "https://registry.npmjs.org/tarball.tgz"}}
 
-    with patch("reqstool.locations.npm_location.requests.get", return_value=mock_response) as mock_get:
-        try:
-            loc._make_available_on_localdisk(str(tmp_path))
-        except Exception:
-            pass
+    extracted = str(tmp_path / "package")
+
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response) as mock_get,
+        patch("reqstool.locations.npm_location.Utils.download_file", return_value=tmp_path / "tarball.tgz"),
+        patch("reqstool.locations.npm_location.Utils.extract_targz", return_value=extracted),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
 
     assert mock_get.call_args[1].get("timeout") == 30
+
+
+def test_npm_location_make_available_token_env_var_absent_sends_no_auth(tmp_path, monkeypatch):
+    monkeypatch.delenv("NPM_TOKEN", raising=False)
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0", env_token="NPM_TOKEN")
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"dist": {"tarball": "https://registry.npmjs.org/tarball.tgz"}}
+
+    extracted = str(tmp_path / "package")
+
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response) as mock_get,
+        patch("reqstool.locations.npm_location.Utils.download_file", return_value=tmp_path / "tarball.tgz"),
+        patch("reqstool.locations.npm_location.Utils.extract_targz", return_value=extracted),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
+
+    assert "Authorization" not in mock_get.call_args[1]["headers"]

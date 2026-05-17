@@ -31,6 +31,7 @@ class NpmLocation(LocationInterface):
         return v
 
     def _make_available_on_localdisk(self, dst_path: str):
+        """Resolve token → fetch tarball URL → SSRF check → download → extract."""
         token = os.getenv(self.env_token) if self.env_token else None
 
         try:
@@ -38,13 +39,16 @@ class NpmLocation(LocationInterface):
             logging.debug(f"Downloading npm package {self.package}@{self.version} from {tarball_url} to {dst_path}")
 
             registry_host = urlparse(self.url).netloc
-            tarball_host = urlparse(tarball_url).netloc
-            if urlparse(tarball_url).scheme != "https" or tarball_host != registry_host:
+            parsed_tarball = urlparse(tarball_url)
+            if parsed_tarball.scheme != "https" or parsed_tarball.netloc != registry_host:
                 raise ArtifactDownloadError(
                     f"Tarball URL {tarball_url!r} does not match registry host {registry_host!r}; "
                     "refusing download to prevent SSRF"
                 )
 
+            # allow_redirects=True is intentional: registries may redirect tarballs to CDN.
+            # Cross-host redirect SSRF is an accepted risk; auth headers are stripped by
+            # requests on cross-host redirects.
             downloaded_file = Utils.download_file(url=tarball_url, dst_path=dst_path, token=token)
         except ArtifactDownloadError:
             raise
@@ -72,6 +76,7 @@ class NpmLocation(LocationInterface):
         if token:
             headers["Authorization"] = f"Bearer {token}"
 
+        # allow_redirects=True is intentional; redirect-based SSRF is an accepted risk.
         response = requests.get(metadata_url, headers=headers, timeout=_REQUEST_TIMEOUT)
         response.raise_for_status()
 
