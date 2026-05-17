@@ -253,7 +253,7 @@ class CombinedRawDatasetsGenerator:
         mvrs_data = None
         automated_tests = None
 
-        tmp_path = self._tmpdir_manager.get_suffix_path("can_we_use_urn_here").absolute()
+        tmp_path = self._tmpdir_manager.get_suffix_path(current_location_handler.current.tmpdir_key()).absolute()
 
         actual_tmp_path = current_location_handler.make_available_on_localdisk(dst_path=tmp_path)
 
@@ -280,7 +280,6 @@ class CombinedRawDatasetsGenerator:
             actual_tmp_path, requirements_indata, rmg
         )
 
-        # Capture location provenance
         location_type, location_uri = self.__extract_location_provenance(current_location_handler.current)
 
         # Capture resolved file paths for LocalLocation only
@@ -301,8 +300,10 @@ class CombinedRawDatasetsGenerator:
 
     @staticmethod
     def __extract_location_provenance(location: LocationInterface) -> tuple:
-        """Extract location_type and location_uri from a resolved location."""
+        """Extract location_type and location_uri for RawDataset metadata."""
         from reqstool.locations.git_location import GitLocation
+        from reqstool.locations.local_maven_location import LocalMavenLocation
+        from reqstool.locations.local_pypi_location import LocalPypiLocation
         from reqstool.locations.maven_location import MavenLocation
         from reqstool.locations.pypi_location import PypiLocation
 
@@ -314,7 +315,12 @@ class CombinedRawDatasetsGenerator:
             return "maven", f"{location.group_id}:{location.artifact_id}:{location.version}"
         elif isinstance(location, PypiLocation):
             return "pypi", f"{location.package}=={location.version}"
-        return None, None
+        elif isinstance(location, LocalMavenLocation):
+            return "local_maven", f"file://{os.path.abspath(location.path)}"
+        elif isinstance(location, LocalPypiLocation):
+            return "local_pypi", f"file://{os.path.abspath(location.path)}"
+        logging.warning("Unknown location type %s", type(location).__name__)
+        return "unknown", None
 
     @staticmethod
     def __extract_source_paths(location: LocationInterface, requirements_indata: RequirementsIndata) -> Dict[str, str]:

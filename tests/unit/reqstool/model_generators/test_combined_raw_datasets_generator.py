@@ -1,13 +1,23 @@
 # Copyright © LFV
 
+import contextlib
+import re
+from unittest.mock import patch
+
 import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
 from reqstool.common.exceptions import CircularImplementationError, CircularImportError, MissingRequirementsFileError
+from reqstool.common.utils import TempDirectoryManager
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
+from reqstool.location_resolver.location_resolver import LocationResolver
+from reqstool.locations.git_location import GitLocation
 from reqstool.locations.local_location import LocalLocation
+from reqstool.locations.maven_location import MavenLocation
+from reqstool.locations.pypi_location import PypiLocation
 from reqstool.model_generators import combined_raw_datasets_generator
+from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
 from reqstool.models.raw_datasets import CombinedRawDataset
 
 
@@ -131,3 +141,56 @@ def test_implementation_traversal_recursive(local_testdata_resources_rootdir_w_p
     assert ("lib-a", "implementation") in crd.parsing_graph["root"]
     assert ("lib-b", "implementation") in crd.parsing_graph["lib-a"]
     assert ("lib-c", "implementation") in crd.parsing_graph["lib-b"]
+
+
+@contextlib.contextmanager
+def _capture_suffix_calls():
+    captured = []
+    original = TempDirectoryManager.get_suffix_path
+
+    def _capturing(self, suffix):
+        captured.append(suffix)
+        return original(self, suffix)
+
+    with patch.object(TempDirectoryManager, "get_suffix_path", _capturing):
+        yield captured
+
+
+def _assert_safe_suffix(suffix, expected_prefix, uri_fragment):
+    assert len(suffix) >= 1, "get_suffix_path was never called"
+    assert suffix.startswith(expected_prefix)
+    assert uri_fragment in suffix
+    assert re.match(r"^[a-zA-Z0-9._-]+$", suffix), f"Suffix contains unsafe chars: {suffix!r}"
+
+
+@SVCs("SVC_020")
+def test_tmpdir_suffix_local_uses_local_prefix():
+    with _capture_suffix_calls() as captured_suffixes:
+        with pytest.raises(MissingRequirementsFileError):
+            CombinedRawDatasetsGenerator(
+                initial_location=LocalLocation(path="/nonexistent/path"),
+                semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
+            )
+    assert len(captured_suffixes) >= 1, "get_suffix_path was never called"
+    _assert_safe_suffix(captured_suffixes[0], "local_", "nonexistent")
+
+
+@SVCs("SVC_020")
+@pytest.mark.parametrize(
+    "location,expected_prefix,uri_fragment",
+    [
+        (GitLocation(url="https://github.com/org/repo", branch="main"), "git_", "github.com"),
+        (MavenLocation(group_id="com.example", artifact_id="my-artifact", version="1.0.0"), "maven_", "my-artifact"),
+        (PypiLocation(package="my-package", version="1.0.0"), "pypi_", "my-package"),
+    ],
+)
+def test_tmpdir_suffix_remote_uses_location_type_prefix(tmp_path, location, expected_prefix, uri_fragment):
+    with _capture_suffix_calls() as captured_suffixes:
+        with patch.object(LocationResolver, "make_available_on_localdisk", return_value=str(tmp_path)):
+            with pytest.raises(MissingRequirementsFileError):
+                CombinedRawDatasetsGenerator(
+                    initial_location=location,
+                    semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
+                )
+    assert len(captured_suffixes) >= 1, "get_suffix_path was never called"
+    _assert_safe_suffix(captured_suffixes[0], expected_prefix, uri_fragment)
