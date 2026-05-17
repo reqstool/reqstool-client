@@ -5,7 +5,7 @@ import argparse
 import logging
 import os
 import sys
-from typing import Optional, TextIO, Union
+from typing import Literal, Optional, TextIO, Union, cast
 
 if __package__ is None or len(__package__) == 0:
     _script_dir = os.path.abspath(os.path.dirname(__file__))
@@ -360,9 +360,26 @@ class Command:
         mcp_parser = subparsers.add_parser(
             "mcp",
             help=(
-                "Start the Model Context Protocol server (stdio). "
+                "Start the Model Context Protocol server. "
                 "With no source, auto-detects the dataset from .reqstool-ai.yaml in cwd or an ancestor directory."
             ),
+        )
+        mcp_parser.add_argument(
+            "--transport",
+            choices=["stdio", "sse", "streamable-http"],
+            default="stdio",
+            help="Transport to use (default: %(default)s)",
+        )
+        mcp_parser.add_argument(
+            "--host",
+            default="127.0.0.1",
+            help="Host for HTTP transports (default: %(default)s)",
+        )
+        mcp_parser.add_argument(
+            "--port",
+            type=int,
+            default=8000,
+            help="Port for HTTP transports (default: %(default)s)",
         )
         mcp_source_subparsers = mcp_parser.add_subparsers(dest="source", required=False)
         self._add_subparsers_source(mcp_source_subparsers, include_report_options=False, include_filter_options=False)
@@ -511,7 +528,12 @@ class Command:
             location = self._get_initial_source(mcp_args)
 
         try:
-            start_server(location=location)
+            start_server(
+                location=location,
+                transport=cast(Literal["stdio", "sse", "streamable-http"], mcp_args.transport),
+                host=mcp_args.host,
+                port=mcp_args.port,
+            )
         except Exception as exc:
             logging.fatal("reqstool MCP server crashed: %s", exc)
             sys.exit(1)
