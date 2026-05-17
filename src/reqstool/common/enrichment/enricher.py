@@ -46,11 +46,11 @@ def _block_field(label: str, value: str) -> list:
     lines = value.splitlines()
     if not lines:
         return []
-    prefix = f"**{label}**: "
-    indent = " " * len(prefix)
-    result = [prefix + lines[0]]
-    for line in lines[1:]:
-        result.append(indent + line if line.strip() else "")
+    if len(lines) == 1:
+        return [f"**{label}**: {lines[0]}"]
+    result = [f"**{label}**:"]
+    for line in lines:
+        result.append("    " + line if line.strip() else "")
     return result
 
 

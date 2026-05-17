@@ -63,3 +63,10 @@ def test_mvr_enrichment(ms101):
     input_content, expected = _load("mvr")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])
     assert result.result == expected
+
+
+@SVCs("SVC_039")
+def test_spec_multiline_description(ms101):
+    input_content, expected = _load("spec_multiline_description")
+    result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])
+    assert result.result == expected
