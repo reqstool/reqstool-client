@@ -2,7 +2,6 @@
 
 import logging
 import os
-import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -29,9 +28,6 @@ from reqstool.models.svcs import SVCsData
 from reqstool.models.test_data import TestsData
 from reqstool.requirements_indata.requirements_indata import RequirementsIndata
 from reqstool.storage.database import RequirementsDatabase
-
-_SUFFIX_MAX_LEN = 80
-_UNSAFE_PATH_CHARS = re.compile(r"[^a-zA-Z0-9._-]")
 
 
 @Requirements("REQ_005", "REQ_006", "REQ_007")
@@ -257,11 +253,7 @@ class CombinedRawDatasetsGenerator:
         mvrs_data = None
         automated_tests = None
 
-        location_type, location_uri = self.__extract_location_provenance(current_location_handler.current)
-        type_prefix = location_type or "unknown"
-        sanitized_uri = re.sub(r"\.{2,}", "_", _UNSAFE_PATH_CHARS.sub("_", location_uri or ""))
-        safe_suffix = f"{type_prefix}_{sanitized_uri}"[:_SUFFIX_MAX_LEN]
-        tmp_path = self._tmpdir_manager.get_suffix_path(safe_suffix).absolute()
+        tmp_path = self._tmpdir_manager.get_suffix_path(current_location_handler.current.tmpdir_key()).absolute()
 
         actual_tmp_path = current_location_handler.make_available_on_localdisk(dst_path=tmp_path)
 
@@ -288,6 +280,8 @@ class CombinedRawDatasetsGenerator:
             actual_tmp_path, requirements_indata, rmg
         )
 
+        location_type, location_uri = self.__extract_location_provenance(current_location_handler.current)
+
         # Capture resolved file paths for LocalLocation only
         source_paths = self.__extract_source_paths(current_location_handler.current, requirements_indata)
 
@@ -306,9 +300,7 @@ class CombinedRawDatasetsGenerator:
 
     @staticmethod
     def __extract_location_provenance(location: LocationInterface) -> tuple:
-        """Extract location_type and location_uri from a resolved location."""
-        from urllib.parse import urlparse, urlunparse
-
+        """Extract location_type and location_uri for RawDataset metadata."""
         from reqstool.locations.git_location import GitLocation
         from reqstool.locations.local_maven_location import LocalMavenLocation
         from reqstool.locations.local_pypi_location import LocalPypiLocation
@@ -318,10 +310,7 @@ class CombinedRawDatasetsGenerator:
         if isinstance(location, LocalLocation):
             return "local", f"file://{os.path.abspath(location.path)}"
         elif isinstance(location, GitLocation):
-            parsed = urlparse(location.url)
-            if parsed.username or parsed.password:
-                parsed = parsed._replace(netloc=parsed.hostname + (f":{parsed.port}" if parsed.port else ""))
-            return "git", urlunparse(parsed)
+            return "git", location.url
         elif isinstance(location, MavenLocation):
             return "maven", f"{location.group_id}:{location.artifact_id}:{location.version}"
         elif isinstance(location, PypiLocation):
@@ -330,7 +319,7 @@ class CombinedRawDatasetsGenerator:
             return "local_maven", f"file://{os.path.abspath(location.path)}"
         elif isinstance(location, LocalPypiLocation):
             return "local_pypi", f"file://{os.path.abspath(location.path)}"
-        logging.warning("Unknown location type %s; using 'unknown' prefix for tmp dir", type(location).__name__)
+        logging.warning("Unknown location type %s", type(location).__name__)
         return "unknown", None
 
     @staticmethod

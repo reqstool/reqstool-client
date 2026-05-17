@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.common.utils import Utils
-from reqstool.locations.location import LocationInterface
+from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
 
 
 class PypiLocation(LocationInterface):
@@ -21,6 +21,9 @@ class PypiLocation(LocationInterface):
     @staticmethod
     def normalize_pypi_package_name(package_name):
         return re.sub(r"[-_.]+", "-", package_name).lower()
+
+    def tmpdir_key(self) -> str:
+        return make_safe_tmpdir_suffix("pypi", f"{self.package}=={self.version}")
 
     def _make_available_on_localdisk(self, dst_path: str):
         """
