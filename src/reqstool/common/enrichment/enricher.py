@@ -50,7 +50,7 @@ def _block_field(label: str, value: str) -> list:
         return [f"**{label}**: {lines[0]}"]
     result = [f"**{label}**:"]
     for line in lines:
-        result.append("    " + line if line.strip() else "")
+        result.append("> " + line if line.strip() else ">")
     return result
 
 
