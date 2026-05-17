@@ -4,9 +4,6 @@ import logging
 import os
 import re
 from collections import defaultdict
-
-_SUFFIX_MAX_LEN = 80
-_UNSAFE_PATH_CHARS = re.compile(r"[^a-zA-Z0-9._-]")
 from typing import Dict, List, Optional, Set, Tuple
 
 from reqstool_python_decorators.decorators.decorators import Requirements
@@ -32,6 +29,9 @@ from reqstool.models.svcs import SVCsData
 from reqstool.models.test_data import TestsData
 from reqstool.requirements_indata.requirements_indata import RequirementsIndata
 from reqstool.storage.database import RequirementsDatabase
+
+_SUFFIX_MAX_LEN = 80
+_UNSAFE_PATH_CHARS = re.compile(r"[^a-zA-Z0-9._-]")
 
 
 @Requirements("REQ_005", "REQ_006", "REQ_007")
