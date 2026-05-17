@@ -7,7 +7,7 @@ from typing import Optional
 from pygit2 import RemoteCallbacks, UserPass, clone_repository
 from reqstool_python_decorators.decorators.decorators import Requirements
 
-from reqstool.locations.location import LocationInterface
+from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
 
 
 @Requirements("REQ_002")
@@ -16,6 +16,15 @@ class GitLocation(LocationInterface):
     branch: str
     env_token: Optional[str] = None
     path: str = ""
+
+    def tmpdir_key(self) -> str:
+        from urllib.parse import urlparse, urlunparse
+
+        parsed = urlparse(self.url)
+        if parsed.username or parsed.password:
+            host = parsed.hostname or ""
+            parsed = parsed._replace(netloc=host + (f":{parsed.port}" if parsed.port else ""))
+        return make_safe_tmpdir_suffix("git", urlunparse(parsed))
 
     def _make_available_on_localdisk(self, dst_path: str) -> str:
         api_token = os.getenv(self.env_token) if self.env_token else None
