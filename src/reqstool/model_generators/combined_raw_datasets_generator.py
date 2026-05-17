@@ -303,7 +303,9 @@ class CombinedRawDatasetsGenerator:
     def __extract_location_provenance(location: LocationInterface) -> tuple:
         """Extract location_type and location_uri from a resolved location."""
         from reqstool.locations.git_location import GitLocation
+        from reqstool.locations.local_npm_location import LocalNpmLocation
         from reqstool.locations.maven_location import MavenLocation
+        from reqstool.locations.npm_location import NpmLocation
         from reqstool.locations.pypi_location import PypiLocation
 
         if isinstance(location, LocalLocation):
@@ -312,6 +314,10 @@ class CombinedRawDatasetsGenerator:
             return "git", location.url
         elif isinstance(location, MavenLocation):
             return "maven", f"{location.group_id}:{location.artifact_id}:{location.version}"
+        elif isinstance(location, NpmLocation):
+            return "npm", f"{location.package}@{location.version}"
+        elif isinstance(location, LocalNpmLocation):
+            return "npm", f"file://{os.path.abspath(location.path)}"
         elif isinstance(location, PypiLocation):
             return "pypi", f"{location.package}=={location.version}"
         return None, None

@@ -16,9 +16,11 @@ from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxV
 from reqstool.locations.git_location import GitLocation
 from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.local_maven_location import LocalMavenLocation
+from reqstool.locations.local_npm_location import LocalNpmLocation
 from reqstool.locations.local_pypi_location import LocalPypiLocation
 from reqstool.locations.location import LocationInterface
 from reqstool.locations.maven_location import MavenLocation
+from reqstool.locations.npm_location import NpmLocation
 from reqstool.locations.pypi_location import PypiLocation
 from reqstool.reqstool_config.reqstool_config import ReqstoolConfig
 from reqstool.requirements_indata.requirements_indata_paths import RequirementsIndataPathItem, RequirementsIndataPaths
@@ -69,7 +71,10 @@ class RequirementsIndata(BaseModel):
                 RequirementsIndata._ensure_absolute_path_and_check_existance(
                     paths=[self.dst_path, self.location.path], original=original
                 )
-            elif isinstance(self.location, (MavenLocation, LocalMavenLocation, PypiLocation, LocalPypiLocation)):
+            elif isinstance(
+                self.location,
+                (MavenLocation, LocalMavenLocation, NpmLocation, LocalNpmLocation, PypiLocation, LocalPypiLocation),
+            ):
                 RequirementsIndata._ensure_absolute_path_and_check_existance(paths=[self.dst_path], original=original)
             elif isinstance(self.location, LocalLocation):
                 # resolve soft link

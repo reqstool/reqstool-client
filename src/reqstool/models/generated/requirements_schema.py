@@ -237,6 +237,28 @@ class Maven(BaseModel):
     """
 
 
+class Npm(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    env_token: str | None = None
+    """
+    Token to authenticate. E.g. NPM_TOKEN or empty.
+    """
+    url: Url | None = None
+    """
+    URL to npm-compatible registry (default: https://registry.npmjs.org)
+    """
+    package: str
+    """
+    npm package name (e.g. @scope/package-reqstool)
+    """
+    version: Annotated[str, Field(pattern='^(\\d+\\.)?(\\d+\\.)?(\\*|\\d+).*$')]
+    """
+    Version of the npm package
+    """
+
+
 class Pypi(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -270,6 +292,10 @@ class Locations(BaseModel):
     maven: list[Maven] | None = None
     """
     Array of Maven artifacts
+    """
+    npm: list[Npm] | None = None
+    """
+    Array of npm packages
     """
     pypi: list[Pypi] | None = None
     """
