@@ -46,10 +46,14 @@ def _block_field(label: str, value: str) -> list:
     lines = value.splitlines()
     if not lines:
         return []
-    prefix = f"**{label}**: "
-    indent = " " * len(prefix)
-    result = [prefix + lines[0]]
-    for line in lines[1:]:
+    if len(lines) == 1:
+        return [f"**{label}**: {lines[0]}"]
+    # U+00A0 (non-breaking space) is not stripped by CommonMark parsers (unlike U+0020),
+    # so it survives as visible indentation in react-markdown. enrich_text appends
+    # "  \n" (hard line break) to every block line, so we don't add trailing spaces here.
+    indent = " " * 4
+    result = [f"**{label}**:"]
+    for line in lines:
         result.append(indent + line if line.strip() else "")
     return result
 
@@ -207,7 +211,7 @@ def enrich_text(  # noqa: C901
                     if info.block_lines:
                         output.append("\n")  # blank line separates heading from block
                     for bl in info.block_lines:
-                        output.append(bl + "  \n")  # trailing spaces = Markdown hard line break
+                        output.append(bl + "  \n")
                     last_enriched_id = id_str
                     continue
 

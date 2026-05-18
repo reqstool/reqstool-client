@@ -2,12 +2,47 @@
 
 from reqstool.common.enrichment.enricher import (
     BUILT_IN_PRESETS,
+    _block_field,
     _format_value,
     _in_backtick_span,
     _is_stub,
     _make_pattern,
     enrich_text,
 )
+
+
+# ---------------------------------------------------------------------------
+# _block_field
+# ---------------------------------------------------------------------------
+
+
+def test_block_field_single_line():
+    assert _block_field("Description", "Simple one-liner") == ["**Description**: Simple one-liner"]
+
+
+def test_block_field_empty():
+    assert _block_field("Description", "") == []
+
+
+def test_block_field_multiline():
+    value = "GIVEN a component\nWHEN it is invoked\nTHEN it returns a result"
+    nbsp = " " * 4
+    assert _block_field("Description", value) == [
+        "**Description**:",
+        f"{nbsp}GIVEN a component",
+        f"{nbsp}WHEN it is invoked",
+        f"{nbsp}THEN it returns a result",
+    ]
+
+
+def test_block_field_multiline_blank_lines_preserved():
+    nbsp = " " * 4
+    assert _block_field("Description", "Line one\n\nLine three") == [
+        "**Description**:",
+        f"{nbsp}Line one",
+        "",
+        f"{nbsp}Line three",
+    ]
 
 
 # ---------------------------------------------------------------------------
