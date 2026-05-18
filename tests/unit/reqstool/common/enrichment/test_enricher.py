@@ -31,6 +31,7 @@ def test_block_field_multiline():
         "> GIVEN a component",
         "> WHEN it is invoked",
         "> THEN it returns a result",
+        "",
     ]
 
 
@@ -40,6 +41,7 @@ def test_block_field_multiline_blank_lines_preserved():
         "> Line one",
         ">",
         "> Line three",
+        "",
     ]
 
 
