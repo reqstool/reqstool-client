@@ -50,8 +50,7 @@ def _block_field(label: str, value: str) -> list:
         return [f"**{label}**: {lines[0]}"]
     result = [f"**{label}**:"]
     for line in lines:
-        result.append("> " + line if line.strip() else ">")
-    result.append("")  # paragraph break — terminates blockquote before next field
+        result.append(line)
     return result
 
 
@@ -208,7 +207,7 @@ def enrich_text(  # noqa: C901
                     if info.block_lines:
                         output.append("\n")  # blank line separates heading from block
                     for bl in info.block_lines:
-                        output.append("\n" if bl == "" else bl + "  \n")
+                        output.append(bl + "  \n")
                     last_enriched_id = id_str
                     continue
 
