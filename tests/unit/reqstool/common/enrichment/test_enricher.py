@@ -26,20 +26,22 @@ def test_block_field_empty():
 
 def test_block_field_multiline():
     value = "GIVEN a component\nWHEN it is invoked\nTHEN it returns a result"
+    nbsp = " " * 4
     assert _block_field("Description", value) == [
         "**Description**:",
-        "GIVEN a component",
-        "WHEN it is invoked",
-        "THEN it returns a result",
+        f"{nbsp}GIVEN a component",
+        f"{nbsp}WHEN it is invoked",
+        f"{nbsp}THEN it returns a result",
     ]
 
 
 def test_block_field_multiline_blank_lines_preserved():
+    nbsp = " " * 4
     assert _block_field("Description", "Line one\n\nLine three") == [
         "**Description**:",
-        "Line one",
+        f"{nbsp}Line one",
         "",
-        "Line three",
+        f"{nbsp}Line three",
     ]
 
 

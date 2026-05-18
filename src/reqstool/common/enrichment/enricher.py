@@ -48,9 +48,13 @@ def _block_field(label: str, value: str) -> list:
         return []
     if len(lines) == 1:
         return [f"**{label}**: {lines[0]}"]
+    # U+00A0 (non-breaking space) is not stripped by CommonMark parsers (unlike U+0020),
+    # so it survives as visible indentation in react-markdown. enrich_text appends
+    # "  \n" (hard line break) to every block line, so we don't add trailing spaces here.
+    indent = " " * 4
     result = [f"**{label}**:"]
     for line in lines:
-        result.append(line)
+        result.append(indent + line if line.strip() else "")
     return result
 
 
