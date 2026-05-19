@@ -50,9 +50,7 @@ def test_ecosystem_git_location(ecosystem_path):
 
     # Ecosystem-specific wrapper URN present
     ecosystem_name = ecosystem_path.split("/")[-1]
-    assert any(f"regression-{ecosystem_name}" in u for u in urns), (
-        f"Expected regression-{ecosystem_name} URN in {urns}"
-    )
+    assert any(f"regression-{ecosystem_name}" in u for u in urns), f"Expected regression-{ecosystem_name} URN in {urns}"
 
     # Parent layer resolved via local import
     assert "reqstool-regression" in urns, f"Parent URN missing from {urns}"
