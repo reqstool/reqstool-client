@@ -68,7 +68,7 @@ def test_ecosystem_git_location(ecosystem_path):
     """Each ecosystem wrapper resolves correctly via GitLocation."""
     gen, holder = _make_generator(ecosystem_path)
 
-    assert holder.get_no_of_errors() == 0, f"Unexpected validation errors: {holder}"
+    assert holder.get_no_of_errors() == 0, f"Unexpected validation errors: {holder.get_errors()}"
 
     urns = set(gen.combined_raw_datasets.raw_datasets.keys())
 
@@ -94,7 +94,7 @@ def test_parent_entry_aggregates_all_ecosystems():
     """Running from the parent entry point walks all ecosystem implementations."""
     gen, holder = _make_generator("fixtures/parent")
 
-    assert holder.get_no_of_errors() == 0, f"Unexpected validation errors: {holder}"
+    assert holder.get_no_of_errors() == 0, f"Unexpected validation errors: {holder.get_errors()}"
 
     urns = set(gen.combined_raw_datasets.raw_datasets.keys())
 
