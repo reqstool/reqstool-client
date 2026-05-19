@@ -2,7 +2,7 @@
 
 Self-contained Python fake-project fixture for LSP and MCP integration testing.
 This fixture is Python-specific and kept here for tests that cannot be parameterised across ecosystems.
-Cross-ecosystem regression tests use the real `reqstool/reqstool-regression` monorepo — see reqstool-client#386.
+Cross-ecosystem regression tests use the real `reqstool/reqstool-regression` monorepo — see https://github.com/reqstool/reqstool-client/issues/386.
 
 ## Enum Coverage Matrix
 
