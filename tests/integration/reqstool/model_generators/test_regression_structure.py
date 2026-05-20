@@ -57,18 +57,14 @@ def test_parent_requirement_counts(combined):
 
 
 def test_parent_req_001(combined):
-    req = combined["reqstool-regression"].requirements_data.requirements[
-        UrnId(urn="reqstool-regression", id="REQ_001")
-    ]
+    req = combined["reqstool-regression"].requirements_data.requirements[UrnId(urn="reqstool-regression", id="REQ_001")]
     assert req.significance == SIGNIFICANCETYPES.SHALL
     assert req.lifecycle.state == LIFECYCLESTATE.EFFECTIVE
     assert CATEGORIES.RELIABILITY in req.categories
 
 
 def test_parent_req_002(combined):
-    req = combined["reqstool-regression"].requirements_data.requirements[
-        UrnId(urn="reqstool-regression", id="REQ_002")
-    ]
+    req = combined["reqstool-regression"].requirements_data.requirements[UrnId(urn="reqstool-regression", id="REQ_002")]
     assert req.significance == SIGNIFICANCETYPES.MAY
     assert req.lifecycle.state == LIFECYCLESTATE.DRAFT
     assert CATEGORIES.SECURITY in req.categories
@@ -76,18 +72,14 @@ def test_parent_req_002(combined):
 
 
 def test_parent_req_003(combined):
-    req = combined["reqstool-regression"].requirements_data.requirements[
-        UrnId(urn="reqstool-regression", id="REQ_003")
-    ]
+    req = combined["reqstool-regression"].requirements_data.requirements[UrnId(urn="reqstool-regression", id="REQ_003")]
     assert req.significance == SIGNIFICANCETYPES.SHOULD
     assert req.lifecycle.state == LIFECYCLESTATE.DEPRECATED
     assert CATEGORIES.MAINTAINABILITY in req.categories
 
 
 def test_parent_req_004(combined):
-    req = combined["reqstool-regression"].requirements_data.requirements[
-        UrnId(urn="reqstool-regression", id="REQ_004")
-    ]
+    req = combined["reqstool-regression"].requirements_data.requirements[UrnId(urn="reqstool-regression", id="REQ_004")]
     assert req.significance == SIGNIFICANCETYPES.SHALL
     assert req.lifecycle.state == LIFECYCLESTATE.OBSOLETE
     assert CATEGORIES.FLEXIBILITY in req.categories
@@ -169,18 +161,14 @@ def test_base_a_requirement_counts(combined):
 
 
 def test_base_a_req_a01(combined):
-    req = combined["regression-base-a"].requirements_data.requirements[
-        UrnId(urn="regression-base-a", id="REQ_A01")
-    ]
+    req = combined["regression-base-a"].requirements_data.requirements[UrnId(urn="regression-base-a", id="REQ_A01")]
     assert req.significance == SIGNIFICANCETYPES.SHALL
     assert req.lifecycle.state == LIFECYCLESTATE.EFFECTIVE
     assert CATEGORIES.FUNCTIONAL_SUITABILITY in req.categories
 
 
 def test_base_a_req_a02(combined):
-    req = combined["regression-base-a"].requirements_data.requirements[
-        UrnId(urn="regression-base-a", id="REQ_A02")
-    ]
+    req = combined["regression-base-a"].requirements_data.requirements[UrnId(urn="regression-base-a", id="REQ_A02")]
     assert req.significance == SIGNIFICANCETYPES.SHOULD
     assert req.lifecycle.state == LIFECYCLESTATE.EFFECTIVE
     assert CATEGORIES.SAFETY in req.categories
@@ -225,18 +213,14 @@ def test_base_b_requirement_counts(combined):
 
 
 def test_base_b_req_b01(combined):
-    req = combined["regression-base-b"].requirements_data.requirements[
-        UrnId(urn="regression-base-b", id="REQ_B01")
-    ]
+    req = combined["regression-base-b"].requirements_data.requirements[UrnId(urn="regression-base-b", id="REQ_B01")]
     assert req.significance == SIGNIFICANCETYPES.MAY
     assert req.lifecycle.state == LIFECYCLESTATE.EFFECTIVE
     assert CATEGORIES.PERFORMANCE_EFFICIENCY in req.categories
 
 
 def test_base_b_req_b02(combined):
-    req = combined["regression-base-b"].requirements_data.requirements[
-        UrnId(urn="regression-base-b", id="REQ_B02")
-    ]
+    req = combined["regression-base-b"].requirements_data.requirements[UrnId(urn="regression-base-b", id="REQ_B02")]
     assert req.significance == SIGNIFICANCETYPES.SHALL
     assert req.lifecycle.state == LIFECYCLESTATE.EFFECTIVE
     assert CATEGORIES.COMPATIBILITY in req.categories
