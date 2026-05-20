@@ -3,7 +3,9 @@
 
 _REGRESSION_REPO_URL = "https://github.com/reqstool/reqstool-regression.git"
 # Branch is intentionally 'main' (always latest regression data).
-# For stronger CI stability, pin to a commit SHA when the regression repo cuts stable releases.
+# To pin CI to a known-good state, replace "main" with a commit SHA, e.g.:
+#   _REGRESSION_REPO_BRANCH = "abc1234def..."
+# GitLocation passes this value as checkout_branch to pygit2, which accepts SHAs.
 _REGRESSION_REPO_BRANCH = "main"
 _GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 
