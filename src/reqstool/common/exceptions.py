@@ -37,3 +37,12 @@ class ArtifactExtractionError(Exception):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class GitRefNotFoundError(Exception):
+    """Raised when a git ref (branch, tag, or commit SHA) cannot be resolved in a cloned repo."""
+
+    def __init__(self, ref: str, url: str):
+        self.ref = ref
+        self.url = url
+        super().__init__(f"ref '{ref}' not found in {url}")

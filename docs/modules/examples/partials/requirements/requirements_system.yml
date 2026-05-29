@@ -9,7 +9,7 @@ metadata:
 imports:
   git:
     - env_token: e.g. GITLAB_TOKEN or empty
-      branch:
+      ref:
       url:
       path:
   maven:
@@ -27,7 +27,7 @@ filters:
 implementations: # only used with type = system
   git:
     - env_token: e.g. GITLAB_TOKEN or empty
-      branch:
+      ref:
       url:
       path:
   maven:

@@ -9,7 +9,7 @@ metadata:
 imports: #Optional
   git:
     - env_token: e.g. GITLAB_TOKEN or empty
-      branch: branch
+      ref: branch, tag, or commit SHA
       url: url
       path: path
   maven:

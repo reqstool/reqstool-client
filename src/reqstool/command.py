@@ -66,7 +66,7 @@ _LOCATION_DEFS = [
         "args": [
             {"flags": ["-u", "--url"], "kwargs": {"help": "url description", "required": True}},
             {"flags": ["-p", "--path"], "kwargs": {"help": "path description", "required": True}},
-            {"flags": ["-b", "--branch"], "kwargs": {"help": "branch description"}},
+            {"flags": ["-r", "--ref"], "kwargs": {"help": "git branch, tag, or commit SHA", "required": True}},
             {"flags": ["-t", "--env_token"], "kwargs": {"help": "env_token description"}},
         ],
     },
@@ -411,7 +411,7 @@ class Command:
             location = GitLocation(
                 url=args_source.url,
                 path=args_source.path,
-                branch=args_source.branch if args_source.branch else None,
+                ref=args_source.ref,
                 env_token=args_source.env_token if args_source.env_token else None,
             )
         elif "local" in args_source.source:

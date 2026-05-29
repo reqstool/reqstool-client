@@ -4,16 +4,17 @@ import logging
 import os
 from typing import Optional
 
-from pygit2 import RemoteCallbacks, UserPass, clone_repository
+from pygit2 import Commit, RemoteCallbacks, UserPass, clone_repository
 from reqstool_python_decorators.decorators.decorators import Requirements
 
+from reqstool.common.exceptions import GitRefNotFoundError
 from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
 
 
 @Requirements("REQ_002")
 class GitLocation(LocationInterface):
     url: str
-    branch: str
+    ref: str
     env_token: Optional[str] = None
     path: str = ""
 
@@ -29,14 +30,23 @@ class GitLocation(LocationInterface):
     def _make_available_on_localdisk(self, dst_path: str) -> str:
         api_token = os.getenv(self.env_token) if self.env_token else None
 
-        if self.branch:
-            repo = clone_repository(
-                url=self.url, path=dst_path, checkout_branch=self.branch, callbacks=self.MyRemoteCallbacks(api_token)
-            )
-        else:
-            repo = clone_repository(url=self.url, path=dst_path, callbacks=self.MyRemoteCallbacks(api_token))
+        repo = clone_repository(url=self.url, path=dst_path, callbacks=self.MyRemoteCallbacks(api_token))
 
-        logging.debug(f"Cloned repo {self.url} (branch: {self.branch}) to {repo.workdir}\n")
+        # Resolve ref uniformly: a tag, the default branch, or a commit SHA resolve directly;
+        # a non-default branch only exists as a remote-tracking ref (origin/<ref>) after a plain clone.
+        try:
+            try:
+                obj = repo.revparse_single(self.ref)
+            except KeyError:
+                obj = repo.revparse_single(f"origin/{self.ref}")
+        except KeyError as e:
+            raise GitRefNotFoundError(self.ref, self.url) from e
+
+        commit = obj.peel(Commit)
+        repo.checkout_tree(commit)
+        repo.set_head(commit.id)  # Oid detaches HEAD at the resolved commit
+
+        logging.debug(f"Cloned repo {self.url} (ref: {self.ref}) to {repo.workdir}\n")
 
         return repo.workdir
 
