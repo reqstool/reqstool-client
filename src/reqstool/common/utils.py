@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import tarfile
 import tempfile
 from importlib.metadata import version
@@ -10,10 +11,12 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
 from zipfile import ZipFile
 
+import expandvars
 import requests
 from packaging.version import InvalidVersion, Version as PkgVersion
 from requests_file import FileAdapter
 
+from reqstool.common.exceptions import EnvVarInterpolationError
 from reqstool.common.models.urn_id import UrnId
 from reqstool.models.raw_datasets import RawDataset
 from reqstool.models.requirements import RequirementData
@@ -23,6 +26,45 @@ from reqstool.models.svcs import SVCData
 class Utils:
 
     is_installed_package: bool = True
+
+    # Only the braced ``${...}`` form is interpolated. The bare ``$VAR`` form is
+    # intentionally left untouched: reqstool YAML files routinely contain a
+    # ``# yaml-language-server: $schema=...`` directive (and regexes, prices,
+    # etc.) where a stray ``$`` must not be treated as a variable reference.
+    _ENV_VAR_PATTERN = re.compile(r"\$\{[^{}]*\}")
+
+    @staticmethod
+    def interpolate_env_vars(text: str, source: str | None = None) -> str:
+        """Expand environment variables in raw YAML text before parsing.
+
+        Uses POSIX shell parameter expansion (the ``envsubst`` standard),
+        restricted to the braced form::
+
+            ${VAR}            substitute the value of VAR
+            ${VAR:-default}   use ``default`` when VAR is unset or empty
+            ${VAR:?message}   fail with ``message`` when VAR is unset or empty
+            ${VAR:+alt}       use ``alt`` when VAR is set
+
+        A bare ``${VAR}`` whose variable is unset (and has no inline default)
+        is a hard error: this keeps ingestion deterministic and catches
+        misconfiguration in CI rather than silently producing empty values.
+
+        Args:
+            text: raw file contents to interpolate.
+            source: optional file path/URI used in error messages.
+
+        Raises:
+            EnvVarInterpolationError: on an unset variable without a default or
+                a malformed ``${...}`` expression.
+        """
+
+        def _expand(match: "re.Match[str]") -> str:
+            try:
+                return expandvars.expand(match.group(0), nounset=True)
+            except expandvars.ExpandvarsException as e:
+                raise EnvVarInterpolationError(str(e), source=source) from e
+
+        return Utils._ENV_VAR_PATTERN.sub(_expand, text)
 
     @staticmethod
     def get_version() -> str:

@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
+
+metadata:
+  urn: sys-001
+  variant: system
+  title: ${REQSTOOL_TEST_TITLE:-Default Title}
+
+imports:
+  maven:
+    - url: https://repo.maven.org
+      group_id: com.example.one
+      artifact_id: test-one
+      version: ${REQSTOOL_TEST_MAVEN_VERSION}
+
+requirements:
+  - id: REQ_001
+    title: Title REQ_001
+    significance: may
+    description: Description REQ_001
+    rationale: Rationale REQ_001
+    categories: ["maintainability"]
+    revision: 0.0.1
