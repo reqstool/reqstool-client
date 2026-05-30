@@ -30,6 +30,7 @@ from reqstool.commands.exit_codes import (
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError, MissingRequirementsFileError
 from reqstool.commands.generate_json.generate_json import GenerateJsonCommand
 from reqstool.commands.report import report
+from reqstool.commands.validate.validate import ValidateCommand
 from reqstool.commands.report.criterias.group_by import GroupbyOptions
 from reqstool.commands.report.criterias.sort_by import SortByOptions
 from reqstool.commands.enrich.enrich import EnrichCommand
@@ -103,22 +104,15 @@ class Command:
         """
         Create the directory if it doesn't exist and open the specified file.
 
-        Parameters:
-        - file_path (TextIO (sys.stdout) or str (path as argument on command line): The file path.
-        - mode (str): The mode in which the file should be opened.
-
-        Returns:
-        - TextIO: The opened file.
-
-        If the file path is sys.stdout, it is returned as is without attempting to create the directory.
+        If file_path is sys.stdout it is returned as-is; otherwise a new writable
+        file handle is opened at the given path (directories are created as needed).
         """
-        if file_path == sys.stdout:
-            return file_path
+        if file_path is sys.stdout:
+            return sys.stdout  # type: ignore[return-value]
 
+        assert isinstance(file_path, str)
         directory = os.path.dirname(os.path.abspath(file_path))
-
         os.makedirs(directory, exist_ok=True)
-
         return open(file_path, "w")
 
     def _add_argument_output(self, argument_parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -202,7 +196,7 @@ class Command:
 
         return argument_parser
 
-    def _add_argument_log_level(self, argument_parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    def _add_argument_log_level(self, argument_parser: argparse.ArgumentParser) -> None:
         argument_parser.add_argument(
             "--log", default="WARNING", help="Set the logging level (FATAL, ERROR, WARNING, INFO, DEBUG)."
         )
@@ -246,9 +240,9 @@ class Command:
 
         export_parser.add_argument(
             "--format",
-            choices=["json"],
+            choices=["json", "sqlite"],
             default="json",
-            help="Output format",
+            help="Output format (sqlite requires -o <file>)",
         )
 
         export_parser.add_argument(
@@ -262,22 +256,18 @@ class Command:
         export_source_subparsers = export_parser.add_subparsers(dest="source", required=True)
         self._add_subparsers_source(export_source_subparsers, include_report_options=False, include_filter_options=True)
 
-        # command: generate-json (deprecated, use 'export' instead)
-        generate_json_parser = subparsers.add_parser(
-            "generate-json", help="[DEPRECATED: use 'export --format json'] Export JSON"
+        # command: validate
+        validate_parser = subparsers.add_parser(
+            "validate", help="Validate spec completeness (every requirement has SVCs, manual SVCs have MVRs)"
         )
-
-        generate_json_parser.add_argument(
-            "--no-filter",
+        validate_parser.add_argument(
+            "--strict",
             action="store_true",
-            dest="no_filters",
-            help="Do not filter data",
+            help="Treat coverage warnings as errors (fail if any coverage gap)",
             default=False,
-            required=False,
         )
-
-        generate_json_source_subparsers = generate_json_parser.add_subparsers(dest="source", required=True)
-        self._add_subparsers_source(generate_json_source_subparsers, include_report_options=False)
+        validate_source_subparsers = validate_parser.add_subparsers(dest="source", required=True)
+        self._add_subparsers_source(validate_source_subparsers, include_report_options=False)
 
         # command: status
         status_parser = subparsers.add_parser("status", help="Status on implementations and tests of requirements")
@@ -288,12 +278,24 @@ class Command:
             help="Output format (default: %(default)s)",
         )
         status_parser.add_argument(
+            "--verbosity",
+            choices=["compact", "normal", "verbose", "extra-verbose"],
+            default="normal",
+            help="Console output detail level (default: %(default)s; ignored for --format json)",
+        )
+        status_parser.add_argument(
+            "--incomplete",
+            action="store_true",
+            default=False,
+            help="Show only incomplete requirements",
+        )
+        status_parser.add_argument(
             "--check-all-reqs-met",
             action="store_true",
             help="Fail unless all requirements are implemented",
         )
         status_source_subparsers = status_parser.add_subparsers(dest="source", required=True)
-        self._add_subparsers_source(status_source_subparsers)
+        self._add_subparsers_source(status_source_subparsers, include_report_options=False, include_filter_options=True)
 
         # command: enrich
         enrich_parser = subparsers.add_parser(
@@ -441,34 +443,63 @@ class Command:
 
     def command_export(self, export_args: argparse.Namespace):
         initial_source = self._get_initial_source(export_args)
+        fmt = getattr(export_args, "format", "json")
 
-        filter_data = not export_args.no_filters
-        req_ids = getattr(export_args, "req_ids", None)
-        svc_ids = getattr(export_args, "svc_ids", None)
+        if fmt == "sqlite":
+            output = export_args.output
+            if output is sys.stdout:
+                print("Error: --format sqlite requires -o <file>", file=sys.stderr)
+                sys.exit(1)
+            output_path = output.name
+            output.close()
+            from reqstool.common.validator_error_holder import ValidationErrorHolder
+            from reqstool.common.validators.semantic_validator import SemanticValidator
+            from reqstool.storage.pipeline import build_database
 
-        result = GenerateJsonCommand(location=initial_source, filter_data=filter_data, req_ids=req_ids, svc_ids=svc_ids)
+            filter_data = not export_args.no_filters
+            with build_database(
+                location=initial_source,
+                semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
+                filter_data=filter_data,
+            ) as (db, _):
+                db.backup_to(output_path)
+        else:
+            filter_data = not export_args.no_filters
+            req_ids = getattr(export_args, "req_ids", None)
+            svc_ids = getattr(export_args, "svc_ids", None)
+            result = GenerateJsonCommand(
+                location=initial_source, filter_data=filter_data, req_ids=req_ids, svc_ids=svc_ids
+            )
+            export_args.output.write(result.result)
 
-        output = export_args.output
+    def command_validate(self, validate_args: argparse.Namespace) -> int:
+        initial_source = self._get_initial_source(validate_args)
+        output = validate_args.output
+        strict = getattr(validate_args, "strict", False)
+
+        result = ValidateCommand(location=initial_source, strict=strict)
         output.write(result.result)
-
-    @Requirements("REQ_031")
-    def command_generate_json(self, generate_json_args: argparse.Namespace):
-        initial_source = self._get_initial_source(generate_json_args)
-
-        filter_data = not generate_json_args.no_filters
-
-        result = GenerateJsonCommand(location=initial_source, filter_data=filter_data)
-
-        output = generate_json_args.output  # where to put the generated report
-        output.write(result.result)
+        return result.exit_code
 
     @Requirements("REQ_029")
     def command_status(self, status_args: argparse.Namespace) -> int:
         initial_source = self._get_initial_source(status_args)
-        output = status_args.output  # where to put the generated report
+        output = status_args.output
 
-        format = getattr(status_args, "format", "console")
-        result = StatusCommand(location=initial_source, format=format)
+        fmt = getattr(status_args, "format", "console")
+        verbosity = getattr(status_args, "verbosity", "normal")
+        incomplete = getattr(status_args, "incomplete", False)
+        req_ids = getattr(status_args, "req_ids", None)
+        svc_ids = getattr(status_args, "svc_ids", None)
+
+        result = StatusCommand(
+            location=initial_source,
+            format=fmt,
+            verbosity=verbosity,
+            incomplete=incomplete,
+            req_ids=req_ids,
+            svc_ids=svc_ids,
+        )
         status, nr_of_incomplete_requirements = result.result
 
         output.write(str(status))
@@ -598,12 +629,8 @@ def main():  # noqa: C901
             command.command_report(report_args=args)
         elif args.command == "export":
             command.command_export(export_args=args)
-        elif args.command == "generate-json":
-            print(
-                "WARNING: 'generate-json' is deprecated. Use 'export --format json' instead.",
-                file=sys.stderr,
-            )
-            command.command_generate_json(generate_json_args=args)
+        elif args.command == "validate":
+            exit_code = command.command_validate(validate_args=args)
         elif args.command == "status":
             exit_code = command.command_status(status_args=args)
         elif args.command == "lsp":
