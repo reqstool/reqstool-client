@@ -2,7 +2,6 @@
 
 
 import json
-import re
 import shutil
 
 from rich.columns import Columns
@@ -14,7 +13,7 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
-from reqstool.models.requirements import IMPLEMENTATION
+from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
 from reqstool.services.statistics_service import StatisticsService, TestStats, TotalStats
 from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -22,11 +21,22 @@ from reqstool.storage.requirements_repository import RequirementsRepository
 
 _ORANGE = "dark_orange"
 _DIM = "dim"
-_ANSI_ESCAPE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+_MIN_CONSOLE_WIDTH = 80
+
+# Labels shown in the per-row Implementation cell for non-code types.
+_NON_CODE_LABELS: dict[IMPLEMENTATION, str] = {
+    IMPLEMENTATION.NOT_APPLICABLE: "N/A",
+    IMPLEMENTATION.CONFIGURATION: "configuration",
+    IMPLEMENTATION.PLATFORM: "platform",
+    IMPLEMENTATION.FRAMEWORK: "framework",
+}
+assert (
+    set(_NON_CODE_LABELS) == NON_CODE_IMPLEMENTATIONS
+), f"_NON_CODE_LABELS keys {set(_NON_CODE_LABELS)} must match NON_CODE_IMPLEMENTATIONS {NON_CODE_IMPLEMENTATIONS}"
 
 
 def _make_console() -> Console:
-    width = max(80, shutil.get_terminal_size((120, 24)).columns)
+    width = max(_MIN_CONSOLE_WIDTH, shutil.get_terminal_size((120, 24)).columns)
     return Console(highlight=False, force_terminal=True, color_system="standard", width=width)
 
 
@@ -105,8 +115,8 @@ def _build_table(
         Text(urn),
         Text(req_id, style=id_style),
     ]
-    if implementation == IMPLEMENTATION.NOT_APPLICABLE:
-        row.append(Text("N/A", style="dim"))
+    if implementation in _NON_CODE_LABELS:
+        row.append(Text(_NON_CODE_LABELS[implementation], style="dim"))
     else:
         impl_style = "green" if impls > 0 else "red"
         row.append(Text(str(impls), style=impl_style))
@@ -122,7 +132,7 @@ def _get_row_with_totals(stats_service: StatisticsService) -> list:
     total_implementations = sum(
         stats.implementations
         for stats in stats_service.requirement_statistics.values()
-        if stats.implementation_type != IMPLEMENTATION.NOT_APPLICABLE
+        if stats.implementation_type not in _NON_CODE_LABELS
     )
     auto_stats = TestStats(
         total=total_automatic,
@@ -196,52 +206,43 @@ def _status_table(stats_service: StatisticsService) -> str:
 
 
 def _summarize_statistics(ts: TotalStats) -> str:
-    nr_of_reqs_without_implementation = ts.without_implementation_total
-    nr_of_completed_reqs_without_implementation = ts.without_implementation_completed
-    code_reqs = ts.total_requirements - nr_of_reqs_without_implementation
-    code_completed = ts.completed_requirements - nr_of_completed_reqs_without_implementation
+    CODE, NA, CONFIGURATION, PLATFORM, FRAMEWORK, IMPLEMENTATIONS = __colorize_headers()
 
-    CODE, NA, IMPLEMENTATIONS = __colorize_headers()
+    annotated_not_verified = ts.with_implementation - ts.code_completed
+    missing_annotation = ts.code_reqs - ts.with_implementation
 
-    # Code group: 4 stats (total, implemented, verified, not verified)
+    # In Code group: 4 stats (total, verified, annotated not verified, missing annotation)
     code_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=CODE, title_justify="center")
     code_table.add_column("Total", justify="center")
-    code_table.add_column("Implemented", justify="center")
     code_table.add_column("Verified", justify="center")
-    code_table.add_column("Not Verified", justify="center")
+    code_table.add_column("Annotated, not verified", justify="center")
+    code_table.add_column("Missing annotation", justify="center")
     code_table.add_row(
-        str(code_reqs) + __numbers_as_percentage(numerator=code_reqs, denominator=code_reqs),
-        str(ts.with_implementation) + __numbers_as_percentage(numerator=ts.with_implementation, denominator=code_reqs),
-        str(code_completed) + __numbers_as_percentage(numerator=code_completed, denominator=code_reqs),
-        str(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed))
-        + __numbers_as_percentage(
-            numerator=(ts.total_requirements - (nr_of_reqs_without_implementation + code_completed)),
-            denominator=code_reqs,
-        ),
+        str(ts.code_reqs) + __numbers_as_percentage(numerator=ts.code_reqs, denominator=ts.code_reqs),
+        str(ts.code_completed) + __numbers_as_percentage(numerator=ts.code_completed, denominator=ts.code_reqs),
+        str(annotated_not_verified)
+        + __numbers_as_percentage(numerator=annotated_not_verified, denominator=ts.code_reqs),
+        str(missing_annotation) + __numbers_as_percentage(numerator=missing_annotation, denominator=ts.code_reqs),
     )
 
-    # N/A group: 3 stats (total, verified, not verified)
-    na_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=NA, title_justify="center")
-    na_table.add_column("Total", justify="center")
-    na_table.add_column("Verified", justify="center")
-    na_table.add_column("Not Verified", justify="center")
-    na_table.add_row(
-        str(nr_of_reqs_without_implementation)
-        + __numbers_as_percentage(
-            numerator=nr_of_reqs_without_implementation,
-            denominator=nr_of_reqs_without_implementation,
-        ),
-        str(nr_of_completed_reqs_without_implementation)
-        + __numbers_as_percentage(
-            numerator=nr_of_completed_reqs_without_implementation,
-            denominator=nr_of_reqs_without_implementation,
-        ),
-        str(nr_of_reqs_without_implementation - nr_of_completed_reqs_without_implementation)
-        + __numbers_as_percentage(
-            numerator=(nr_of_reqs_without_implementation - nr_of_completed_reqs_without_implementation),
-            denominator=nr_of_reqs_without_implementation,
-        ),
-    )
+    def _non_code_table(title: Text, total: int, completed: int, overall_total: int) -> Table:
+        t = Table(box=box.DOUBLE_EDGE, show_header=True, title=title, title_justify="center")
+        # "Total" % = share of all requirements; "Verified"/"Not Verified" % = share of this type
+        t.add_column("Total (% of all)", justify="center")
+        t.add_column("Verified", justify="center")
+        t.add_column("Not Verified", justify="center")
+        t.add_row(
+            str(total) + __numbers_as_percentage(numerator=total, denominator=overall_total),
+            str(completed) + __numbers_as_percentage(numerator=completed, denominator=total),
+            str(total - completed) + __numbers_as_percentage(numerator=(total - completed), denominator=total),
+        )
+        return t
+
+    overall = ts.total_requirements
+    na_table = _non_code_table(NA, ts.without_implementation_total, ts.without_implementation_completed, overall)
+    config_table = _non_code_table(CONFIGURATION, ts.configuration_total, ts.configuration_completed, overall)
+    platform_table = _non_code_table(PLATFORM, ts.platform_total, ts.platform_completed, overall)
+    framework_table = _non_code_table(FRAMEWORK, ts.framework_total, ts.framework_completed, overall)
 
     tests_table = Table(
         box=box.DOUBLE_EDGE, show_header=True, title=f"Total Tests: {ts.total_tests}", title_style="white"
@@ -265,17 +266,14 @@ def _summarize_statistics(ts: TotalStats) -> str:
         + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
     )
 
-    cols_rendered = _render(Columns([code_table, na_table]))
-    cols_width = max(
-        (len(_ANSI_ESCAPE.sub("", line)) for line in cols_rendered.split("\n") if line.strip()),
-        default=80,
-    )
-    impl_console = Console(highlight=False, force_terminal=True, color_system="standard", width=cols_width)
+    impl_tables = [code_table, config_table, platform_table, framework_table, na_table]  # na_table intentionally last
+    stacked_rendered = "".join(_render(t) for t in impl_tables)
+    impl_console = _make_console()
     with impl_console.capture() as cap:
         impl_console.print(IMPLEMENTATIONS, justify="center")
     impl_header = cap.get()
 
-    return "\n" + impl_header + cols_rendered + _render(Columns([tests_table, svcs_table]))
+    return "\n" + impl_header + stacked_rendered + _render(Columns([tests_table, svcs_table]))
 
 
 def __numbers_as_percentage(numerator: int, denominator: int) -> str:
@@ -286,9 +284,12 @@ def __numbers_as_percentage(numerator: int, denominator: int) -> str:
     return percentage_as_string
 
 
-def __colorize_headers() -> tuple[Text, Text, Text]:
+def __colorize_headers() -> tuple[Text, Text, Text, Text, Text, Text]:
     return (
         Text("In Code", style="white"),
-        Text("Not in Code", style="white"),
+        Text("N/A", style="white"),
+        Text("Configuration", style="white"),
+        Text("Platform", style="white"),
+        Text("Framework", style="white"),
         Text("IMPLEMENTATIONS", style="bold white"),
     )

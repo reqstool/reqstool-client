@@ -1,6 +1,9 @@
 # Copyright © LFV
 
 
+import pytest
+
+from reqstool.common.exceptions import EnvVarInterpolationError
 from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validator_error_holder import ValidationErrorHolder
@@ -44,7 +47,7 @@ def test_system_requirements_model_generator(resource_funcname_rootdir_w_path):
     # git
     assert model.imports[1].current_unresolved.env_token == "GITLAB_TOKEN"
     assert model.imports[1].current_unresolved.url == "https://gitlab.sys-example.com"
-    assert model.imports[1].current_unresolved.branch == "feature/sys"
+    assert model.imports[1].current_unresolved.ref == "feature/sys"
     assert model.imports[1].current_unresolved.path == "/some/path"
 
     # maven #1
@@ -84,7 +87,7 @@ def test_system_requirements_model_generator(resource_funcname_rootdir_w_path):
     # git
     assert model.implementations[1].current_unresolved.env_token == "GITLAB_TOKEN"
     assert model.implementations[1].current_unresolved.url == "https://gitlab.impl-example.com"
-    assert model.implementations[1].current_unresolved.branch == "feature/impl"
+    assert model.implementations[1].current_unresolved.ref == "feature/impl"
     assert model.implementations[1].current_unresolved.path == "README.md"
 
     # maven #1
@@ -146,7 +149,7 @@ def test_microservice_requirements_model_generator(resource_funcname_rootdir_w_p
     # git
     assert model.imports[1].current_unresolved.env_token == "GITLAB_TOKEN"
     assert model.imports[1].current_unresolved.url == "https://gitlab.ms-example.com"
-    assert model.imports[1].current_unresolved.branch == "main"
+    assert model.imports[1].current_unresolved.ref == "main"
     assert model.imports[1].current_unresolved.path == "/some/ms-path"
 
     # maven
@@ -293,3 +296,34 @@ def test_npm_requirements_model_generator(resource_funcname_rootdir_w_path):
     assert isinstance(npm_impl, NpmLocation)
     assert npm_impl.package == "@my-org/my-impl-reqstool"
     assert npm_impl.version == "2.0.0"
+
+
+def test_requirements_model_generator_interpolates_env_vars(resource_funcname_rootdir_w_path, monkeypatch):
+    monkeypatch.setenv("REQSTOOL_TEST_MAVEN_VERSION", "9.9.9")
+    monkeypatch.delenv("REQSTOOL_TEST_TITLE", raising=False)  # exercise the ${VAR:-default} form
+
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    rmg = RequirementsModelGenerator(
+        parent=None,
+        filename=resource_funcname_rootdir_w_path(REQUIREMENTS_YML_FILE),
+        semantic_validator=semantic_validator,
+    )
+
+    model = rmg.requirements_data
+
+    assert model.metadata.title == "Default Title"
+    assert model.imports[0].current_unresolved.version == "9.9.9"
+
+
+def test_requirements_model_generator_unset_env_var_raises(resource_funcname_rootdir_w_path, monkeypatch):
+    monkeypatch.delenv("REQSTOOL_TEST_MAVEN_VERSION", raising=False)
+
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    with pytest.raises(EnvVarInterpolationError) as exc_info:
+        RequirementsModelGenerator(
+            parent=None,
+            filename=resource_funcname_rootdir_w_path(REQUIREMENTS_YML_FILE),
+            semantic_validator=semantic_validator,
+        )
+
+    assert "REQSTOOL_TEST_MAVEN_VERSION" in str(exc_info.value)

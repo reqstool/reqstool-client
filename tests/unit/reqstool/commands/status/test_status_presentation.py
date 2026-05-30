@@ -2,8 +2,10 @@
 
 from rich.console import Console
 
-from reqstool.commands.status.status import _build_table, _format_test_cell, _summarize_statistics
-from reqstool.models.requirements import IMPLEMENTATION
+import pytest
+
+from reqstool.commands.status.status import _NON_CODE_LABELS, _build_table, _format_test_cell, _summarize_statistics
+from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
 from reqstool.services.statistics_service import TestStats, TotalStats
 
 
@@ -224,3 +226,112 @@ def test_summarize_statistics_contains_percentage_string():
         )
     )
     assert "%" in result
+
+
+@pytest.mark.parametrize(
+    "impl_type, expected_label",
+    [
+        (IMPLEMENTATION.NOT_APPLICABLE, "N/A"),
+        (IMPLEMENTATION.CONFIGURATION, "configuration"),
+        (IMPLEMENTATION.PLATFORM, "platform"),
+        (IMPLEMENTATION.FRAMEWORK, "framework"),
+    ],
+)
+def test_build_table_non_code_type_shows_dim_label(impl_type, expected_label):
+    """Non-code implementation types show a dim label, not a count."""
+    row = _build_table(
+        req_id="REQ_001",
+        urn="ms-001",
+        impls=0,
+        tests=TestStats(not_applicable=True),
+        mvrs=TestStats(not_applicable=True),
+        completed=True,
+        implementation=impl_type,
+    )
+    assert row[2].plain == expected_label
+    assert row[2].style == "dim"
+
+
+def test_summarize_statistics_shows_all_non_code_section_headers():
+    """All four non-code section headers appear in the summary output."""
+    result = _summarize_statistics(TotalStats())
+    assert "N/A" in result
+    assert "Configuration" in result
+    assert "Platform" in result
+    assert "Framework" in result
+
+
+def test_summarize_statistics_non_zero_non_code_counts_show_percentages():
+    """_non_code_table percentage path is exercised with non-zero type counts."""
+    result = _summarize_statistics(
+        TotalStats(
+            total_requirements=7,
+            completed_requirements=5,
+            with_implementation=2,
+            without_implementation_total=2,
+            without_implementation_completed=1,
+            configuration_total=1,
+            configuration_completed=1,
+            platform_total=1,
+            platform_completed=1,
+            framework_total=1,
+            framework_completed=0,
+            total_svcs=4,
+            total_tests=4,
+            passed_tests=3,
+        )
+    )
+    assert "%" in result
+    assert "Configuration" in result
+    assert "Platform" in result
+    assert "Framework" in result
+
+
+def test_non_code_labels_covers_all_non_code_implementations():
+    """_NON_CODE_LABELS must stay in sync with NON_CODE_IMPLEMENTATIONS."""
+    assert set(_NON_CODE_LABELS.keys()) == NON_CODE_IMPLEMENTATIONS
+
+
+def test_summarize_statistics_na_appears_after_framework():
+    """N/A section must appear after the Framework section (stacked layout, N/A last)."""
+    result = _summarize_statistics(
+        TotalStats(
+            total_requirements=7,
+            without_implementation_total=1,
+            without_implementation_completed=0,
+            configuration_total=2,
+            platform_total=1,
+            framework_total=1,
+        )
+    )
+    framework_pos = result.find("Framework")
+    na_pos = result.find("N/A")
+    assert framework_pos != -1, "Framework section must be present"
+    assert na_pos != -1, "N/A section must be present"
+    assert na_pos > framework_pos, "N/A must appear after Framework (stacked, N/A last)"
+
+
+def test_summarize_statistics_section_order():
+    """Implementation sections must appear in order: In Code, Configuration, Platform, Framework, N/A."""
+    result = _summarize_statistics(
+        TotalStats(
+            total_requirements=10,
+            with_implementation=4,
+            without_implementation_total=2,
+            configuration_total=2,
+            platform_total=1,
+            framework_total=1,
+        )
+    )
+    positions = {
+        "In Code": result.find("In Code"),
+        "Configuration": result.find("Configuration"),
+        "Platform": result.find("Platform"),
+        "Framework": result.find("Framework"),
+        "N/A": result.find("N/A"),
+    }
+    assert all(p != -1 for p in positions.values()), f"Missing sections: {positions}"
+    assert positions["In Code"] < positions["Configuration"]
+    assert positions["Configuration"] < positions["Platform"]
+    assert positions["Platform"] < positions["Framework"]
+    assert positions["Framework"] < positions["N/A"]

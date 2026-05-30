@@ -2,8 +2,10 @@
 
 
 import logging
+from typing import Literal
 
 from reqstool.common.project_session import ProjectSession
+from reqstool.common.enrichment.enricher import BUILT_IN_PRESETS, enrich_text
 from reqstool.common.queries.details import (
     get_mvr_details,
     get_requirement_details,
@@ -20,7 +22,12 @@ from reqstool.storage.requirements_repository import RequirementsRepository
 logger = logging.getLogger(__name__)
 
 
-def start_server(location: LocationInterface) -> None:  # noqa: C901
+def start_server(  # noqa: C901
+    location: LocationInterface,
+    transport: Literal["stdio", "sse", "streamable-http"] = "stdio",
+    host: str = "127.0.0.1",
+    port: int = 8000,
+) -> None:
     try:
         from mcp.server.fastmcp import FastMCP
     except ImportError as exc:
@@ -38,6 +45,11 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
     urn_source_paths = session.urn_source_paths
 
     mcp = FastMCP("reqstool")
+    mcp.settings.host = host
+    mcp.settings.port = port
+    if transport == "streamable-http":
+        mcp.settings.json_response = True
+        mcp.settings.stateless_http = True
 
     @mcp.tool()
     def list_requirements(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
@@ -130,7 +142,23 @@ def start_server(location: LocationInterface) -> None:  # noqa: C901
             raise ValueError(f"URN {urn!r} not found")
         return result
 
+    @mcp.tool()
+    def enrich_document(content: str, preset: str) -> str:
+        """Enrich an OpenSpec document by resolving requirement/SVC/MVR IDs.
+
+        Injects titles and further fields next to each known ID according to the
+        named preset. Both arguments are required.
+
+        Presets: openspec:spec, openspec:delta-spec, openspec:design,
+                 openspec:proposal, openspec:tasks
+        """
+        if preset not in BUILT_IN_PRESETS:
+            raise ValueError(f"Unknown preset {preset!r}. Valid: {sorted(BUILT_IN_PRESETS)}")
+        config = BUILT_IN_PRESETS[preset]
+        return enrich_text(content, repo.get_all_requirements(), repo.get_all_svcs(), repo.get_all_mvrs(), config)
+
     try:
-        mcp.run()
+        logger.info("Starting reqstool MCP server (transport=%s, host=%s, port=%s)", transport, host, port)
+        mcp.run(transport=transport)
     finally:
         session.close()

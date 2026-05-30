@@ -37,3 +37,25 @@ class ArtifactExtractionError(Exception):
 
     def __init__(self, message: str):
         super().__init__(message)
+
+
+class GitRefNotFoundError(Exception):
+    """Raised when a git ref (branch, tag, or commit SHA) cannot be resolved in a cloned repo."""
+
+    def __init__(self, ref: str, url: str):
+        self.ref = ref
+        self.url = url
+        super().__init__(f"ref '{ref}' not found in {url}")
+
+
+class EnvVarInterpolationError(Exception):
+    """Raised when environment variable interpolation of YAML input fails.
+
+    This covers references to unset variables that have no inline default, as
+    well as malformed ``${...}`` expressions. Failing hard keeps ingestion
+    deterministic and surfaces configuration mistakes in CI.
+    """
+
+    def __init__(self, message: str, source: str | None = None):
+        self.source = source
+        super().__init__(f"{message} (in {source})" if source else message)

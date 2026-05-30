@@ -9,7 +9,7 @@ imports:
   git:
     - env_token: "GITLAB_TOKEN"
       url: https://gitlab.sys-example.com
-      branch: feature/sys
+      ref: feature/sys
       path: /some/path
   local:
     - path: /some/local-sys-path
@@ -53,7 +53,7 @@ implementations: # only used with type = system
   git:
     - env_token: GITLAB_TOKEN
       url: https://gitlab.impl-example.com
-      branch: feature/impl
+      ref: feature/impl
       path: README.md
 
   local: # for future use

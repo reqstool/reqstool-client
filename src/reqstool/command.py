@@ -5,7 +5,7 @@ import argparse
 import logging
 import os
 import sys
-from typing import Optional, TextIO, Union
+from typing import Literal, Optional, TextIO, Union, cast
 
 if __package__ is None or len(__package__) == 0:
     _script_dir = os.path.abspath(os.path.dirname(__file__))
@@ -32,7 +32,9 @@ from reqstool.commands.generate_json.generate_json import GenerateJsonCommand
 from reqstool.commands.report import report
 from reqstool.commands.report.criterias.group_by import GroupbyOptions
 from reqstool.commands.report.criterias.sort_by import SortByOptions
+from reqstool.commands.enrich.enrich import EnrichCommand
 from reqstool.commands.status.status import StatusCommand
+from reqstool.common.enrichment.enricher import BUILT_IN_PRESETS
 from reqstool.common.utils import Utils
 from reqstool.common.validators.syntax_validator import JsonSchemaItem
 from reqstool.locations.git_location import GitLocation
@@ -70,7 +72,7 @@ _LOCATION_DEFS = [
         "args": [
             {"flags": ["-u", "--url"], "kwargs": {"help": "git repository URL", "required": True}},
             {"flags": ["-p", "--path"], "kwargs": {"help": "path within the repository", "required": True}},
-            {"flags": ["-b", "--branch"], "kwargs": {"help": "branch name"}},
+            {"flags": ["-r", "--ref"], "kwargs": {"help": "git branch, tag, or commit SHA", "required": True}},
             {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the access token"}},
         ],
     },
@@ -309,6 +311,33 @@ class Command:
         status_source_subparsers = status_parser.add_subparsers(dest="source", required=True)
         self._add_subparsers_source(status_source_subparsers)
 
+        # command: enrich
+        enrich_parser = subparsers.add_parser(
+            "enrich",
+            help=(
+                "Enrich a document with requirement/SVC/MVR titles and descriptions. "
+                "Auto-detects dataset from .reqstool-ai.yaml if no source is given."
+            ),
+        )
+        enrich_parser.add_argument(
+            "--preset",
+            required=True,
+            choices=sorted(BUILT_IN_PRESETS),
+            help="Enrichment preset (e.g. openspec:spec, openspec:design)",
+        )
+        enrich_parser.add_argument(
+            "--input",
+            "-i",
+            metavar="FILE",
+            default=None,
+            help="Input file to enrich (default: stdin)",
+        )
+        self._add_argument_output(enrich_parser)
+        enrich_source_subparsers = enrich_parser.add_subparsers(dest="source", required=False)
+        self._add_subparsers_source(
+            enrich_source_subparsers, include_report_options=False, include_filter_options=False
+        )
+
         # command: lsp
         lsp_parser = subparsers.add_parser(
             "lsp", help="Start the Language Server Protocol server (requires reqstool[lsp])"
@@ -347,9 +376,26 @@ class Command:
         mcp_parser = subparsers.add_parser(
             "mcp",
             help=(
-                "Start the Model Context Protocol server (stdio). "
+                "Start the Model Context Protocol server. "
                 "With no source, auto-detects the dataset from .reqstool-ai.yaml in cwd or an ancestor directory."
             ),
+        )
+        mcp_parser.add_argument(
+            "--transport",
+            choices=["stdio", "sse", "streamable-http"],
+            default="stdio",
+            help="Transport to use (default: %(default)s)",
+        )
+        mcp_parser.add_argument(
+            "--host",
+            default="127.0.0.1",
+            help="Host for HTTP transports (default: %(default)s)",
+        )
+        mcp_parser.add_argument(
+            "--port",
+            type=int,
+            default=8000,
+            help="Port for HTTP transports (default: %(default)s)",
         )
         mcp_source_subparsers = mcp_parser.add_subparsers(dest="source", required=False)
         self._add_subparsers_source(mcp_source_subparsers, include_report_options=False, include_filter_options=False)
@@ -388,7 +434,7 @@ class Command:
             location = GitLocation(
                 url=args_source.url,
                 path=args_source.path,
-                branch=args_source.branch if args_source.branch else None,
+                ref=args_source.ref,
                 env_token=args_source.env_token if args_source.env_token else None,
             )
         elif args_source.source == "local":
@@ -507,10 +553,51 @@ class Command:
             location = self._get_initial_source(mcp_args)
 
         try:
-            start_server(location=location)
+            start_server(
+                location=location,
+                transport=cast(Literal["stdio", "sse", "streamable-http"], mcp_args.transport),
+                host=mcp_args.host,
+                port=mcp_args.port,
+            )
         except Exception as exc:
             logging.fatal("reqstool MCP server crashed: %s", exc)
             sys.exit(1)
+
+    @Requirements("REQ_039")
+    def command_enrich(self, enrich_args: argparse.Namespace):
+        if getattr(enrich_args, "source", None) is None:
+            from pathlib import Path
+
+            from reqstool.common.reqstool_ai_config import CONFIG_FILENAME, find_config, resolve_system_path
+
+            config_path = find_config()
+            if config_path is None:
+                print(
+                    f"reqstool enrich: no {CONFIG_FILENAME} found from {Path.cwd()} upward; "
+                    f"either run from a project containing {CONFIG_FILENAME} or specify an explicit source "
+                    f"(e.g. `reqstool enrich --preset openspec:spec --input foo.md local -p <path>`).",
+                    file=sys.stderr,
+                )
+                sys.exit(2)
+            try:
+                resolved = resolve_system_path(config_path)
+            except ValueError as exc:
+                print(f"reqstool enrich: {exc}", file=sys.stderr)
+                sys.exit(2)
+            location: LocationInterface = LocalLocation(path=str(resolved))
+        else:
+            location = self._get_initial_source(enrich_args)
+
+        input_file = getattr(enrich_args, "input", None)
+        if input_file is None:
+            input_content = sys.stdin.read()
+        else:
+            with open(input_file, encoding="utf-8") as f:
+                input_content = f.read()
+
+        config = BUILT_IN_PRESETS[enrich_args.preset]
+        result = EnrichCommand(location=location, input_content=input_content, config=config)
+        enrich_args.output.write(result.result)
 
     def print_help(self):
         self.__parser.print_help(sys.stderr)
@@ -548,6 +635,8 @@ def main():  # noqa: C901
             command.command_lsp(lsp_args=args)
         elif args.command == "mcp":
             command.command_mcp(mcp_args=args)
+        elif args.command == "enrich":
+            command.command_enrich(enrich_args=args)
         else:
             command.print_help()
     except MissingRequirementsFileError as exc:

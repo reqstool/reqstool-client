@@ -12,14 +12,52 @@ Use `-h/--help` for more information about each command and location.
 Each command accepts a location argument that specifies where the reqstool data resides:
 
 * `local` -- path on the local file system
-* `git` -- Git repository (URL, branch, optional token)
+* `git` -- Git repository (URL, ref (branch, tag, or commit SHA), optional token)
 * `maven` -- Maven artifact (ZIP)
 * `pypi` -- PyPI package (tar.gz)
 
 *Example with git location:*
 [source,bash]
 ----
-reqstool report git -u URL_TO_REPOSITORY.git -t ACCESS_TOKEN -p PATH_TO_DIR -b BRANCH_NAME
+reqstool report git -u URL_TO_REPOSITORY.git -t ACCESS_TOKEN -p PATH_TO_DIR -r REF
+----
+
+[[env-var-interpolation]]
+== Environment variable interpolation
+
+Reqstool expands environment variables in YAML input (`requirements.yml`, `svcs.yml`,
+`mvrs.yml`, `annotations.yml`, `reqstool_config.yml`) before parsing, using POSIX shell
+parameter expansion (the `envsubst` standard). Only the *braced* form is interpolated:
+
+[cols="1,3"]
+|===
+| Syntax | Behaviour
+
+| `${VAR}`            | Substitute the value of `VAR`.
+| `${VAR:-default}`   | Use `default` when `VAR` is unset or empty.
+| `${VAR:?message}`   | Fail with `message` when `VAR` is unset or empty.
+| `${VAR:+alt}`       | Use `alt` when `VAR` is set.
+|===
+
+A bare `${VAR}` whose variable is unset and has no inline default is a *hard error* -- this
+keeps ingestion deterministic and surfaces misconfiguration in CI rather than silently
+producing empty values.
+
+The bare `$VAR` form (without braces) is intentionally *not* expanded, so the
+`# yaml-language-server: $schema=...` directive, regular expressions and other literal `$`
+characters are left untouched.
+
+This is the recommended way to keep imported artifact versions current -- pin the version to
+an environment variable and let a tool such as Renovate update it:
+
+[source,yaml]
+----
+imports:
+  maven:
+    - url: https://repo.maven.org
+      group_id: com.example
+      artifact_id: my-lib
+      version: ${MY_LIB_VERSION}
 ----
 
 [[status]]
@@ -63,9 +101,22 @@ The requirements table shows for each requirement:
 
 * *URN* -- the source system or microservice
 * *ID* -- the requirement identifier
-* *Implementation* -- whether the requirement has a matching `@Requirements` annotation in code (`Implemented` or `Missing`)
+* *Implementation* -- how the requirement is fulfilled, determined by the `implementation` field in `requirements.yml`:
+** a number (green/red) -- `in-code` (default): count of `@Requirements` annotations found; red means none found
+** `configuration` -- `configuration`: fulfilled by application config (YAML properties, env vars); no annotation required
+** `platform` -- `platform`: fulfilled by infrastructure or platform layer (Kubernetes, load balancing, network policies); no annotation required
+** `framework` -- `framework`: fulfilled by framework auto-configuration (Spring Boot starters, OTel agents); no annotation required
+** `N/A` -- not applicable, intentionally deferred, or out of scope; no annotation required
 * *Automated Tests* -- test results from JUnit XML: T=total SVCs, P=passed, F=failed, S=skipped, M=missing (no test found for SVC)
 * *Manual Tests* -- manual verification results: T=total, P=passed, F=failed, M=missing
+
+The summary panels below the table break down requirements by implementation type.
+The `In Code` panel shows total, verified, annotated-not-verified, and missing-annotation counts (all percentages relative to in-code requirements).
+The `N/A`, `Configuration`, `Platform`, and `Framework` panels each show three columns:
+
+* *Total (% of all)* -- count of this type, as a percentage of _all_ requirements; shows the type's share of the full requirement set
+* *Verified* -- count verified, as a percentage of _this type_
+* *Not Verified* -- count not yet verified, as a percentage of _this type_
 
 The exit code equals the number of unmet requirements, making it suitable for CI/CD gates (`exit 0` = all requirements met).
 

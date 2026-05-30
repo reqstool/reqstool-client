@@ -55,9 +55,9 @@ class Git(BaseModel):
     """
     Token to authenticate. E.g. GITLAB_TOKEN or empty.
     """
-    branch: str
+    ref: str
     """
-    Git branch to read from.
+    Git branch, tag, or commit SHA to read from.
     """
     url: str
     """
@@ -125,6 +125,9 @@ class Implementation(StrEnum):
     """
 
     in_code = 'in-code'
+    configuration = 'configuration'
+    platform = 'platform'
+    framework = 'framework'
     N_A = 'N/A'
 
 

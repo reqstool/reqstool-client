@@ -96,7 +96,7 @@ class RequirementsModelGenerator:
 
         yaml = YAML(typ="safe")
 
-        data = yaml.load(response.text)
+        data = yaml.load(Utils.interpolate_env_vars(response.text, source=uri))
 
         urn = self.get_urn_if_available(response.text)
 
@@ -264,7 +264,7 @@ class RequirementsModelGenerator:
                     current_unresolved=GitLocation(
                         env_token=git.env_token,
                         url=git.url,
-                        branch=git.branch,
+                        ref=git.ref,
                         path=git.path or "",
                     ),
                 )

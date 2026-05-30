@@ -28,3 +28,13 @@ cases:
     verification: manual-test
     instructions: "Some instructions"
     revision: "0.0.2"
+
+  - id: SVC_203
+    requirement_ids: ["REQ_201"]
+    title: "Some Title SVC_203"
+    description: |
+      GIVEN a component
+      WHEN it is invoked
+      THEN it returns a result
+    verification: automated-test
+    revision: "0.0.1"

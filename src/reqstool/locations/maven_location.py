@@ -9,7 +9,7 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.common.utils import Utils
-from reqstool.locations.location import LocationInterface
+from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
 
 
 @Requirements("REQ_003", "REQ_017")
@@ -20,6 +20,9 @@ class MavenLocation(LocationInterface):
     version: str
     classifier: str = "reqstool"
     env_token: Optional[str] = None
+
+    def tmpdir_key(self) -> str:
+        return make_safe_tmpdir_suffix("maven", f"{self.group_id}:{self.artifact_id}:{self.version}")
 
     def _make_available_on_localdisk(self, dst_path: str):
         token = os.getenv(self.env_token) if self.env_token else None
