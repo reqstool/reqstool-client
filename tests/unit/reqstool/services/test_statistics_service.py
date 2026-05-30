@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 
 from reqstool.common.models.urn_id import UrnId
@@ -270,6 +272,76 @@ def test_total_svcs(db):
     repo = RequirementsRepository(db)
     stats = StatisticsService(repo)
     assert stats.total_statistics.total_svcs == 2
+
+
+# -- MVR supersession --
+
+
+MVR_ID_A = UrnId(urn=URN, id="MVR_A")
+MVR_ID_B = UrnId(urn=URN, id="MVR_B")
+
+
+def _insert_mvr_dated(db, mvr_id, svc_ids, passed, date_iso: str | None):
+    date = datetime.fromisoformat(date_iso) if date_iso else None
+    mvr = MVRData(id=mvr_id, passed=passed, svc_ids=svc_ids, date=date)
+    db.insert_mvr(mvr_id.urn, mvr)
+
+
+def test_supersession_fail_then_pass_counts_as_passed(db):
+    """The core bug from issue #72: fail→pass should yield T1 P1, not T2 P1 F1."""
+    _insert_req(db)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    _insert_mvr_dated(db, MVR_ID_A, [SVC_ID], passed=False, date_iso="2026-01-01T00:00:00Z")
+    _insert_mvr_dated(db, MVR_ID_B, [SVC_ID], passed=True, date_iso="2026-01-02T00:00:00Z")
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+
+    manual = stats.requirement_statistics[REQ_ID].manual_tests
+    assert manual.total == 1
+    assert manual.passed == 1
+    assert manual.failed == 0
+    assert stats.requirement_statistics[REQ_ID].completed is True
+    assert stats.total_statistics.passed_manual_tests == 1
+    assert stats.total_statistics.failed_manual_tests == 0
+    assert stats.total_statistics.total_manual_tests == 1
+
+
+def test_supersession_pass_then_fail_counts_as_failed(db):
+    """Later fail supersedes earlier pass — requirement is not met."""
+    _insert_req(db)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    _insert_mvr_dated(db, MVR_ID_A, [SVC_ID], passed=True, date_iso="2026-01-01T00:00:00Z")
+    _insert_mvr_dated(db, MVR_ID_B, [SVC_ID], passed=False, date_iso="2026-01-02T00:00:00Z")
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+
+    manual = stats.requirement_statistics[REQ_ID].manual_tests
+    assert manual.total == 1
+    assert manual.passed == 0
+    assert manual.failed == 1
+    assert stats.requirement_statistics[REQ_ID].completed is False
+
+
+def test_supersession_mixed_tz_offsets_latest_utc_wins(db):
+    """UTC 14:30 (+00:00) beats UTC 13:30 (+01:00) even though wall-clock strings differ."""
+    _insert_req(db)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    _insert_mvr_dated(db, MVR_ID_A, [SVC_ID], passed=False, date_iso="2026-01-15T14:30:00+01:00")  # UTC 13:30
+    _insert_mvr_dated(db, MVR_ID_B, [SVC_ID], passed=True, date_iso="2026-01-15T14:30:00+00:00")  # UTC 14:30
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+
+    assert stats.requirement_statistics[REQ_ID].manual_tests.passed == 1
+    assert stats.requirement_statistics[REQ_ID].completed is True
 
 
 def test_empty_database(db):

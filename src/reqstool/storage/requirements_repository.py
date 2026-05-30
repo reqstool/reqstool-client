@@ -1,6 +1,8 @@
 # Copyright © LFV
 
 
+from datetime import datetime
+
 from packaging.version import Version
 
 from reqstool.common.models.lifecycle import LIFECYCLESTATE, LifecycleData
@@ -139,6 +141,47 @@ class RequirementsRepository:
             (svc_urn_id.urn, svc_urn_id.id),
         ).fetchall()
         return [UrnId(urn=row["mvr_urn"], id=row["mvr_id"]) for row in rows]
+
+    def get_effective_mvr_for_svc(self, svc_urn_id: UrnId) -> MVRData | None:
+        """Return the MVR that represents the current verdict for a SVC.
+
+        When a SVC has multiple MVRs the one with the latest date (UTC-normalized
+        via SQLite's datetime() function) is the verdict; all others are audit
+        history.  When there is only one MVR (dated or not) it is returned
+        directly.  Returns None when no MVRs exist for the SVC.
+        """
+        row = self._db.connection.execute(
+            """
+            SELECT m.*
+            FROM mvrs m
+            JOIN mvr_svc_links l ON m.urn = l.mvr_urn AND m.id = l.mvr_id
+            WHERE l.svc_urn = ? AND l.svc_id = ?
+            ORDER BY datetime(m.date) DESC NULLS LAST
+            LIMIT 1
+            """,
+            (svc_urn_id.urn, svc_urn_id.id),
+        ).fetchone()
+        return self._row_to_mvr_data(row) if row else None
+
+    def get_superseded_mvrs_for_svc(self, svc_urn_id: UrnId) -> list[MVRData]:
+        """Return all MVRs for a SVC that are NOT the effective (latest) one.
+
+        These are retained as audit history but excluded from the verdict.
+        """
+        effective = self.get_effective_mvr_for_svc(svc_urn_id)
+        if effective is None:
+            return []
+        rows = self._db.connection.execute(
+            """
+            SELECT m.*
+            FROM mvrs m
+            JOIN mvr_svc_links l ON m.urn = l.mvr_urn AND m.id = l.mvr_id
+            WHERE l.svc_urn = ? AND l.svc_id = ?
+              AND NOT (m.urn = ? AND m.id = ?)
+            """,
+            (svc_urn_id.urn, svc_urn_id.id, effective.id.urn, effective.id.id),
+        ).fetchall()
+        return [self._row_to_mvr_data(row) for row in rows]
 
     def get_annotations_impls(self, urn: str | None = None) -> dict[UrnId, list[AnnotationData]]:
         sql = "SELECT req_urn, req_id, element_kind, fqn FROM annotations_impls" + (" WHERE req_urn = ?" if urn else "")
@@ -345,10 +388,12 @@ class RequirementsRepository:
         ).fetchall()
         svc_ids = [UrnId(urn=r["svc_urn"], id=r["svc_id"]) for r in svc_link_rows]
 
+        raw_date = row["date"]
         return MVRData(
             id=UrnId(urn=urn, id=mvr_id),
             comment=row["comment"],
             passed=bool(row["passed"]),
+            date=datetime.fromisoformat(raw_date) if raw_date is not None else None,
             svc_ids=svc_ids,
             source_line=row["source_line"],
             source_col_start=row["source_col_start"],

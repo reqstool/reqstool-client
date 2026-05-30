@@ -5,7 +5,11 @@
 | | |
 |---|---|
 | **MVR ID** | **Result** |
-| {{mvr_info.id.urn}}:{{mvr_info.id.id}} | {%if mvr_info.passed%}passed{% else %}failed{%endif%} |
+| {{mvr_info.id.urn}}:{{mvr_info.id.id}}{% if mvr_info.superseded %} *(superseded)*{%endif%} | {%if mvr_info.passed%}passed{% else %}failed{%endif%} |
+{%if mvr_info.date%}
+| **Date** | |
+| {{mvr_info.date}} | |
+{%endif%}
 | **Comment** | |
 | {{mvr_info.comment}} | |
 | **Referenced SVCs** | |

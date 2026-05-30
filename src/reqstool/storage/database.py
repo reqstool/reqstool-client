@@ -114,13 +114,14 @@ class RequirementsDatabase:
 
     def insert_mvr(self, urn: str, mvr: MVRData) -> None:
         self._conn.execute(
-            "INSERT INTO mvrs (urn, id, passed, comment, source_line, source_col_start, source_col_end)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO mvrs (urn, id, passed, comment, date, source_line, source_col_start, source_col_end)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 urn,
                 mvr.id.id,
                 int(mvr.passed),
                 mvr.comment,
+                mvr.date.isoformat() if mvr.date is not None else None,
                 mvr.source_line,
                 mvr.source_col_start,
                 mvr.source_col_end,

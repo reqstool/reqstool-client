@@ -14,7 +14,6 @@ from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
 from reqstool.models.annotations import AnnotationData
-from reqstool.models.mvrs import MVRData
 from reqstool.models.svcs import SVCData
 from reqstool.models.test_data import TEST_RUN_STATUS
 from reqstool.services.statistics_service import StatisticsService
@@ -161,11 +160,21 @@ class ReportCommand:
             # get all implementations for current requirement
             impls: list = self._get_annotation_impls(repo=repo, urn_id=urn_id)
 
-            # Get MVR IDs via SVCs
+            # Get MVR IDs via SVCs, annotated with supersession state
             mvr_ids: list[UrnId] = [mid for svc_uid in svcs_urn_ids for mid in repo.get_mvrs_for_svc(svc_uid)]
-
-            # Get mvrs for current requirement if there are any (else [])
-            mvrs: list[MVRData] = [all_mvrs[mvr_id] for mvr_id in mvr_ids if mvr_id in all_mvrs] if mvr_ids else []
+            superseded_ids = {m.id for svc_uid in svcs_urn_ids for m in repo.get_superseded_mvrs_for_svc(svc_uid)}
+            mvrs = [
+                {
+                    "id": all_mvrs[mid].id,
+                    "passed": all_mvrs[mid].passed,
+                    "date": all_mvrs[mid].date or "",
+                    "comment": all_mvrs[mid].comment,
+                    "svc_ids": all_mvrs[mid].svc_ids,
+                    "superseded": mid in superseded_ids,
+                }
+                for mid in mvr_ids
+                if mid in all_mvrs
+            ]
 
             # generate templates for tests related to current requirement
             automated_test_results_for_req: list = self._get_annotated_automated_test_results_for_req(

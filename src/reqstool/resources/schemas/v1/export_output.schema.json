@@ -279,6 +279,10 @@
                     "type": "boolean",
                     "description": "Whether the manual verification passed"
                 },
+                "date": {
+                    "type": "string",
+                    "description": "ISO 8601 date or date-time when the verification was performed"
+                },
                 "comment": {
                     "type": ["string", "null"],
                     "description": "Optional comment about the verification result"

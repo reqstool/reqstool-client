@@ -13,6 +13,7 @@ from reqstool.common.models.urn_id import UrnId
 from reqstool.common.utils import Utils
 from reqstool.common.validator_error_holder import ValidationError, ValidationErrorHolder
 from reqstool.models.imports import ImportDataInterface
+from reqstool.models.mvrs import MVRData
 from reqstool.models.raw_datasets import CombinedRawDataset
 from reqstool.models.requirements import RequirementData
 from reqstool.models.svcs import SVCData, SVCsData
@@ -46,6 +47,9 @@ class SemanticValidator:
         )
         self._validation_error_holder.add_errors(
             self._validate_mvr_refers_to_existing_svc_ids(combined_raw_dataset=combined_raw_dataset)
+        )
+        self._validation_error_holder.add_errors(
+            self._validate_mvr_supersession(combined_raw_dataset=combined_raw_dataset)
         )
 
         errors = self._validation_error_holder.get_errors()
@@ -213,6 +217,60 @@ class SemanticValidator:
                             ValidationError(msg=f"MVR refers to non-existing svc id: {self.prettify_urn_id(svc_id)}")
                         )
 
+        return errors
+
+    def _validate_mvr_supersession(self, combined_raw_dataset: CombinedRawDataset) -> List[ValidationError]:
+        """Validate supersession rules when multiple MVRs reference the same SVC.
+
+        Rules:
+        - If >1 MVR references the same SVC, every such MVR must have a ``date`` field.
+        - No two MVRs for the same SVC may represent the exact same UTC moment (tie-break
+          is an error — use a different timestamp to disambiguate).
+        """
+        errors: List[ValidationError] = []
+        for model, model_data in combined_raw_dataset.raw_datasets.items():
+            if model != combined_raw_dataset.initial_model_urn or not model_data.mvrs_data:
+                continue
+
+            svc_to_mvrs: dict[UrnId, List[MVRData]] = {}
+            for mvr_data in model_data.mvrs_data.results.values():
+                for svc_id in mvr_data.svc_ids:
+                    svc_to_mvrs.setdefault(svc_id, []).append(mvr_data)
+
+            for svc_id, mvrs in svc_to_mvrs.items():
+                if len(mvrs) > 1:
+                    errors.extend(self._check_mvr_dates_for_svc(svc_id, mvrs))
+
+        return errors
+
+    def _check_mvr_dates_for_svc(self, svc_id: UrnId, mvrs: List[MVRData]) -> List[ValidationError]:
+        errors: List[ValidationError] = []
+        dated: list[tuple] = []
+        for mvr in mvrs:
+            if mvr.date is None:
+                errors.append(
+                    ValidationError(
+                        msg=f"MVR '{self.prettify_urn_id(mvr.id)}' references SVC "
+                        f"'{self.prettify_urn_id(svc_id)}' but has no 'date' field. "
+                        f"A 'date' is required when multiple MVRs reference the same SVC."
+                    )
+                )
+            else:
+                dated.append((mvr.date, mvr))
+
+        seen: dict = {}
+        for ts, mvr in dated:
+            if ts in seen:
+                errors.append(
+                    ValidationError(
+                        msg=f"MVRs '{self.prettify_urn_id(seen[ts].id)}' and "
+                        f"'{self.prettify_urn_id(mvr.id)}' both reference SVC "
+                        f"'{self.prettify_urn_id(svc_id)}' at the same UTC moment. "
+                        f"Use a different timestamp to disambiguate."
+                    )
+                )
+            else:
+                seen[ts] = mvr
         return errors
 
     def _validate_svc_imports_filter_has_excludes_xor_includes(self, svc_data: SVCsData) -> List[ValidationError]:
