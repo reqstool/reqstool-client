@@ -5,7 +5,7 @@ import pytest
 from integration.reqstool.model_generators._regression_shared import (
     ECOSYSTEM_URNS,
     _GITHUB_TOKEN_ENV,
-    _REGRESSION_REPO_BRANCH,
+    _REGRESSION_REPO_REF,
     _REGRESSION_REPO_URL,
 )
 from reqstool.common.models.lifecycle import LIFECYCLESTATE
@@ -40,7 +40,7 @@ def repo():
         location=GitLocation(
             env_token=_GITHUB_TOKEN_ENV,
             url=_REGRESSION_REPO_URL,
-            branch=_REGRESSION_REPO_BRANCH,
+            ref=_REGRESSION_REPO_REF,
             path="fixtures/parent",
         ),
         semantic_validator=SemanticValidator(validation_error_holder=holder),

@@ -14,7 +14,7 @@ def git_import_data():
         parent=None,
         current_unresolved=GitLocation(
             env_token="GITLAB_TOKEN",
-            branch="main",
+            ref="main",
             url="https://gitlab.example.com",
             path="git/some/path",
         ),
@@ -44,7 +44,7 @@ def maven_import_data():
 def test_git_import_data(git_import_data):
     assert git_import_data.parent is None
     assert git_import_data.current.env_token == "GITLAB_TOKEN"
-    assert git_import_data.current.branch == "main"
+    assert git_import_data.current.ref == "main"
     assert git_import_data.current.url == "https://gitlab.example.com"
     assert git_import_data.current.path == "git/some/path"
 

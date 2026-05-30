@@ -2,6 +2,8 @@
 
 from unittest.mock import patch
 
+import pytest
+
 from reqstool.command import Command, main
 from reqstool.commands.exit_codes import EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED, EXIT_CODE_MISSING_REQUIREMENTS_FILE
 from reqstool.common.exceptions import MissingRequirementsFileError
@@ -133,14 +135,20 @@ def test_local_source_parser_accepts_path_arg():
     assert args.path == "/some/path"
 
 
-def test_git_source_parser_requires_url_and_path():
+def test_git_source_parser_requires_url_path_and_ref():
     args = _make_command_and_parse(
-        ["reqstool", "report", "git", "-u", "https://example.com/repo", "-p", "docs/reqstool"]
+        ["reqstool", "report", "git", "-u", "https://example.com/repo", "-p", "docs/reqstool", "-r", "v1.0.0"]
     )
     assert args.command == "report"
     assert args.source == "git"
     assert args.url == "https://example.com/repo"
     assert args.path == "docs/reqstool"
+    assert args.ref == "v1.0.0"
+
+
+def test_git_source_parser_missing_ref_errors():
+    with pytest.raises(SystemExit):
+        _make_command_and_parse(["reqstool", "report", "git", "-u", "https://example.com/repo", "-p", "docs/reqstool"])
 
 
 def test_maven_source_parser_requires_group_artifact_version():

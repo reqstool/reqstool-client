@@ -12,14 +12,14 @@ Use `-h/--help` for more information about each command and location.
 Each command accepts a location argument that specifies where the reqstool data resides:
 
 * `local` -- path on the local file system
-* `git` -- Git repository (URL, branch, optional token)
+* `git` -- Git repository (URL, ref (branch, tag, or commit SHA), optional token)
 * `maven` -- Maven artifact (ZIP)
 * `pypi` -- PyPI package (tar.gz)
 
 *Example with git location:*
 [source,bash]
 ----
-reqstool report git -u URL_TO_REPOSITORY.git -t ACCESS_TOKEN -p PATH_TO_DIR -b BRANCH_NAME
+reqstool report git -u URL_TO_REPOSITORY.git -t ACCESS_TOKEN -p PATH_TO_DIR -r REF
 ----
 
 [[status]]

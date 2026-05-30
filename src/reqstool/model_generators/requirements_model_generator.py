@@ -232,7 +232,7 @@ class RequirementsModelGenerator:
                     current_unresolved=GitLocation(
                         env_token=git.env_token,
                         url=git.url,
-                        branch=git.branch,
+                        ref=git.ref,
                         path=git.path or "",
                     ),
                 )

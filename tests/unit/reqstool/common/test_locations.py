@@ -11,7 +11,7 @@ from reqstool.locations.maven_location import MavenLocation
 def git_location_data():
     return GitLocation(
         env_token="GITLAB_TOKEN",
-        branch="main",
+        ref="main",
         url="https://gitlab.example.com",
         path="some/path",
     )
@@ -36,7 +36,7 @@ def maven_location_data():
 
 def test_git_location_data(git_location_data):
     assert git_location_data.env_token == "GITLAB_TOKEN"
-    assert git_location_data.branch == "main"
+    assert git_location_data.ref == "main"
     assert git_location_data.url == "https://gitlab.example.com"
     assert git_location_data.path == "some/path"
 

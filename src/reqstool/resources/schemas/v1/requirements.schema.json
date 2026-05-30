@@ -106,9 +106,9 @@
                     "type": "string",
                     "description": "Token to authenticate. E.g. GITLAB_TOKEN or empty."
                 },
-                "branch": {
+                "ref": {
                     "type": "string",
-                    "description": "Git branch to read from."
+                    "description": "Git branch, tag, or commit SHA to read from."
                 },
                 "url": {
                     "type": "string",
@@ -120,7 +120,7 @@
                 }
             },
             "required": [
-                "branch",
+                "ref",
                 "url"
             ]
         },

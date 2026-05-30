@@ -43,7 +43,7 @@ def test_system_requirements_model_generator(resource_funcname_rootdir_w_path):
     # git
     assert model.imports[1].current_unresolved.env_token == "GITLAB_TOKEN"
     assert model.imports[1].current_unresolved.url == "https://gitlab.sys-example.com"
-    assert model.imports[1].current_unresolved.branch == "feature/sys"
+    assert model.imports[1].current_unresolved.ref == "feature/sys"
     assert model.imports[1].current_unresolved.path == "/some/path"
 
     # maven #1
@@ -83,7 +83,7 @@ def test_system_requirements_model_generator(resource_funcname_rootdir_w_path):
     # git
     assert model.implementations[1].current_unresolved.env_token == "GITLAB_TOKEN"
     assert model.implementations[1].current_unresolved.url == "https://gitlab.impl-example.com"
-    assert model.implementations[1].current_unresolved.branch == "feature/impl"
+    assert model.implementations[1].current_unresolved.ref == "feature/impl"
     assert model.implementations[1].current_unresolved.path == "README.md"
 
     # maven #1
@@ -145,7 +145,7 @@ def test_microservice_requirements_model_generator(resource_funcname_rootdir_w_p
     # git
     assert model.imports[1].current_unresolved.env_token == "GITLAB_TOKEN"
     assert model.imports[1].current_unresolved.url == "https://gitlab.ms-example.com"
-    assert model.imports[1].current_unresolved.branch == "main"
+    assert model.imports[1].current_unresolved.ref == "main"
     assert model.imports[1].current_unresolved.path == "/some/ms-path"
 
     # maven

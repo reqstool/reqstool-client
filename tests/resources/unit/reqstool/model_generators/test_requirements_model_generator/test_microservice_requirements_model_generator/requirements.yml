@@ -10,7 +10,7 @@ imports:
   git:
     - env_token: "GITLAB_TOKEN"
       url: https://gitlab.ms-example.com
-      branch: main
+      ref: main
       path: /some/ms-path
   local:
     - path: /some/local-ms-path

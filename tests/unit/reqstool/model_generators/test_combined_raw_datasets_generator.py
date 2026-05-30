@@ -179,7 +179,7 @@ def test_tmpdir_suffix_local_uses_local_prefix():
 @pytest.mark.parametrize(
     "location,expected_prefix,uri_fragment",
     [
-        (GitLocation(url="https://github.com/org/repo", branch="main"), "git_", "github.com"),
+        (GitLocation(url="https://github.com/org/repo", ref="main"), "git_", "github.com"),
         (MavenLocation(group_id="com.example", artifact_id="my-artifact", version="1.0.0"), "maven_", "my-artifact"),
         (PypiLocation(package="my-package", version="1.0.0"), "pypi_", "my-package"),
     ],
