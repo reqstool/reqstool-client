@@ -42,6 +42,7 @@ class RequirementsDatabase:
 
         The authorizer is cleared for the duration of the backup because the
         SQLite backup API reads sqlite_master, which the authorizer blocks.
+        The authorizer is always restored (or re-cleared) afterwards.
         """
         self._conn.set_authorizer(None)
         target = sqlite3.connect(dest_path)
@@ -49,6 +50,7 @@ class RequirementsDatabase:
             self._conn.backup(target)
         finally:
             target.close()
+            self._conn.set_authorizer(authorizer)
 
     def close(self):
         self._conn.close()

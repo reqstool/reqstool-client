@@ -111,6 +111,10 @@ class StatisticsService:
     def total_statistics(self) -> TotalStats:
         return self._totals
 
+    @property
+    def initial_urn(self) -> str:
+        return self._repo.get_initial_urn()
+
     def _calculate(self):
         requirements = self._repo.get_all_requirements()
         all_svcs = self._repo.get_all_svcs()

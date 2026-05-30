@@ -111,7 +111,7 @@ class StatusCommand:
 
 def _filtered_status_dict(stats_service: StatisticsService, kept_req_ids: set | None) -> dict:
     full = stats_service.to_status_dict()
-    if kept_req_ids:
+    if kept_req_ids is not None:
         kept_keys = {str(uid) for uid in kept_req_ids}
         full["requirements"] = {k: v for k, v in full["requirements"].items() if k in kept_keys}
     return full
@@ -138,7 +138,7 @@ def _incomplete_reasons(status) -> str:
 
 def _status_compact(stats_service: StatisticsService) -> str:
     ts = stats_service.total_statistics
-    urn = stats_service._repo.get_initial_urn()
+    urn = stats_service.initial_urn
     incomplete = ts.total_requirements - ts.completed_requirements
     verdict = "PASS" if incomplete == 0 else "FAIL"
     return (
@@ -150,7 +150,7 @@ def _status_compact(stats_service: StatisticsService) -> str:
 
 def _status_normal(stats_service: StatisticsService, incomplete_only: bool = False) -> str:
     ts = stats_service.total_statistics
-    urn = stats_service._repo.get_initial_urn()
+    urn = stats_service.initial_urn
     incomplete_count = ts.total_requirements - ts.completed_requirements
     verdict = "PASS" if incomplete_count == 0 else "FAIL"
 
@@ -241,7 +241,7 @@ def _status_extra_verbose(
     stats_service: StatisticsService, repo: RequirementsRepository, incomplete_only: bool = False
 ) -> str:
     ts = stats_service.total_statistics
-    urn = stats_service._repo.get_initial_urn()
+    urn = stats_service.initial_urn
     incomplete_count = ts.total_requirements - ts.completed_requirements
     verdict = "PASS" if incomplete_count == 0 else "FAIL"
 
