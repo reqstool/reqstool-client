@@ -41,11 +41,12 @@ class RequirementsIndata(BaseModel):
     def _handle_requirements_config(self):
 
         if os.path.exists(os.path.join(self.dst_path, "reqstool_config.yml")):
-            response = Utils.open_file_https_file(os.path.join(self.dst_path, "reqstool_config.yml"))
+            config_path = os.path.join(self.dst_path, "reqstool_config.yml")
+            response = Utils.open_file_https_file(config_path)
 
             yaml = YAML(typ="safe")
 
-            data: dict = yaml.load(response.text)
+            data: dict = yaml.load(Utils.interpolate_env_vars(response.text, source=config_path))
 
             if not SyntaxValidator.is_valid_data(
                 json_schema_type=JsonSchemaTypes.REQSTOOL_CONFIG, data=data, urn="unknown"

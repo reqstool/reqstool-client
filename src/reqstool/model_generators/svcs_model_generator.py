@@ -37,7 +37,7 @@ class SVCsModelGenerator:
 
         yaml = YAML(typ="safe")
 
-        data: dict = yaml.load(response.text)
+        data: dict = yaml.load(Utils.interpolate_env_vars(response.text, source=uri))
 
         if not SyntaxValidator.is_valid_data(
             json_schema_type=JsonSchemaTypes.SOFTWARE_VERIFICATION_CASES, data=data, urn=self.urn

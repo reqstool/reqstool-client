@@ -1,6 +1,9 @@
 # Copyright © LFV
 
 
+import pytest
+
+from reqstool.common.exceptions import EnvVarInterpolationError
 from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validator_error_holder import ValidationErrorHolder
@@ -256,3 +259,34 @@ def test_lifecycle_variable_model_generator(resource_funcname_rootdir_w_path):
     assert requirements[UrnId(urn="ms-001", id="REQ_003")].lifecycle.reason == "Reason for being obsolete"
     assert requirements[UrnId(urn="ms-001", id="REQ_004")].lifecycle.state == LIFECYCLESTATE.DRAFT
     assert requirements[UrnId(urn="ms-001", id="REQ_004")].lifecycle.reason == "Unnecessary reason"
+
+
+def test_requirements_model_generator_interpolates_env_vars(resource_funcname_rootdir_w_path, monkeypatch):
+    monkeypatch.setenv("REQSTOOL_TEST_MAVEN_VERSION", "9.9.9")
+    monkeypatch.delenv("REQSTOOL_TEST_TITLE", raising=False)  # exercise the ${VAR:-default} form
+
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    rmg = RequirementsModelGenerator(
+        parent=None,
+        filename=resource_funcname_rootdir_w_path(REQUIREMENTS_YML_FILE),
+        semantic_validator=semantic_validator,
+    )
+
+    model = rmg.requirements_data
+
+    assert model.metadata.title == "Default Title"
+    assert model.imports[0].current_unresolved.version == "9.9.9"
+
+
+def test_requirements_model_generator_unset_env_var_raises(resource_funcname_rootdir_w_path, monkeypatch):
+    monkeypatch.delenv("REQSTOOL_TEST_MAVEN_VERSION", raising=False)
+
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    with pytest.raises(EnvVarInterpolationError) as exc_info:
+        RequirementsModelGenerator(
+            parent=None,
+            filename=resource_funcname_rootdir_w_path(REQUIREMENTS_YML_FILE),
+            semantic_validator=semantic_validator,
+        )
+
+    assert "REQSTOOL_TEST_MAVEN_VERSION" in str(exc_info.value)

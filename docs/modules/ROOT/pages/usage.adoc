@@ -22,6 +22,44 @@ Each command accepts a location argument that specifies where the reqstool data 
 reqstool report git -u URL_TO_REPOSITORY.git -t ACCESS_TOKEN -p PATH_TO_DIR -r REF
 ----
 
+[[env-var-interpolation]]
+== Environment variable interpolation
+
+Reqstool expands environment variables in YAML input (`requirements.yml`, `svcs.yml`,
+`mvrs.yml`, `annotations.yml`, `reqstool_config.yml`) before parsing, using POSIX shell
+parameter expansion (the `envsubst` standard). Only the *braced* form is interpolated:
+
+[cols="1,3"]
+|===
+| Syntax | Behaviour
+
+| `${VAR}`            | Substitute the value of `VAR`.
+| `${VAR:-default}`   | Use `default` when `VAR` is unset or empty.
+| `${VAR:?message}`   | Fail with `message` when `VAR` is unset or empty.
+| `${VAR:+alt}`       | Use `alt` when `VAR` is set.
+|===
+
+A bare `${VAR}` whose variable is unset and has no inline default is a *hard error* -- this
+keeps ingestion deterministic and surfaces misconfiguration in CI rather than silently
+producing empty values.
+
+The bare `$VAR` form (without braces) is intentionally *not* expanded, so the
+`# yaml-language-server: $schema=...` directive, regular expressions and other literal `$`
+characters are left untouched.
+
+This is the recommended way to keep imported artifact versions current -- pin the version to
+an environment variable and let a tool such as Renovate update it:
+
+[source,yaml]
+----
+imports:
+  maven:
+    - url: https://repo.maven.org
+      group_id: com.example
+      artifact_id: my-lib
+      version: ${MY_LIB_VERSION}
+----
+
 [[status]]
 == Command: status
 
