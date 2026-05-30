@@ -2,13 +2,19 @@
 
 import logging
 import os
+import re
 from typing import Optional
 
-from pygit2 import Commit, RemoteCallbacks, UserPass, clone_repository
+from pydantic import field_validator
+from pygit2 import Commit, GitError, RemoteCallbacks, UserPass, clone_repository
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.exceptions import GitRefNotFoundError
 from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
+
+# Accepted ref characters: alphanumerics, '.', '/', '-', '_'.
+# Rejects control chars, '..', shell-special chars, and git revision syntax (@{, ~, ^, :).
+_VALID_REF_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._/\-]*$")
 
 
 @Requirements("REQ_002")
@@ -18,6 +24,16 @@ class GitLocation(LocationInterface):
     env_token: Optional[str] = None
     path: str = ""
 
+    @field_validator("ref")
+    @classmethod
+    def _validate_ref(cls, v: str) -> str:
+        if not _VALID_REF_RE.match(v) or ".." in v:
+            raise ValueError(
+                f"Invalid git ref '{v}': must start with an alphanumeric and contain only "
+                "alphanumerics, '.', '/', '-', '_'; '..' is not allowed."
+            )
+        return v
+
     def tmpdir_key(self) -> str:
         from urllib.parse import urlparse, urlunparse
 
@@ -25,26 +41,28 @@ class GitLocation(LocationInterface):
         if parsed.username or parsed.password:
             host = parsed.hostname or ""
             parsed = parsed._replace(netloc=host + (f":{parsed.port}" if parsed.port else ""))
-        return make_safe_tmpdir_suffix("git", urlunparse(parsed))
+        return make_safe_tmpdir_suffix("git", f"{urlunparse(parsed)}@{self.ref}")
 
     def _make_available_on_localdisk(self, dst_path: str) -> str:
         api_token = os.getenv(self.env_token) if self.env_token else None
 
         repo = clone_repository(url=self.url, path=dst_path, callbacks=self.MyRemoteCallbacks(api_token))
 
-        # Resolve ref uniformly: a tag, the default branch, or a commit SHA resolve directly;
-        # a non-default branch only exists as a remote-tracking ref (origin/<ref>) after a plain clone.
-        try:
+        # Try direct lookup first (tag, default branch, or commit SHA), then fall back to the
+        # remote-tracking ref — non-default branches only exist as origin/<ref> after a plain clone.
+        obj = None
+        for name in (self.ref, f"origin/{self.ref}"):
             try:
-                obj = repo.revparse_single(self.ref)
-            except KeyError:
-                obj = repo.revparse_single(f"origin/{self.ref}")
-        except KeyError as e:
-            raise GitRefNotFoundError(self.ref, self.url) from e
+                obj = repo.revparse_single(name)
+                break
+            except (KeyError, GitError):
+                continue
+        if obj is None:
+            raise GitRefNotFoundError(self.ref, self.url)
 
         commit = obj.peel(Commit)
         repo.checkout_tree(commit)
-        repo.set_head(commit.id)  # Oid detaches HEAD at the resolved commit
+        repo.set_head(commit.id)  # passing an Oid always results in a detached HEAD
 
         logging.debug(f"Cloned repo {self.url} (ref: {self.ref}) to {repo.workdir}\n")
 

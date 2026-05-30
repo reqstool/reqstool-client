@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from reqstool.common.exceptions import GitRefNotFoundError
 from reqstool.locations.git_location import GitLocation
@@ -62,6 +63,39 @@ def test_git_location_env_token_defaults_to_none():
     assert git_location.env_token is None
 
 
+@pytest.mark.parametrize(
+    "ref",
+    ["main", "v1.2.0", "feature/my-feature", "abc1234def5678", "release_1.0", "some.branch"],
+)
+def test_git_location_valid_ref_accepted(ref):
+    git_location = GitLocation(url="https://git.example.com/repo.git", ref=ref)
+    assert git_location.ref == ref
+
+
+@pytest.mark.parametrize(
+    "ref",
+    [
+        "my..ref",  # double-dot (git range syntax)
+        "@{upstream}",  # git reflog syntax
+        "ref~1",  # relative ref
+        "ref^",  # parent syntax
+        "ref:path",  # colon (git tree-ish)
+        "ref name",  # space
+        ".hidden",  # starts with dot
+        "-branch",  # starts with dash
+        "ref\x00",  # null byte
+    ],
+)
+def test_git_location_invalid_ref_rejected(ref):
+    with pytest.raises(ValidationError):
+        GitLocation(url="https://git.example.com/repo.git", ref=ref)
+
+
+def test_git_location_tmpdir_key_includes_ref():
+    loc = GitLocation(url="https://git.example.com/repo.git", ref="v1.0.0")
+    assert "v1.0.0" in loc.tmpdir_key()
+
+
 def _mock_repo(tmp_path):
     """A cloned-repo mock whose ref resolution and checkout calls are observable."""
     mock_repo = MagicMock()
@@ -114,3 +148,16 @@ def test_git_location_make_available_unresolvable_ref_raises(tmp_path):
 
     assert exc_info.value.ref == "nope"
     assert exc_info.value.url == "https://git.example.com/repo.git"
+
+
+def test_git_location_make_available_git_error_treated_as_not_found(tmp_path):
+    """A pygit2.GitError (e.g. malformed ref reaching revparse) is handled like a missing ref."""
+    from pygit2 import GitError
+
+    git_location = GitLocation(url="https://git.example.com/repo.git", ref="valid-ref", path="")
+    mock_repo = _mock_repo(tmp_path)
+    mock_repo.revparse_single.side_effect = GitError("internal error")
+
+    with patch("reqstool.locations.git_location.clone_repository", return_value=mock_repo):
+        with pytest.raises(GitRefNotFoundError):
+            git_location._make_available_on_localdisk(str(tmp_path))

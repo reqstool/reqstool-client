@@ -2,10 +2,11 @@
 # Shared constants for regression-monorepo integration tests.
 
 _REGRESSION_REPO_URL = "https://github.com/reqstool/reqstool-regression.git"
-# Ref is intentionally 'main' (always latest regression data).
+# Ref is intentionally 'main' (always latest regression data). Note: after a plain clone,
+# 'main' resolves via the origin/main remote-tracking fallback in GitLocation._resolve_ref.
 # To pin CI to a known-good state, replace "main" with a tag or commit SHA, e.g.:
-#   _REGRESSION_REPO_REF = "v1.0.0"  or  "abc1234def..."
-# GitLocation resolves this ref (branch, tag, or SHA) via pygit2 revparse_single.
+#   _REGRESSION_REPO_REF = "v1.0.0"   # resolves directly (no fallback needed)
+#   _REGRESSION_REPO_REF = "abc1234"  # resolves directly as commit SHA
 _REGRESSION_REPO_REF = "main"
 _GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 
