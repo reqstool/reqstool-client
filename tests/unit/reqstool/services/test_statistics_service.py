@@ -441,3 +441,45 @@ def test_mixed_phase_only_build_svc_gates_by_default(db):
     # Build SVC passed; post-build SVC non-gating → requirement completed
     assert req_status.automated_tests.passed == 1
     assert req_status.completed is True
+
+
+def test_statistics_service_default_excludes_post_build(db):
+    _insert_req(db)
+    _insert_svc(db, phase=VERIFICATIONPHASE.POST_BUILD)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.E2ETest.testFlow")
+    db.insert_annotation_test(SVC_ID, ann)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)  # no include_post_build kwarg — default is False
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    assert req_status.automated_tests.not_applicable is True
+
+
+def test_post_build_manual_test_svc_is_non_gating_by_default(db):
+    _insert_req(db, implementation=IMPLEMENTATION.NOT_APPLICABLE)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST, phase=VERIFICATIONPHASE.POST_BUILD)
+    _insert_mvr(db, passed=True)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo, include_post_build=False)
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    assert req_status.manual_tests.not_applicable is True
+
+
+def test_post_build_manual_test_svc_gates_when_include_post_build_true(db):
+    _insert_req(db, implementation=IMPLEMENTATION.NOT_APPLICABLE)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST, phase=VERIFICATIONPHASE.POST_BUILD)
+    _insert_mvr(db, passed=True)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo, include_post_build=True)
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    assert req_status.manual_tests.passed == 1
+    assert req_status.completed is True

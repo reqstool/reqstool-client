@@ -294,10 +294,10 @@ class Command:
         )
         status_parser.add_argument(
             "--with-post-tests",
-            nargs="+",
+            action="append",
             dest="with_post_tests",
             metavar="PATH",
-            help="JUnit XML files with post-build test results; activates post-build SVC verdict gating",
+            help="JUnit XML file with post-build test results (repeat for multiple files); activates post-build gating",
             default=None,
         )
         status_source_subparsers = status_parser.add_subparsers(dest="source", required=True)

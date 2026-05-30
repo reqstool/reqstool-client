@@ -69,9 +69,9 @@ class StatusCommand:
             location=self.__initial_location,
             semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
         ) as (db, _):
-            if self.__with_post_tests:
-                self.__inject_post_tests(db, self.__with_post_tests)
             repo = RequirementsRepository(db)
+            if self.__with_post_tests:
+                self.__inject_post_tests(db, repo.get_initial_urn(), self.__with_post_tests)
             stats_service = StatisticsService(repo, include_post_build=bool(self.__with_post_tests))
 
             if self.__format == "json":
@@ -86,14 +86,13 @@ class StatusCommand:
             )
 
     @staticmethod
-    def __inject_post_tests(db: RequirementsDatabase, paths: list[str]) -> None:
-        repo = RequirementsRepository(db)
-        initial_urn = repo.get_initial_urn()
-        generator = TestDataModelGenerator(
-            test_result_files=[Path(p) for p in paths],
-            urn=initial_urn,
-        )
-        for urn_id, test_data in generator.model.tests.items():  # type: ignore[union-attr]
+    def __inject_post_tests(db: RequirementsDatabase, initial_urn: str, paths: list[str]) -> None:
+        resolved = [Path(p).resolve() for p in paths]
+        missing = [p for p in resolved if not p.is_file()]
+        if missing:
+            raise FileNotFoundError(f"--with-post-tests: file(s) not found: {', '.join(str(p) for p in missing)}")
+        generator = TestDataModelGenerator(test_result_files=resolved, urn=initial_urn)
+        for urn_id, test_data in generator.model.tests.items():
             db.insert_test_result(urn_id.urn, test_data.fully_qualified_name, test_data.status)
 
 

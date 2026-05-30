@@ -157,7 +157,7 @@ class RequirementsDatabase:
 
     def insert_test_result(self, urn: str, fqn: str, status: TEST_RUN_STATUS) -> None:
         self._conn.execute(
-            "INSERT INTO test_results (urn, fqn, status) VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO test_results (urn, fqn, status) VALUES (?, ?, ?)",
             (urn, fqn, status.value),
         )
 
