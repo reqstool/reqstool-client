@@ -20,6 +20,12 @@ class VERIFICATIONTYPES(Enum):
     OTHER = "other"
 
 
+@unique
+class VERIFICATIONPHASE(Enum):
+    BUILD = "build"
+    POST_BUILD = "post-build"
+
+
 class SVCData(BaseModel):
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
@@ -27,6 +33,7 @@ class SVCData(BaseModel):
     title: str
     description: Optional[str] = None
     verification: VERIFICATIONTYPES
+    phase: VERIFICATIONPHASE = VERIFICATIONPHASE.BUILD
     instructions: Optional[str] = None
     revision: VersionField
     lifecycle: LifecycleData = Field(default_factory=lambda: LifecycleData(state=LIFECYCLESTATE.EFFECTIVE, reason=None))

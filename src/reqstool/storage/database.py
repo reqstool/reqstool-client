@@ -84,14 +84,15 @@ class RequirementsDatabase:
 
     def insert_svc(self, urn: str, svc: SVCData) -> None:
         self._conn.execute(
-            "INSERT INTO svcs (urn, id, title, verification_type, lifecycle_state, lifecycle_reason,"
+            "INSERT INTO svcs (urn, id, title, verification_type, phase, lifecycle_state, lifecycle_reason,"
             " description, instructions, revision, source_line, source_col_start, source_col_end)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 urn,
                 svc.id.id,
                 svc.title,
                 svc.verification.value,
+                svc.phase.value,
                 svc.lifecycle.state.value,
                 svc.lifecycle.reason,
                 svc.description,

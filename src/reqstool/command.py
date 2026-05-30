@@ -292,6 +292,14 @@ class Command:
             action="store_true",
             help="Fail unless all requirements are implemented",
         )
+        status_parser.add_argument(
+            "--with-post-tests",
+            nargs="+",
+            dest="with_post_tests",
+            metavar="PATH",
+            help="JUnit XML files with post-build test results; activates post-build SVC verdict gating",
+            default=None,
+        )
         status_source_subparsers = status_parser.add_subparsers(dest="source", required=True)
         self._add_subparsers_source(status_source_subparsers)
 
@@ -468,7 +476,11 @@ class Command:
         output = status_args.output  # where to put the generated report
 
         format = getattr(status_args, "format", "console")
-        result = StatusCommand(location=initial_source, format=format)
+        result = StatusCommand(
+            location=initial_source,
+            format=format,
+            with_post_tests=getattr(status_args, "with_post_tests", None),
+        )
         status, nr_of_incomplete_requirements = result.result
 
         output.write(str(status))

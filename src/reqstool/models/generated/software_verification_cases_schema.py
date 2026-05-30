@@ -23,6 +23,15 @@ class Verification(StrEnum):
     other = 'other'
 
 
+class Phase(StrEnum):
+    """
+    Verification phase. 'build' (default) SVCs gate the build-stage verdict. 'post-build' SVCs are informational by default and gate the verdict only when --with-post-tests is supplied.
+    """
+
+    build = 'build'
+    post_build = 'post-build'
+
+
 class State(StrEnum):
     """
     The state of the requirement.
@@ -72,6 +81,10 @@ class Cases(BaseModel):
     verification: Verification
     """
     Verification method. E.g. automated-test, manual-test, review, platform or other
+    """
+    phase: Phase | None = None
+    """
+    Verification phase. 'build' (default) SVCs gate the build-stage verdict. 'post-build' SVCs are informational by default and gate the verdict only when --with-post-tests is supplied.
     """
     instructions: str | None = None
     """

@@ -7,7 +7,7 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
-from reqstool.models.svcs import VERIFICATIONTYPES
+from reqstool.models.svcs import VERIFICATIONPHASE, VERIFICATIONTYPES
 from reqstool.models.test_data import TEST_RUN_STATUS, TestData
 from reqstool.storage.requirements_repository import RequirementsRepository
 
@@ -97,8 +97,9 @@ class TotalStats:
 
 @Requirements("REQ_028")
 class StatisticsService:
-    def __init__(self, repository: RequirementsRepository):
+    def __init__(self, repository: RequirementsRepository, include_post_build: bool = False):
         self._repo = repository
+        self._include_post_build = include_post_build
         self._requirement_stats: dict[UrnId, RequirementStatus] = {}
         self._totals: TotalStats = TotalStats()
         self._calculate()
@@ -168,15 +169,22 @@ class StatisticsService:
     ):
         svcs_urn_ids = self._repo.get_svcs_for_req(urn_id)
         svcs = [all_svcs[sid] for sid in svcs_urn_ids if sid in all_svcs]
+        verdict_svcs = svcs if self._include_post_build else [s for s in svcs if s.phase == VERIFICATIONPHASE.BUILD]
+        verdict_svc_urn_ids = [s.id for s in verdict_svcs]
 
-        should_have_mvrs = any(svc.verification in EXPECTS_MVRS for svc in svcs)
-        should_have_automated_tests = any(svc.verification in EXPECTS_AUTOMATED_TESTS for svc in svcs)
+        should_have_mvrs = any(svc.verification in EXPECTS_MVRS for svc in verdict_svcs)
+        should_have_automated_tests = any(svc.verification in EXPECTS_AUTOMATED_TESTS for svc in verdict_svcs)
 
         nr_of_implementations = len(annotations_impls.get(urn_id, []))
 
-        mvr_stats = self._get_requirement_mvr_stats(svcs_urn_ids, all_mvrs, svcs, should_have_mvrs)
+        mvr_stats = self._get_requirement_mvr_stats(verdict_svc_urn_ids, all_mvrs, verdict_svcs, should_have_mvrs)
         automated_test_stats = self._get_requirement_automated_stats(
-            svcs_urn_ids, all_svcs, annotations_tests, automated_test_results, svcs, should_have_automated_tests
+            verdict_svc_urn_ids,
+            all_svcs,
+            annotations_tests,
+            automated_test_results,
+            verdict_svcs,
+            should_have_automated_tests,
         )
 
         implementation_ok = self._check_implementation(

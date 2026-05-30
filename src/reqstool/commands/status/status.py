@@ -3,6 +3,7 @@
 
 import json
 import shutil
+from pathlib import Path
 
 from rich.columns import Columns
 from rich.console import Console
@@ -13,8 +14,10 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
+from reqstool.model_generators.testdata_model_generator import TestDataModelGenerator
 from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
 from reqstool.services.statistics_service import StatisticsService, TestStats, TotalStats
+from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
@@ -50,9 +53,15 @@ def _render(*renderables) -> str:
 
 @Requirements("REQ_027")
 class StatusCommand:
-    def __init__(self, location: LocationInterface, format: str = "console"):
+    def __init__(
+        self,
+        location: LocationInterface,
+        format: str = "console",
+        with_post_tests: list[str] | None = None,
+    ):
         self.__initial_location: LocationInterface = location
         self.__format: str = format
+        self.__with_post_tests: list[str] | None = with_post_tests
         self.result = self.__status_result()
 
     def __status_result(self) -> tuple[str, int]:
@@ -60,8 +69,10 @@ class StatusCommand:
             location=self.__initial_location,
             semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
         ) as (db, _):
+            if self.__with_post_tests:
+                self.__inject_post_tests(db, self.__with_post_tests)
             repo = RequirementsRepository(db)
-            stats_service = StatisticsService(repo)
+            stats_service = StatisticsService(repo, include_post_build=bool(self.__with_post_tests))
 
             if self.__format == "json":
                 status = json.dumps(stats_service.to_status_dict(), indent=2)
@@ -73,6 +84,17 @@ class StatusCommand:
                 stats_service.total_statistics.total_requirements
                 - stats_service.total_statistics.completed_requirements,
             )
+
+    @staticmethod
+    def __inject_post_tests(db: RequirementsDatabase, paths: list[str]) -> None:
+        repo = RequirementsRepository(db)
+        initial_urn = repo.get_initial_urn()
+        generator = TestDataModelGenerator(
+            test_result_files=[Path(p) for p in paths],
+            urn=initial_urn,
+        )
+        for urn_id, test_data in generator.model.tests.items():  # type: ignore[union-attr]
+            db.insert_test_result(urn_id.urn, test_data.fully_qualified_name, test_data.status)
 
 
 def _format_test_cell(stats: TestStats) -> Text:
