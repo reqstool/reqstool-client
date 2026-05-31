@@ -207,3 +207,44 @@ def test_export_empty_database():
     assert result["svcs"] == {}
     assert result["mvrs"] == {}
     db.close()
+
+
+# -- MVR date serialization --
+
+
+def test_export_mvr_with_date_serializes_as_iso_string(populated_db):
+    """MVR date field must be an ISO 8601 string in the export dict (not a datetime object)."""
+    import json
+    from datetime import datetime
+
+    dated_mvr_id = UrnId(urn=URN, id="MVR_DATED")
+    dt = datetime.fromisoformat("2026-03-15T14:30:00+01:00")
+    dated_mvr = MVRData(id=dated_mvr_id, passed=True, svc_ids=[SVC_ID_2], date=dt)
+    populated_db.insert_mvr(dated_mvr_id.urn, dated_mvr)
+    populated_db.commit()
+
+    repo = RequirementsRepository(populated_db)
+    result = ExportService(repo).to_export_dict()
+
+    mvr_entry = result["mvrs"].get(str(dated_mvr_id))
+    assert mvr_entry is not None
+    assert "date" in mvr_entry
+    assert isinstance(mvr_entry["date"], str), "date must be a string for JSON serialization"
+    assert mvr_entry["date"] == dt.isoformat()
+    # Must be JSON-serializable without a custom encoder
+    json.dumps(result)  # raises TypeError if datetime slipped through
+
+
+def test_export_mvr_without_date_omits_field(populated_db):
+    """MVR with no date must not include a 'date' key in the export dict."""
+    undated_mvr_id = UrnId(urn=URN, id="MVR_UNDATED")
+    undated_mvr = MVRData(id=undated_mvr_id, passed=True, svc_ids=[SVC_ID_2], date=None)
+    populated_db.insert_mvr(undated_mvr_id.urn, undated_mvr)
+    populated_db.commit()
+
+    repo = RequirementsRepository(populated_db)
+    result = ExportService(repo).to_export_dict()
+
+    mvr_entry = result["mvrs"].get(str(undated_mvr_id))
+    assert mvr_entry is not None
+    assert "date" not in mvr_entry

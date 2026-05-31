@@ -75,6 +75,7 @@ class MVRsModelGenerator:
                 svc_ids=Utils.convert_ids_to_urn_id(ids=result.svc_ids, urn=self.urn),
                 comment=result.comment,
                 passed=result.pass_,
+                date=result.date,
                 source_line=source_lines[result.id][0] if result.id in source_lines else None,
                 source_col_start=source_lines[result.id][1] if result.id in source_lines else None,
                 source_col_end=source_lines[result.id][2] if result.id in source_lines else None,

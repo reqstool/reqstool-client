@@ -413,3 +413,128 @@ def test_meets_requirements_in_code_failing_mvr_is_false():
     assert result is not None
     assert result["meets_requirements"] is False, "failing MVR should make IN_CODE meets_requirements False"
     db.close()
+
+
+# ---------------------------------------------------------------------------
+# Supersession in details queries
+# ---------------------------------------------------------------------------
+
+
+def _make_db_with_superseded_mvrs(mvr_pass_sequence: list[tuple[str, bool]]) -> tuple:
+    """Build a minimal DB with multiple dated MVRs for the same SVC.
+
+    mvr_pass_sequence: list of (iso_datetime_str, passed) in order.
+    Returns (db, req_id, svc_id).
+    """
+    from datetime import datetime
+
+    from reqstool.models.mvrs import MVRData
+
+    db = RequirementsDatabase()
+    db.set_metadata("initial_urn", "ms-001")
+    req_id = UrnId(urn="ms-001", id="REQ_SUPER")
+    svc_id = UrnId(urn="ms-001", id="SVC_SUPER")
+    req = RequirementData(
+        id=req_id,
+        title="T",
+        significance=SIGNIFICANCETYPES.SHALL,
+        description="D",
+        implementation=IMPLEMENTATION.NOT_APPLICABLE,
+        categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+        revision="1.0.0",
+    )
+    svc = SVCData(
+        id=svc_id,
+        title="S",
+        verification=VERIFICATIONTYPES.MANUAL_TEST,
+        revision="1.0.0",
+        requirement_ids=[req_id],
+    )
+    db.insert_requirement(req_id.urn, req)
+    db.insert_svc(svc_id.urn, svc)
+    for i, (dt_str, passed) in enumerate(mvr_pass_sequence):
+        mvr_id = UrnId(urn="ms-001", id=f"MVR_{i:03d}")
+        mvr = MVRData(
+            id=mvr_id,
+            passed=passed,
+            svc_ids=[svc_id],
+            date=datetime.fromisoformat(dt_str),
+        )
+        db.insert_mvr(mvr_id.urn, mvr)
+    db.commit()
+    return db, req_id, svc_id
+
+
+def test_compute_meets_superseded_fail_latest_pass_is_true():
+    """fail→pass: latest (passing) MVR makes _compute_meets True."""
+    db, req_id, _ = _make_db_with_superseded_mvrs([("2026-01-01T00:00:00Z", False), ("2026-01-02T00:00:00Z", True)])
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["meets_requirements"] is True
+    db.close()
+
+
+def test_compute_meets_superseded_pass_latest_fail_is_false():
+    """pass→fail: latest (failing) MVR makes _compute_meets False."""
+    db, req_id, _ = _make_db_with_superseded_mvrs([("2026-01-01T00:00:00Z", True), ("2026-01-02T00:00:00Z", False)])
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["meets_requirements"] is False
+    db.close()
+
+
+def test_get_svc_details_superseded_flag():
+    """get_svc_details marks older MVRs as superseded=True, latest as superseded=False."""
+    db, _, svc_id = _make_db_with_superseded_mvrs([("2026-01-01T00:00:00Z", False), ("2026-01-02T00:00:00Z", True)])
+    db.set_metadata("initial_urn", "ms-001")
+    repo = RequirementsRepository(db)
+    result = get_svc_details(svc_id.id, repo)
+    assert result is not None
+    mvrs = result["mvrs"]
+    assert len(mvrs) == 2
+    superseded = [m for m in mvrs if m["superseded"]]
+    effective = [m for m in mvrs if not m["superseded"]]
+    assert len(superseded) == 1
+    assert len(effective) == 1
+    assert effective[0]["passed"] is True
+    assert effective[0]["date"] == "2026-01-02T00:00:00+00:00"
+    db.close()
+
+
+def test_get_mvr_details_includes_date():
+    """get_mvr_details returns the date field as an ISO string."""
+    from datetime import datetime
+
+    from reqstool.models.mvrs import MVRData
+
+    db = RequirementsDatabase()
+    db.set_metadata("initial_urn", "ms-001")
+    req_id = UrnId(urn="ms-001", id="REQ_D")
+    svc_id = UrnId(urn="ms-001", id="SVC_D")
+    mvr_id = UrnId(urn="ms-001", id="MVR_D")
+    req = RequirementData(
+        id=req_id,
+        title="T",
+        significance=SIGNIFICANCETYPES.SHALL,
+        description="D",
+        implementation=IMPLEMENTATION.NOT_APPLICABLE,
+        categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+        revision="1.0.0",
+    )
+    svc = SVCData(
+        id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST, revision="1.0.0", requirement_ids=[req_id]
+    )
+    dt = datetime.fromisoformat("2026-03-15T09:00:00+01:00")
+    mvr = MVRData(id=mvr_id, passed=True, svc_ids=[svc_id], date=dt)
+    db.insert_requirement(req_id.urn, req)
+    db.insert_svc(svc_id.urn, svc)
+    db.insert_mvr(mvr_id.urn, mvr)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    result = get_mvr_details(mvr_id.id, repo)
+    assert result is not None
+    assert result["date"] == dt.isoformat()
+    db.close()

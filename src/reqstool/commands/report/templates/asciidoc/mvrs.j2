@@ -5,7 +5,11 @@
 [cols="1a,1"]
 |===
 |*MVR ID*|*Result*
-|{{mvr_info.id.urn}}:{{mvr_info.id.id}}| {%if mvr_info.passed%} passed {% else %} failed {%endif%}
+|{{mvr_info.id.urn}}:{{mvr_info.id.id}}{% if mvr_info.superseded %} _(superseded)_{%endif%}| {%if mvr_info.passed%} passed {% else %} failed {%endif%}
+{%if mvr_info.date%}
+2+|*Date*
+2+|{{mvr_info.date}}
+{%endif%}
 2+|*Comment*
 2+|{{mvr_info.comment}}
 2+|*Referenced SVCs*

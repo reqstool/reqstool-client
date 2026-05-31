@@ -246,11 +246,11 @@ The full protocol spec (OpenRPC) is at `docs/modules/ROOT/lsp/reqstool-lsp.openr
 
 | `svc`
 | `SVC_001`
-| Full SVC with linked requirements, test annotations, test results, and MVRs
+| Full SVC with linked requirements, test annotations, test results, and MVRs (each with `date` and `superseded` flag)
 
 | `mvr`
 | `MVR_001`
-| Manual verification result with linked SVC IDs
+| Manual verification result with linked SVC IDs, RFC 3339 date, and `superseded` flag
 
 | `urn`
 | `my-service`
