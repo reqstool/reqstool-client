@@ -183,7 +183,7 @@ def test_status_incomplete_flag_hides_complete_section(local_testdata_resources_
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
         verbosity="normal",
-        incomplete=True,
+        incomplete_only=True,
     )
     status, _ = result.result
     assert "INCOMPLETE" in status
@@ -197,7 +197,7 @@ def test_status_incomplete_flag_verbose(local_testdata_resources_rootdir_w_path)
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
         verbosity="verbose",
-        incomplete=True,
+        incomplete_only=True,
     )
     status, _ = result.result
     assert "REQUIREMENTS" in status
@@ -314,6 +314,64 @@ def test_export_sqlite_produces_valid_db(local_testdata_resources_rootdir_w_path
         db.backup_to(dest)
 
     conn = sqlite3.connect(dest)
-    tables = [t[0] for t in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
-    assert "requirements" in tables
-    assert conn.execute("SELECT count(*) FROM requirements").fetchone()[0] > 0
+    try:
+        tables = [t[0] for t in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        assert "requirements" in tables
+        assert conn.execute("SELECT count(*) FROM requirements").fetchone()[0] > 0
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Additional coverage: non-IN_CODE types, verbosity+json warning, VerbosityLevel enum
+# ---------------------------------------------------------------------------
+
+
+def test_incomplete_reasons_non_code_type_no_not_implemented():
+    """'not implemented' must not appear for non-IN_CODE requirement types."""
+    for impl_type in [
+        IMPLEMENTATION.NOT_APPLICABLE,
+        IMPLEMENTATION.CONFIGURATION,
+        IMPLEMENTATION.PLATFORM,
+        IMPLEMENTATION.FRAMEWORK,
+    ]:
+        s = _make_status(implementation_type=impl_type, implementations=0, auto_na=True, manual_na=True)
+        r = _incomplete_reasons(s)
+        assert "not implemented" not in r, f"Expected no 'not implemented' for {impl_type}"
+
+
+def test_incomplete_reasons_non_code_with_manual_failure():
+    """Non-IN_CODE type with a failed manual test should report the failure."""
+    s = _make_status(
+        implementation_type=IMPLEMENTATION.CONFIGURATION,
+        implementations=0,
+        auto_na=True,
+        manual_failed=1,
+    )
+    r = _incomplete_reasons(s)
+    assert "manual verification failed" in r
+    assert "not implemented" not in r
+
+
+@SVCs("SVC_021")
+def test_status_json_verbosity_warning_is_emitted(local_testdata_resources_rootdir_w_path, caplog):
+    """--verbosity is ignored for --format json; a warning must be logged."""
+    import logging
+
+    with caplog.at_level(logging.WARNING):
+        StatusCommand(
+            location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
+            format="json",
+            verbosity="verbose",
+        )
+    assert any("--verbosity" in r.message for r in caplog.records)
+
+
+def test_verbosity_level_enum_values():
+    """VerbosityLevel enum values must match the CLI choices."""
+    from reqstool.commands.status.status import VerbosityLevel
+
+    assert VerbosityLevel.COMPACT.value == "compact"
+    assert VerbosityLevel.NORMAL.value == "normal"
+    assert VerbosityLevel.VERBOSE.value == "verbose"
+    assert VerbosityLevel.EXTRA_VERBOSE.value == "extra-verbose"

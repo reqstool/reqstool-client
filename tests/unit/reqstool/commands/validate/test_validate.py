@@ -47,3 +47,24 @@ def test_validate_pass_on_complete_dataset(local_testdata_resources_rootdir_w_pa
     )
     assert "✓ All checks passed" in result.result
     assert result.exit_code == 0
+
+
+@SVCs("SVC_021")
+def test_validate_strict_with_no_warnings_exits_zero(local_testdata_resources_rootdir_w_path):
+    """--strict on a fully-covered dataset must still exit 0 (no warnings to promote)."""
+    result = ValidateCommand(
+        location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_basic/baseline/ms-101")),
+        strict=True,
+    )
+    assert result.exit_code == 0
+
+
+@SVCs("SVC_021")
+def test_validate_referential_errors_cause_exit_one(local_testdata_resources_rootdir_w_path):
+    """Referential-integrity errors (broken references detected by SemanticValidator) must
+    always produce exit code 1 and be prefixed with ✗ in the output."""
+    result = ValidateCommand(
+        location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/empty_ms/ms-001"))
+    )
+    assert result.exit_code == 1
+    assert "✗" in result.result

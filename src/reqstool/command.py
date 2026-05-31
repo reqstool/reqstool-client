@@ -34,7 +34,7 @@ from reqstool.commands.validate.validate import ValidateCommand
 from reqstool.commands.report.criterias.group_by import GroupbyOptions
 from reqstool.commands.report.criterias.sort_by import SortByOptions
 from reqstool.commands.enrich.enrich import EnrichCommand
-from reqstool.commands.status.status import StatusCommand
+from reqstool.commands.status.status import StatusCommand, VerbosityLevel
 from reqstool.common.enrichment.enricher import BUILT_IN_PRESETS
 from reqstool.common.utils import Utils
 from reqstool.common.validators.syntax_validator import JsonSchemaItem
@@ -153,14 +153,21 @@ class Command:
             "--requirement-ids",
             nargs="+",
             dest="req_ids",
-            help="Filter output to specific requirement IDs (e.g. REQ_010 or ms-001:REQ_010)",
+            help=(
+                "Filter output to specific requirement IDs "
+                "(e.g. REQ_010 or ms-001:REQ_010; must follow the location subcommand, "
+                "e.g. local -p . --req-ids REQ_010)"
+            ),
             default=None,
         )
         parser.add_argument(
             "--svc-ids",
             nargs="+",
             dest="svc_ids",
-            help="Filter output to specific SVC IDs (e.g. SVC_010 or ms-001:SVC_010)",
+            help=(
+                "Filter output to specific SVC IDs "
+                "(e.g. SVC_010 or ms-001:SVC_010; must follow the location subcommand)"
+            ),
             default=None,
         )
 
@@ -279,8 +286,8 @@ class Command:
         )
         status_parser.add_argument(
             "--verbosity",
-            choices=["compact", "normal", "verbose", "extra-verbose"],
-            default="normal",
+            choices=[v.value for v in VerbosityLevel],
+            default=VerbosityLevel.NORMAL.value,
             help="Console output detail level (default: %(default)s; ignored for --format json)",
         )
         status_parser.add_argument(
@@ -456,7 +463,7 @@ class Command:
             from reqstool.common.validators.semantic_validator import SemanticValidator
             from reqstool.storage.pipeline import build_database
 
-            filter_data = not export_args.no_filters
+            filter_data = not getattr(export_args, "no_filters", False)
             with build_database(
                 location=initial_source,
                 semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
@@ -464,7 +471,7 @@ class Command:
             ) as (db, _):
                 db.backup_to(output_path)
         else:
-            filter_data = not export_args.no_filters
+            filter_data = not getattr(export_args, "no_filters", False)
             req_ids = getattr(export_args, "req_ids", None)
             svc_ids = getattr(export_args, "svc_ids", None)
             result = GenerateJsonCommand(
@@ -487,8 +494,8 @@ class Command:
         output = status_args.output
 
         fmt = getattr(status_args, "format", "console")
-        verbosity = getattr(status_args, "verbosity", "normal")
-        incomplete = getattr(status_args, "incomplete", False)
+        verbosity = getattr(status_args, "verbosity", VerbosityLevel.NORMAL.value)
+        incomplete_only = getattr(status_args, "incomplete", False)
         req_ids = getattr(status_args, "req_ids", None)
         svc_ids = getattr(status_args, "svc_ids", None)
 
@@ -496,7 +503,7 @@ class Command:
             location=initial_source,
             format=fmt,
             verbosity=verbosity,
-            incomplete=incomplete,
+            incomplete_only=incomplete_only,
             req_ids=req_ids,
             svc_ids=svc_ids,
         )

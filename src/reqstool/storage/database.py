@@ -40,9 +40,9 @@ class RequirementsDatabase:
     def backup_to(self, dest_path: str) -> None:
         """Write the in-memory database to a binary SQLite file.
 
-        The authorizer is cleared for the duration of the backup because the
-        SQLite backup API reads sqlite_master, which the authorizer blocks.
-        The authorizer is always restored (or re-cleared) afterwards.
+        The authorizer is temporarily cleared during backup because the SQLite
+        backup API reads sqlite_master, which the authorizer blocks. The original
+        authorizer is always restored after the backup completes, even on error.
         """
         self._conn.set_authorizer(None)
         target = sqlite3.connect(dest_path)

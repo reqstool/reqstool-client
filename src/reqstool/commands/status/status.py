@@ -4,6 +4,7 @@
 import json
 import logging
 import shutil
+from enum import Enum
 
 from rich.columns import Columns
 from rich.console import Console
@@ -11,12 +12,15 @@ from rich.table import Table, box
 from rich.text import Text
 from reqstool_python_decorators.decorators.decorators import Requirements
 
+from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
+from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
+from reqstool.models.svcs import SVCData
 from reqstool.services.export_service import ExportService
-from reqstool.services.statistics_service import EXPECTS_MVRS, StatisticsService, TestStats, TotalStats
+from reqstool.services.statistics_service import EXPECTS_MVRS, RequirementStatus, StatisticsService, TestStats, TotalStats
 from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
@@ -25,6 +29,7 @@ _ORANGE = "dark_orange"
 _DIM = "dim"
 _MIN_CONSOLE_WIDTH = 80
 
+# Labels shown in the Implementation cell for non-code requirement types.
 _NON_CODE_LABELS: dict[IMPLEMENTATION, str] = {
     IMPLEMENTATION.NOT_APPLICABLE: "N/A",
     IMPLEMENTATION.CONFIGURATION: "configuration",
@@ -34,6 +39,13 @@ _NON_CODE_LABELS: dict[IMPLEMENTATION, str] = {
 assert (
     set(_NON_CODE_LABELS) == NON_CODE_IMPLEMENTATIONS
 ), f"_NON_CODE_LABELS keys {set(_NON_CODE_LABELS)} must match NON_CODE_IMPLEMENTATIONS {NON_CODE_IMPLEMENTATIONS}"
+
+
+class VerbosityLevel(Enum):
+    COMPACT = "compact"
+    NORMAL = "normal"
+    VERBOSE = "verbose"
+    EXTRA_VERBOSE = "extra-verbose"
 
 
 def _make_console() -> Console:
@@ -55,19 +67,19 @@ class StatusCommand:
         self,
         location: LocationInterface,
         format: str = "console",
-        verbosity: str = "normal",
-        incomplete: bool = False,
+        verbosity: str = VerbosityLevel.NORMAL.value,
+        incomplete_only: bool = False,
         req_ids: list[str] | None = None,
         svc_ids: list[str] | None = None,
     ):
         self.__initial_location: LocationInterface = location
         self.__format: str = format
         self.__verbosity: str = verbosity
-        self.__incomplete: bool = incomplete
+        self.__incomplete_only: bool = incomplete_only
         self.__req_ids: list[str] | None = req_ids
         self.__svc_ids: list[str] | None = svc_ids
 
-        if self.__format == "json" and self.__verbosity != "normal":
+        if self.__format == "json" and self.__verbosity != VerbosityLevel.NORMAL.value:
             logging.warning("--verbosity has no effect when --format json is used; ignoring")
 
         self.result = self.__status_result()
@@ -92,15 +104,16 @@ class StatusCommand:
                     _filtered_status_dict(stats_service, req_filter), indent=2
                 )
             else:
-                match self.__verbosity:
-                    case "compact":
+                level = VerbosityLevel(self.__verbosity)
+                match level:
+                    case VerbosityLevel.COMPACT:
                         status = _status_compact(stats_service)
-                    case "verbose":
-                        status = _status_verbose(stats_service, self.__incomplete)
-                    case "extra-verbose":
-                        status = _status_extra_verbose(stats_service, repo, self.__incomplete)
-                    case _:  # normal
-                        status = _status_normal(stats_service, self.__incomplete)
+                    case VerbosityLevel.VERBOSE:
+                        status = _status_verbose(stats_service, self.__incomplete_only)
+                    case VerbosityLevel.EXTRA_VERBOSE:
+                        status = _status_extra_verbose(stats_service, repo, self.__incomplete_only)
+                    case _:  # NORMAL
+                        status = _status_normal(stats_service, self.__incomplete_only)
 
             ts = stats_service.total_statistics
             return (
@@ -117,7 +130,30 @@ def _filtered_status_dict(stats_service: StatisticsService, kept_req_ids: set | 
     return full
 
 
-def _incomplete_reasons(status) -> str:
+def _status_verdict(incomplete_count: int) -> str:
+    return "PASS" if incomplete_count == 0 else "FAIL"
+
+
+def _build_sections(
+    complete_items: list[str],
+    incomplete_items: list[str],
+    incomplete_only: bool,
+) -> str:
+    """Build the COMPLETE / INCOMPLETE section body, respecting --incomplete-only."""
+    sections = []
+    if not incomplete_only:
+        if complete_items:
+            sections.append(f"COMPLETE ({len(complete_items)})\n" + "\n".join(complete_items))
+        else:
+            sections.append("COMPLETE (0)")
+    if incomplete_items:
+        sections.append(f"INCOMPLETE ({len(incomplete_items)})\n" + "\n".join(incomplete_items))
+    elif not incomplete_only:
+        sections.append("INCOMPLETE (0)")
+    return "\n\n".join(sections)
+
+
+def _incomplete_reasons(status: RequirementStatus) -> str:
     reasons = []
     if status.implementation_type == IMPLEMENTATION.IN_CODE and status.implementations == 0:
         reasons.append("not implemented")
@@ -140,11 +176,10 @@ def _status_compact(stats_service: StatisticsService) -> str:
     ts = stats_service.total_statistics
     urn = stats_service.initial_urn
     incomplete = ts.total_requirements - ts.completed_requirements
-    verdict = "PASS" if incomplete == 0 else "FAIL"
     return (
         f"{urn}: {ts.total_requirements} requirements · "
         f"{ts.completed_requirements} complete · "
-        f"{incomplete} incomplete · {verdict}\n"
+        f"{incomplete} incomplete · {_status_verdict(incomplete)}\n"
     )
 
 
@@ -152,41 +187,24 @@ def _status_normal(stats_service: StatisticsService, incomplete_only: bool = Fal
     ts = stats_service.total_statistics
     urn = stats_service.initial_urn
     incomplete_count = ts.total_requirements - ts.completed_requirements
-    verdict = "PASS" if incomplete_count == 0 else "FAIL"
+    col_id, col_urn = 18, 10
 
     complete_lines = []
     incomplete_lines = []
-    col_id = 18
-    col_urn = 10
-
     for req_uid, req_status in stats_service.requirement_statistics.items():
         id_str = f"{req_uid.id:<{col_id}}"
         urn_str = f"{req_uid.urn:<{col_urn}}"
         if req_status.completed:
             complete_lines.append(f"  {id_str}  {urn_str}")
         else:
-            reason = _incomplete_reasons(req_status)
-            incomplete_lines.append(f"  {id_str}  {urn_str}  {reason}")
+            incomplete_lines.append(f"  {id_str}  {urn_str}  {_incomplete_reasons(req_status)}")
 
-    sections = []
-    if not incomplete_only:
-        if complete_lines:
-            sections.append(f"COMPLETE ({len(complete_lines)})\n" + "\n".join(complete_lines))
-        else:
-            sections.append("COMPLETE (0)")
-
-    if incomplete_lines:
-        sections.append(f"INCOMPLETE ({len(incomplete_lines)})\n" + "\n".join(incomplete_lines))
-    elif not incomplete_only:
-        sections.append("INCOMPLETE (0)")
-
-    body = "\n\n".join(sections)
-    header = f"Requirements status · {urn}\n"
+    body = _build_sections(complete_lines, incomplete_lines, incomplete_only)
     footer = (
         f"\n{ts.completed_requirements}/{ts.total_requirements} complete · "
-        f"{incomplete_count} incomplete · {verdict}\n"
+        f"{incomplete_count} incomplete · {_status_verdict(incomplete_count)}\n"
     )
-    return header + "\n" + body + footer
+    return f"Requirements status · {urn}\n\n{body}{footer}"
 
 
 def _status_verbose(stats_service: StatisticsService, incomplete_only: bool = False) -> str:
@@ -243,46 +261,34 @@ def _status_extra_verbose(
     ts = stats_service.total_statistics
     urn = stats_service.initial_urn
     incomplete_count = ts.total_requirements - ts.completed_requirements
-    verdict = "PASS" if incomplete_count == 0 else "FAIL"
 
     all_svcs = repo.get_all_svcs()
     all_mvrs = repo.get_all_mvrs()
 
     complete_lines = []
     incomplete_blocks = []
-
     for req_uid, req_status in stats_service.requirement_statistics.items():
         if req_status.completed:
             complete_lines.append(f"  ✓ {req_uid.id} · {req_uid.urn}")
         else:
-            block = _build_drill_down_block(req_uid, req_status, repo, all_svcs, all_mvrs)
-            incomplete_blocks.append(block)
+            incomplete_blocks.append(_build_drill_down_block(req_uid, req_status, repo, all_svcs, all_mvrs))
 
-    sections = []
-    if not incomplete_only:
-        if complete_lines:
-            sections.append("COMPLETE ({})\n{}".format(len(complete_lines), "\n".join(complete_lines)))
-        else:
-            sections.append("COMPLETE (0)")
-
-    if incomplete_blocks:
-        header = "INCOMPLETE ({})\n".format(len(incomplete_blocks))
-        sections.append(header + "\n".join(incomplete_blocks))
-    elif not incomplete_only:
-        sections.append("INCOMPLETE (0)")
-
-    body = "\n\n".join(sections)
-    top = f"Requirements status · {urn}\n"
+    body = _build_sections(complete_lines, incomplete_blocks, incomplete_only)
     footer = (
         f"\n{ts.completed_requirements}/{ts.total_requirements} complete · "
-        f"{incomplete_count} incomplete · {verdict}\n"
+        f"{incomplete_count} incomplete · {_status_verdict(incomplete_count)}\n"
     )
-    return top + "\n" + body + footer
+    return f"Requirements status · {urn}\n\n{body}{footer}"
 
 
-def _build_drill_down_block(req_uid, req_status, repo, all_svcs, all_mvrs) -> str:
-    reason = _incomplete_reasons(req_status)
-    lines = [f"✗ {req_uid.id} · {req_uid.urn} · {reason}"]
+def _build_drill_down_block(
+    req_uid: UrnId,
+    req_status: RequirementStatus,
+    repo: RequirementsRepository,
+    all_svcs: dict[UrnId, SVCData],
+    all_mvrs: dict[UrnId, MVRData],
+) -> str:
+    lines = [f"✗ {req_uid.id} · {req_uid.urn} · {_incomplete_reasons(req_status)}"]
 
     impl_annotations = repo.get_annotations_impls_for_req(req_uid)
     if impl_annotations:
@@ -296,8 +302,7 @@ def _build_drill_down_block(req_uid, req_status, repo, all_svcs, all_mvrs) -> st
         svc = all_svcs.get(svc_uid)
         if svc is None:
             continue
-        svc_prefix = f"    {svc_uid.id:<16} {svc.verification.value}"
-        lines.append(svc_prefix)
+        lines.append(f"    {svc_uid.id:<16} {svc.verification.value}")
         if svc.verification in EXPECTS_MVRS:
             lines.extend(_render_mvrs(svc_uid, all_mvrs, repo))
         else:
@@ -306,7 +311,9 @@ def _build_drill_down_block(req_uid, req_status, repo, all_svcs, all_mvrs) -> st
     return "\n".join(lines)
 
 
-def _render_mvrs(svc_uid, all_mvrs, repo) -> list[str]:
+def _render_mvrs(
+    svc_uid: UrnId, all_mvrs: dict[UrnId, MVRData], repo: RequirementsRepository
+) -> list[str]:
     mvr_ids = repo.get_mvrs_for_svc(svc_uid)
     if not mvr_ids:
         return ["                     ⌀ no manual result"]
@@ -321,7 +328,7 @@ def _render_mvrs(svc_uid, all_mvrs, repo) -> list[str]:
     return lines
 
 
-def _render_test_results(svc_uid, repo) -> list[str]:
+def _render_test_results(svc_uid: UrnId, repo: RequirementsRepository) -> list[str]:
     test_results = repo.get_test_results_for_svc(svc_uid)
     if not test_results:
         return ["                     (no test results)"]
@@ -427,6 +434,7 @@ def _summarize_statistics(ts: TotalStats) -> str:
     annotated_not_verified = ts.with_implementation - ts.code_completed
     missing_annotation = ts.code_reqs - ts.with_implementation
 
+    # In Code group: total, verified, annotated-but-not-verified, missing annotation
     code_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=CODE, title_justify="center")
     code_table.add_column("Total", justify="center")
     code_table.add_column("Verified", justify="center")
@@ -441,6 +449,7 @@ def _summarize_statistics(ts: TotalStats) -> str:
     )
 
     def _non_code_table(title: Text, total: int, completed: int, overall_total: int) -> Table:
+        # "Total (% of all)" = share of all requirements; "Verified"/"Not Verified" = share of this type
         t = Table(box=box.DOUBLE_EDGE, show_header=True, title=title, title_justify="center")
         t.add_column("Total (% of all)", justify="center")
         t.add_column("Verified", justify="center")
@@ -480,7 +489,7 @@ def _summarize_statistics(ts: TotalStats) -> str:
         + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
     )
 
-    impl_tables = [code_table, config_table, platform_table, framework_table, na_table]
+    impl_tables = [code_table, config_table, platform_table, framework_table, na_table]  # N/A intentionally last
     stacked_rendered = "".join(_render(t) for t in impl_tables)
     impl_console = _make_console()
     with impl_console.capture() as cap:
