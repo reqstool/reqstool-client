@@ -129,20 +129,14 @@ class StatisticsService:
         self._totals.total_svcs = len(all_svcs)
         self._totals.total_annotated_tests = len(automated_test_results)
 
-        # Count only effective MVRs — superseded ones are audit history, not active verdicts
-        effective_mvr_count = 0
-        for svc_uid in all_svcs:
-            effective = self._repo.get_effective_mvr_for_svc(svc_uid)
-            if effective is not None:
-                effective_mvr_count += 1
-                if effective.passed:
-                    self._totals.passed_tests += 1
-                    self._totals.passed_manual_tests += 1
-                else:
-                    self._totals.failed_tests += 1
-                    self._totals.failed_manual_tests += 1
-        self._totals.total_manual_tests = effective_mvr_count
-        self._totals.total_tests = self._totals.total_annotated_tests + effective_mvr_count
+        # Single aggregation query: one effective verdict per SVC, superseded excluded
+        eff_total, eff_passed, eff_failed = self._repo.get_effective_mvr_verdict_counts()
+        self._totals.total_manual_tests = eff_total
+        self._totals.passed_manual_tests = eff_passed
+        self._totals.failed_manual_tests = eff_failed
+        self._totals.passed_tests += eff_passed
+        self._totals.failed_tests += eff_failed
+        self._totals.total_tests = self._totals.total_annotated_tests + eff_total
 
         self._count_automated_test_totals(annotations_tests, automated_test_results)
 

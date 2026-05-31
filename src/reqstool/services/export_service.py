@@ -171,7 +171,7 @@ class ExportService:
                 "svc_ids": [str(sid) for sid in mvr.svc_ids],
             }
             if mvr.date is not None:
-                mvr_dict["date"] = mvr.date
+                mvr_dict["date"] = mvr.date.isoformat()
             if mvr.comment is not None:
                 mvr_dict["comment"] = mvr.comment
             mvrs[str(uid)] = mvr_dict

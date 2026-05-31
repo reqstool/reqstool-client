@@ -153,7 +153,7 @@ def get_svc_details(
                 "id": m.id.id,
                 "urn": m.id.urn,
                 "passed": m.passed,
-                "date": m.date or "",
+                "date": m.date.isoformat() if m.date is not None else "",
                 "comment": m.comment or "",
                 "superseded": m.id in superseded_ids,
             }
@@ -182,7 +182,7 @@ def get_mvr_details(
         "id": mvr.id.id,
         "urn": mvr.id.urn,
         "passed": mvr.passed,
-        "date": mvr.date or "",
+        "date": mvr.date.isoformat() if mvr.date is not None else "",
         "comment": mvr.comment or "",
         "svc_ids": [{"id": s.id, "urn": s.urn} for s in mvr.svc_ids],
         "location": repo.get_urn_location(mvr.id.urn),

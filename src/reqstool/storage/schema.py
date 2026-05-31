@@ -150,6 +150,7 @@ CREATE INDEX IF NOT EXISTS idx_svc_req_links_svc ON svc_requirement_links (svc_u
 CREATE INDEX IF NOT EXISTS idx_svc_req_links_req ON svc_requirement_links (req_urn, req_id);
 CREATE INDEX IF NOT EXISTS idx_mvr_svc_links_mvr ON mvr_svc_links (mvr_urn, mvr_id);
 CREATE INDEX IF NOT EXISTS idx_mvr_svc_links_svc ON mvr_svc_links (svc_urn, svc_id);
+CREATE INDEX IF NOT EXISTS idx_mvrs_date ON mvrs(date);
 CREATE INDEX IF NOT EXISTS idx_annotations_impls_fk ON annotations_impls (req_urn, req_id);
 CREATE INDEX IF NOT EXISTS idx_annotations_tests_fk ON annotations_tests (svc_urn, svc_id);
 CREATE INDEX IF NOT EXISTS idx_parsing_graph_parent ON parsing_graph (parent_urn);

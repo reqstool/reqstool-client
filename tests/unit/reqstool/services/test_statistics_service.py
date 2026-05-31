@@ -409,3 +409,60 @@ def test_total_stats_non_code_properties_all_zero():
     ts = TotalStats()
     assert ts.non_code_total == 0
     assert ts.non_code_completed == 0
+
+
+def test_supersession_three_mvrs_only_latest_counts(db):
+    """Three MVRs for one SVC — only the latest contributes to totals."""
+    MVR_ID_C = UrnId(urn=URN, id="MVR_C")
+    _insert_req(db)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    _insert_mvr_dated(db, MVR_ID_A, [SVC_ID], passed=False, date_iso="2026-01-01T00:00:00Z")
+    _insert_mvr_dated(db, MVR_ID_B, [SVC_ID], passed=False, date_iso="2026-01-02T00:00:00Z")
+    _insert_mvr_dated(db, MVR_ID_C, [SVC_ID], passed=True, date_iso="2026-01-03T00:00:00Z")
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+
+    manual = stats.requirement_statistics[REQ_ID].manual_tests
+    assert manual.total == 1
+    assert manual.passed == 1
+    assert manual.failed == 0
+    assert stats.requirement_statistics[REQ_ID].completed is True
+    # Global totals count only the effective (latest) verdict
+    assert stats.total_statistics.total_manual_tests == 1
+    assert stats.total_statistics.passed_manual_tests == 1
+    assert stats.total_statistics.failed_manual_tests == 0
+
+
+def test_global_totals_reflect_only_effective_mvr_verdicts(db):
+    """total_manual_tests counts effective verdicts per SVC, not all MVR records."""
+    SVC_ID_2 = UrnId(urn=URN, id="SVC_002")
+    REQ_ID_2 = UrnId(urn=URN, id="REQ_002")
+    MVR_ID_C = UrnId(urn=URN, id="MVR_C")
+
+    # SVC_001: 2 MVRs — latest passes
+    _insert_req(db)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    _insert_mvr_dated(db, MVR_ID_A, [SVC_ID], passed=False, date_iso="2026-01-01T00:00:00Z")
+    _insert_mvr_dated(db, MVR_ID_B, [SVC_ID], passed=True, date_iso="2026-01-02T00:00:00Z")
+
+    # SVC_002: 1 MVR — fails
+    _insert_req(db, req_id=REQ_ID_2)
+    _insert_svc(db, svc_id=SVC_ID_2, req_ids=[REQ_ID_2], verification=VERIFICATIONTYPES.MANUAL_TEST)
+    db.insert_annotation_impl(
+        REQ_ID_2, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar2")
+    )
+    _insert_mvr_dated(db, MVR_ID_C, [SVC_ID_2], passed=False, date_iso="2026-01-01T00:00:00Z")
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)
+
+    ts = stats.total_statistics
+    # 2 SVCs each with one effective verdict
+    assert ts.total_manual_tests == 2
+    assert ts.passed_manual_tests == 1
+    assert ts.failed_manual_tests == 1

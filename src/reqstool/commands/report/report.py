@@ -167,7 +167,7 @@ class ReportCommand:
                 {
                     "id": all_mvrs[mid].id,
                     "passed": all_mvrs[mid].passed,
-                    "date": all_mvrs[mid].date or "",
+                    "date": all_mvrs[mid].date.isoformat() if all_mvrs[mid].date is not None else "",
                     "comment": all_mvrs[mid].comment,
                     "svc_ids": all_mvrs[mid].svc_ids,
                     "superseded": mid in superseded_ids,

@@ -389,3 +389,117 @@ def test_log_all_errors_includes_error_message(caplog):
     with caplog.at_level(logging.INFO):
         sv._log_all_errors()
     assert "something went wrong" in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# _validate_mvr_supersession / _check_mvr_dates_for_svc
+# ---------------------------------------------------------------------------
+
+
+def _mvr_supersession_dataset(mvrs: list):
+    """Build a minimal CombinedRawDataset with the given MVRData list."""
+    from reqstool.models.mvrs import MVRsData
+    from reqstool.models.raw_datasets import CombinedRawDataset, RawDataset
+
+    urn = "ms-001"
+    mvrs_data = MVRsData(results={m.id: m for m in mvrs})
+    rd = RawDataset(mvrs_data=mvrs_data)
+    return CombinedRawDataset(
+        initial_model_urn=urn,
+        raw_datasets={urn: rd},
+    )
+
+
+def test_mvr_supersession_single_undated_no_error():
+    """Single MVR with no date is allowed — supersession rules only apply when >1 MVR per SVC."""
+    from reqstool.common.models.urn_id import UrnId
+    from reqstool.models.mvrs import MVRData
+
+    mvr = MVRData(
+        id=UrnId(urn="ms-001", id="MVR_001"),
+        svc_ids=[UrnId(urn="ms-001", id="SVC_001")],
+        passed=True,
+    )
+    dataset = _mvr_supersession_dataset([mvr])
+    holder = ValidationErrorHolder()
+    errors = SemanticValidator(holder)._validate_mvr_supersession(dataset)
+    assert errors == []
+
+
+def test_mvr_supersession_two_dated_different_timestamps_no_error():
+    """Two MVRs for the same SVC with distinct timestamps — valid."""
+    from datetime import datetime
+
+    from reqstool.common.models.urn_id import UrnId
+    from reqstool.models.mvrs import MVRData
+
+    svc = UrnId(urn="ms-001", id="SVC_001")
+    mvr_a = MVRData(
+        id=UrnId(urn="ms-001", id="MVR_A"),
+        svc_ids=[svc],
+        passed=False,
+        date=datetime.fromisoformat("2026-01-01T00:00:00+00:00"),
+    )
+    mvr_b = MVRData(
+        id=UrnId(urn="ms-001", id="MVR_B"),
+        svc_ids=[svc],
+        passed=True,
+        date=datetime.fromisoformat("2026-01-02T00:00:00+00:00"),
+    )
+    dataset = _mvr_supersession_dataset([mvr_a, mvr_b])
+    holder = ValidationErrorHolder()
+    errors = SemanticValidator(holder)._validate_mvr_supersession(dataset)
+    assert errors == []
+
+
+def test_mvr_supersession_missing_date_raises_error():
+    """Two MVRs for the same SVC where one lacks a date — must error."""
+    from reqstool.common.models.urn_id import UrnId
+    from reqstool.models.mvrs import MVRData
+
+    svc = UrnId(urn="ms-001", id="SVC_001")
+    mvr_a = MVRData(
+        id=UrnId(urn="ms-001", id="MVR_A"),
+        svc_ids=[svc],
+        passed=False,
+        date=None,
+    )
+    mvr_b = MVRData(
+        id=UrnId(urn="ms-001", id="MVR_B"),
+        svc_ids=[svc],
+        passed=True,
+        date=None,
+    )
+    dataset = _mvr_supersession_dataset([mvr_a, mvr_b])
+    holder = ValidationErrorHolder()
+    errors = SemanticValidator(holder)._validate_mvr_supersession(dataset)
+    assert len(errors) >= 1
+    assert any("date" in e.msg for e in errors)
+
+
+def test_mvr_supersession_tie_same_utc_moment_raises_error():
+    """Two MVRs for the same SVC with identical UTC moment (different offsets) — must error."""
+    from datetime import datetime, timedelta, timezone
+
+    from reqstool.common.models.urn_id import UrnId
+    from reqstool.models.mvrs import MVRData
+
+    svc = UrnId(urn="ms-001", id="SVC_001")
+    # 14:30 +01:00 == 13:30 Z — same UTC instant
+    mvr_a = MVRData(
+        id=UrnId(urn="ms-001", id="MVR_A"),
+        svc_ids=[svc],
+        passed=False,
+        date=datetime(2026, 1, 15, 14, 30, 0, tzinfo=timezone(timedelta(hours=1))),
+    )
+    mvr_b = MVRData(
+        id=UrnId(urn="ms-001", id="MVR_B"),
+        svc_ids=[svc],
+        passed=True,
+        date=datetime(2026, 1, 15, 13, 30, 0, tzinfo=timezone.utc),
+    )
+    dataset = _mvr_supersession_dataset([mvr_a, mvr_b])
+    holder = ValidationErrorHolder()
+    errors = SemanticValidator(holder)._validate_mvr_supersession(dataset)
+    assert len(errors) == 1
+    assert "same UTC moment" in errors[0].msg
