@@ -87,7 +87,7 @@ class RequirementsModelGenerator:
 
         yaml = YAML(typ="safe")
 
-        data = yaml.load(response.text)
+        data = yaml.load(Utils.interpolate_env_vars(response.text, source=uri))
 
         urn = self.get_urn_if_available(response.text)
 
