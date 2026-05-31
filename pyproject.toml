@@ -53,6 +53,7 @@ dependencies = [
     "packaging==26.2",
     "requests==2.34.2",
     "beautifulsoup4==4.14.3",
+    "defusedxml==0.7.1",
     "expandvars==1.1.2",
     "pygls>=2.0,<3.0",
     "lsprotocol>=2024.0.0",

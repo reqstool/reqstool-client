@@ -1,0 +1,20 @@
+cases:
+  - id: SVC_001
+    requirement_ids: ["REQ_001"]
+    title: "Build-phase SVC"
+    verification: automated-test
+    revision: "0.0.1"
+
+  - id: SVC_002
+    requirement_ids: ["REQ_001"]
+    title: "Post-build SVC"
+    verification: automated-test
+    phase: post-build
+    revision: "0.0.1"
+
+  - id: SVC_003
+    requirement_ids: ["REQ_001"]
+    title: "Explicit build SVC"
+    verification: manual-test
+    phase: build
+    revision: "0.0.1"

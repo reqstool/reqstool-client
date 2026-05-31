@@ -16,7 +16,7 @@ from reqstool.models.requirements import (
     ReferenceData,
     RequirementData,
 )
-from reqstool.models.svcs import VERIFICATIONTYPES, SVCData
+from reqstool.models.svcs import VERIFICATIONPHASE, VERIFICATIONTYPES, SVCData
 from reqstool.models.test_data import TEST_RUN_STATUS, TestData
 from reqstool.storage.database import RequirementsDatabase
 
@@ -407,6 +407,7 @@ class RequirementsRepository:
             title=row["title"],
             description=row["description"],
             verification=VERIFICATIONTYPES(row["verification_type"]),
+            phase=VERIFICATIONPHASE(row["phase"]),
             instructions=row["instructions"],
             revision=Version(row["revision"]),
             lifecycle=lifecycle,

@@ -53,6 +53,14 @@
                     ],
                     "description": "Verification method. E.g. automated-test, manual-test, review, platform or other"
                 },
+                "phase": {
+                    "type": "string",
+                    "enum": [
+                        "build",
+                        "post-build"
+                    ],
+                    "description": "Verification phase. 'build' (default) SVCs gate the build-stage verdict. 'post-build' SVCs are informational by default and gate the verdict only when --with-post-tests is supplied."
+                },
                 "instructions": {
                     "type": "string",
                     "description": "Instructional steps for how to verify, if it is manual"

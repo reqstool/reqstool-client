@@ -15,7 +15,7 @@ from reqstool.models.requirements import (
     ReferenceData,
     VARIANTS,
 )
-from reqstool.models.svcs import SVCData, VERIFICATIONTYPES
+from reqstool.models.svcs import SVCData, VERIFICATIONPHASE, VERIFICATIONTYPES
 from reqstool.models.test_data import TEST_RUN_STATUS
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -506,3 +506,43 @@ def test_mvr_date_round_trips_through_db(db):
     loaded = repo.get_all_mvrs()[MVR_ID]
     assert loaded.date is not None
     assert loaded.date == original  # TZ-aware equality preserves semantics
+
+
+# -- insert_test_result: duplicate FQN uses last-write-wins --
+
+
+def test_insert_test_result_duplicate_fqn_last_wins(db):
+    _insert_requirement(db)
+    _insert_svc(db)
+    db.insert_test_result(URN, "com.example.FooTest.testBar", TEST_RUN_STATUS.FAILED)
+    db.insert_test_result(URN, "com.example.FooTest.testBar", TEST_RUN_STATUS.PASSED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.FooTest.testBar")
+    db.insert_annotation_test(SVC_ID, ann)
+    results = repo.get_automated_test_results()
+    key = UrnId(urn=URN, id="com.example.FooTest.testBar")
+    assert results[key][0].status == TEST_RUN_STATUS.PASSED
+
+
+# -- VERIFICATIONPHASE round-trip --
+
+
+@pytest.mark.parametrize("phase", list(VERIFICATIONPHASE))
+def test_svc_phase_round_trip(db, phase):
+    _insert_requirement(db)
+    svc = SVCData(
+        id=SVC_ID,
+        title="SVC",
+        verification=VERIFICATIONTYPES.AUTOMATED_TEST,
+        phase=phase,
+        revision="1.0.0",
+        requirement_ids=[REQ_ID],
+    )
+    db.insert_svc(SVC_ID.urn, svc)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    svcs = repo.get_all_svcs()
+    assert svcs[SVC_ID].phase is phase
