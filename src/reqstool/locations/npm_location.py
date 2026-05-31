@@ -11,7 +11,7 @@ from pydantic import field_validator
 
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.common.utils import Utils
-from reqstool.locations.location import LocationInterface
+from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
 
 _METADATA_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 _REQUEST_TIMEOUT = 30  # seconds
@@ -29,6 +29,9 @@ class NpmLocation(LocationInterface):
         if not v.startswith("https://"):
             raise ValueError(f"NpmLocation url must use https, got: {v!r}")
         return v
+
+    def tmpdir_key(self) -> str:
+        return make_safe_tmpdir_suffix("npm", f"{self.package}@{self.version}")
 
     def _make_available_on_localdisk(self, dst_path: str):
         """Resolve token → fetch tarball URL → SSRF check → download → extract."""
