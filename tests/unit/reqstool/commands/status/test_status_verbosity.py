@@ -118,7 +118,7 @@ def test_status_compact_single_line(local_testdata_resources_rootdir_w_path):
         verbosity="compact",
     )
     status, _ = result.result
-    non_empty = [l for l in status.splitlines() if l.strip()]
+    non_empty = [line for line in status.splitlines() if line.strip()]
     assert len(non_empty) == 1
     assert "requirements" in non_empty[0]
 
@@ -159,7 +159,7 @@ def test_status_normal_verdict_at_bottom(local_testdata_resources_rootdir_w_path
         verbosity="normal",
     )
     status, _ = result.result
-    lines = [l for l in status.rstrip().splitlines() if l.strip()]
+    lines = [line for line in status.rstrip().splitlines() if line.strip()]
     assert "FAIL" in lines[-1]
 
 
@@ -258,7 +258,7 @@ def test_status_extra_verbose_verdict_at_bottom(local_testdata_resources_rootdir
         verbosity="extra-verbose",
     )
     status, _ = result.result
-    lines = [l for l in status.rstrip().splitlines() if l.strip()]
+    lines = [line for line in status.rstrip().splitlines() if line.strip()]
     assert "FAIL" in lines[-1]
 
 
