@@ -148,7 +148,7 @@ results:
 
 *`date` field rules:*
 
-* The `date` value must be a *timezone-aware ISO 8601 date-time* (RFC 3339), for example `"2026-01-15T14:30:00Z"` or `"2026-01-15T14:30:00+01:00"`. Note the required quotes — unquoted dates are parsed by YAML as `date` objects, not strings.
+* The `date` value must be an *RFC 3339 date-time*, for example `"2026-01-15T14:30:00Z"` or `"2026-01-15T14:30:00+01:00"`. A timezone offset is mandatory — bare local datetimes without a timezone are rejected. Note the required quotes — unquoted values are parsed by YAML as `date` objects, not strings.
 * `date` is *optional* when only one MVR references a given SVC; the single entry is always the verdict regardless.
 * `date` is *required* on every MVR that references a given SVC as soon as more than one MVR does. A missing `date` in that situation is a semantic validation error.
 * Two MVRs for the same SVC with the *exact same UTC moment* are a validation error — add a time component to disambiguate (e.g. `T09:00:00Z` vs `T14:30:00Z`).

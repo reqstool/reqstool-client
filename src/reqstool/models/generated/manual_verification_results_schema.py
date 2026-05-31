@@ -30,7 +30,7 @@ class Results(BaseModel):
     """
     date: AwareDatetime | None = None
     """
-    Timezone-aware ISO 8601 date-time when the verification was performed (e.g. "2026-01-15T14:30:00Z" or "2026-01-15T14:30:00+01:00"). Required when more than one MVR references the same SVC.
+    RFC 3339 date-time when the verification was performed (e.g. "2026-01-15T14:30:00Z" or "2026-01-15T14:30:00+01:00"). A timezone offset is required. Required when more than one MVR references the same SVC.
     """
 
 
