@@ -131,6 +131,9 @@ Full details for a single SVC.
 
 *Returns:* `{ type, id, urn, title, description, verification, instructions, revision, lifecycle, requirement_ids, test_annotations, test_results, test_summary, mvrs, location, source_paths }`
 
+Each entry in `mvrs` is `{ id, urn, passed, date, comment, superseded }`.
+`date` is an RFC 3339 date-time string or empty string; `superseded: true` means an older entry that was superseded by a later one.
+
 ==== `get_mvr`
 
 Full details for a single MVR.
@@ -139,7 +142,9 @@ Full details for a single MVR.
 
 * `id` _(string, required)_
 
-*Returns:* `{ type, id, urn, passed, comment, svc_ids, location, source_paths }`
+*Returns:* `{ type, id, urn, passed, date, comment, svc_ids, location, source_paths }`
+
+`date` is an RFC 3339 date-time string, or an empty string if the MVR has no date.
 
 ==== `get_urn_details`
 
