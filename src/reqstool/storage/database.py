@@ -44,6 +44,7 @@ class RequirementsDatabase:
         backup API reads sqlite_master, which the authorizer blocks. The original
         authorizer is always restored after the backup completes, even on error.
         """
+        self._conn.commit()
         self._conn.set_authorizer(None)
         target = sqlite3.connect(dest_path)
         try:

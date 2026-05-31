@@ -56,26 +56,14 @@ def test_export_subcommand_routes_to_command_export():
         mock_export.assert_called_once()
 
 
-def test_generate_json_deprecated_warning_printed_to_stderr(capsys):
+def test_validate_subcommand_routes_to_command_validate():
     with (
-        patch.object(Command, "command_generate_json"),
-        patch("sys.argv", ["reqstool", "generate-json", "local", "-p", "/tmp"]),
+        patch.object(Command, "command_validate", return_value=0) as mock_validate,
+        patch("sys.argv", ["reqstool", "validate", "local", "-p", "/tmp"]),
         patch("sys.exit"),
     ):
         main()
-        captured = capsys.readouterr()
-        assert "deprecated" in captured.err.lower()
-        assert "generate-json" in captured.err
-
-
-def test_generate_json_still_calls_command_generate_json():
-    with (
-        patch.object(Command, "command_generate_json") as mock_gen,
-        patch("sys.argv", ["reqstool", "generate-json", "local", "-p", "/tmp"]),
-        patch("sys.exit"),
-    ):
-        main()
-        mock_gen.assert_called_once()
+        mock_validate.assert_called_once()
 
 
 def test_status_subcommand_routes_to_command_status():
