@@ -7,7 +7,6 @@ import shutil
 from enum import Enum
 from pathlib import Path
 
-from rich.columns import Columns
 from rich.console import Console
 from rich.table import Table, box
 from rich.text import Text
@@ -27,7 +26,6 @@ from reqstool.services.statistics_service import (
     RequirementStatus,
     StatisticsService,
     TestStats,
-    TotalStats,
 )
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.pipeline import build_database
@@ -443,93 +441,3 @@ def _get_row_with_totals(stats_service: StatisticsService) -> list:
         _format_test_cell(auto_stats),
         _format_test_cell(manual_stats),
     ]
-
-
-def _summarize_statistics(ts: TotalStats) -> str:
-    CODE, NA, CONFIGURATION, PLATFORM, FRAMEWORK, IMPLEMENTATIONS = __colorize_headers()
-
-    annotated_not_verified = ts.with_implementation - ts.code_completed
-    missing_annotation = ts.code_reqs - ts.with_implementation
-
-    # In Code group: total, verified, annotated-but-not-verified, missing annotation
-    code_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=CODE, title_justify="center")
-    code_table.add_column("Total", justify="center")
-    code_table.add_column("Verified", justify="center")
-    code_table.add_column("Annotated, not verified", justify="center")
-    code_table.add_column("Missing annotation", justify="center")
-    code_table.add_row(
-        str(ts.code_reqs) + __numbers_as_percentage(numerator=ts.code_reqs, denominator=ts.code_reqs),
-        str(ts.code_completed) + __numbers_as_percentage(numerator=ts.code_completed, denominator=ts.code_reqs),
-        str(annotated_not_verified)
-        + __numbers_as_percentage(numerator=annotated_not_verified, denominator=ts.code_reqs),
-        str(missing_annotation) + __numbers_as_percentage(numerator=missing_annotation, denominator=ts.code_reqs),
-    )
-
-    def _non_code_table(title: Text, total: int, completed: int, overall_total: int) -> Table:
-        # "Total (% of all)" = share of all requirements; "Verified"/"Not Verified" = share of this type
-        t = Table(box=box.DOUBLE_EDGE, show_header=True, title=title, title_justify="center")
-        t.add_column("Total (% of all)", justify="center")
-        t.add_column("Verified", justify="center")
-        t.add_column("Not Verified", justify="center")
-        t.add_row(
-            str(total) + __numbers_as_percentage(numerator=total, denominator=overall_total),
-            str(completed) + __numbers_as_percentage(numerator=completed, denominator=total),
-            str(total - completed) + __numbers_as_percentage(numerator=(total - completed), denominator=total),
-        )
-        return t
-
-    overall = ts.total_requirements
-    na_table = _non_code_table(NA, ts.without_implementation_total, ts.without_implementation_completed, overall)
-    config_table = _non_code_table(CONFIGURATION, ts.configuration_total, ts.configuration_completed, overall)
-    platform_table = _non_code_table(PLATFORM, ts.platform_total, ts.platform_completed, overall)
-    framework_table = _non_code_table(FRAMEWORK, ts.framework_total, ts.framework_completed, overall)
-
-    tests_table = Table(
-        box=box.DOUBLE_EDGE, show_header=True, title=f"Total Tests: {ts.total_tests}", title_style="white"
-    )
-    tests_table.add_column("Passed tests", justify="center")
-    tests_table.add_column("Failed tests", justify="center")
-    tests_table.add_column("Skipped tests", justify="center")
-    tests_table.add_row(
-        str(ts.passed_tests) + __numbers_as_percentage(numerator=ts.passed_tests, denominator=ts.total_tests),
-        str(ts.failed_tests) + __numbers_as_percentage(numerator=ts.failed_tests, denominator=ts.total_tests),
-        str(ts.skipped_tests) + __numbers_as_percentage(numerator=ts.skipped_tests, denominator=ts.total_tests),
-    )
-
-    svcs_table = Table(box=box.DOUBLE_EDGE, show_header=True, title=f"Total SVCs: {ts.total_svcs}", title_style="white")
-    svcs_table.add_column("SVCs missing tests", justify="center")
-    svcs_table.add_column("SVCs missing MVRs", justify="center")
-    svcs_table.add_row(
-        str(ts.missing_automated_tests)
-        + __numbers_as_percentage(numerator=ts.missing_automated_tests, denominator=ts.total_svcs),
-        str(ts.missing_manual_tests)
-        + __numbers_as_percentage(numerator=ts.missing_manual_tests, denominator=ts.total_svcs),
-    )
-
-    impl_tables = [code_table, config_table, platform_table, framework_table, na_table]  # N/A intentionally last
-    stacked_rendered = "".join(_render(t) for t in impl_tables)
-    impl_console = _make_console()
-    with impl_console.capture() as cap:
-        impl_console.print(IMPLEMENTATIONS, justify="center")
-    impl_header = cap.get()
-
-    return "\n" + impl_header + stacked_rendered + _render(Columns([tests_table, svcs_table]))
-
-
-def __numbers_as_percentage(numerator: int, denominator: int) -> str:
-    if denominator == 0:
-        return ""
-    percentage = (numerator / denominator) * 100
-    percentage_as_string = " ({:.2f}%)".format(percentage)
-    return percentage_as_string
-
-
-def __colorize_headers() -> tuple[Text, Text, Text, Text, Text, Text]:
-    return (
-        Text("In Code", style="white"),
-        Text("N/A", style="white"),
-        Text("Configuration", style="white"),
-        Text("Platform", style="white"),
-        Text("Framework", style="white"),
-        Text("IMPLEMENTATIONS", style="bold white"),
-    )

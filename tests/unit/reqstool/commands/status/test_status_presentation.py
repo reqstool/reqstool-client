@@ -4,9 +4,9 @@ from rich.console import Console
 
 import pytest
 
-from reqstool.commands.status.status import _NON_CODE_LABELS, _build_table, _format_test_cell, _summarize_statistics
+from reqstool.commands.status.status import _NON_CODE_LABELS, _build_table, _format_test_cell
 from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
-from reqstool.services.statistics_service import TestStats, TotalStats
+from reqstool.services.statistics_service import TestStats
 
 
 def _render(renderable) -> str:
@@ -166,68 +166,6 @@ def test_build_table_returns_5_columns():
     assert len(row) == 5
 
 
-# ---------------------------------------------------------------------------
-# _summarize_statistics
-# ---------------------------------------------------------------------------
-
-
-def test_summarize_statistics_zero_counts_no_crash():
-    """_summarize_statistics must not raise when all counts are 0."""
-    result = _summarize_statistics(TotalStats())
-    assert isinstance(result, str)
-    assert "IMPLEMENTATIONS" in result
-
-
-def test_summarize_statistics_all_complete_has_white_header():
-    """IMPLEMENTATIONS header is always white regardless of completion."""
-    result = _summarize_statistics(
-        TotalStats(
-            total_requirements=2,
-            completed_requirements=2,
-            with_implementation=2,
-            total_tests=2,
-            passed_tests=2,
-            total_svcs=2,
-        )
-    )
-    assert "\033[37m" in result  # white ANSI code
-    assert "IMPLEMENTATIONS" in result
-
-
-def test_summarize_statistics_incomplete_has_white_header():
-    """IMPLEMENTATIONS header is always white regardless of completion."""
-    result = _summarize_statistics(
-        TotalStats(
-            total_requirements=3,
-            completed_requirements=1,
-            with_implementation=1,
-            total_tests=3,
-            passed_tests=1,
-            failed_tests=2,
-            missing_automated_tests=2,
-            total_svcs=3,
-        )
-    )
-    assert "\033[37m" in result  # white ANSI code
-    assert "IMPLEMENTATIONS" in result
-
-
-def test_summarize_statistics_contains_percentage_string():
-    """With nonzero counts, the output contains a formatted percentage."""
-    result = _summarize_statistics(
-        TotalStats(
-            total_requirements=4,
-            completed_requirements=2,
-            with_implementation=2,
-            total_tests=4,
-            passed_tests=2,
-            failed_tests=2,
-            total_svcs=4,
-        )
-    )
-    assert "%" in result
-
-
 @pytest.mark.parametrize(
     "impl_type, expected_label",
     [
@@ -252,86 +190,6 @@ def test_build_table_non_code_type_shows_dim_label(impl_type, expected_label):
     assert row[2].style == "dim"
 
 
-def test_summarize_statistics_shows_all_non_code_section_headers():
-    """All four non-code section headers appear in the summary output."""
-    result = _summarize_statistics(TotalStats())
-    assert "N/A" in result
-    assert "Configuration" in result
-    assert "Platform" in result
-    assert "Framework" in result
-
-
-def test_summarize_statistics_non_zero_non_code_counts_show_percentages():
-    """_non_code_table percentage path is exercised with non-zero type counts."""
-    result = _summarize_statistics(
-        TotalStats(
-            total_requirements=7,
-            completed_requirements=5,
-            with_implementation=2,
-            without_implementation_total=2,
-            without_implementation_completed=1,
-            configuration_total=1,
-            configuration_completed=1,
-            platform_total=1,
-            platform_completed=1,
-            framework_total=1,
-            framework_completed=0,
-            total_svcs=4,
-            total_tests=4,
-            passed_tests=3,
-        )
-    )
-    assert "%" in result
-    assert "Configuration" in result
-    assert "Platform" in result
-    assert "Framework" in result
-
-
 def test_non_code_labels_covers_all_non_code_implementations():
     """_NON_CODE_LABELS must stay in sync with NON_CODE_IMPLEMENTATIONS."""
     assert set(_NON_CODE_LABELS.keys()) == NON_CODE_IMPLEMENTATIONS
-
-
-def test_summarize_statistics_na_appears_after_framework():
-    """N/A section must appear after the Framework section (stacked layout, N/A last)."""
-    result = _summarize_statistics(
-        TotalStats(
-            total_requirements=7,
-            without_implementation_total=1,
-            without_implementation_completed=0,
-            configuration_total=2,
-            platform_total=1,
-            framework_total=1,
-        )
-    )
-    framework_pos = result.find("Framework")
-    na_pos = result.find("N/A")
-    assert framework_pos != -1, "Framework section must be present"
-    assert na_pos != -1, "N/A section must be present"
-    assert na_pos > framework_pos, "N/A must appear after Framework (stacked, N/A last)"
-
-
-def test_summarize_statistics_section_order():
-    """Implementation sections must appear in order: In Code, Configuration, Platform, Framework, N/A."""
-    result = _summarize_statistics(
-        TotalStats(
-            total_requirements=10,
-            with_implementation=4,
-            without_implementation_total=2,
-            configuration_total=2,
-            platform_total=1,
-            framework_total=1,
-        )
-    )
-    positions = {
-        "In Code": result.find("In Code"),
-        "Configuration": result.find("Configuration"),
-        "Platform": result.find("Platform"),
-        "Framework": result.find("Framework"),
-        "N/A": result.find("N/A"),
-    }
-    assert all(p != -1 for p in positions.values()), f"Missing sections: {positions}"
-    assert positions["In Code"] < positions["Configuration"]
-    assert positions["Configuration"] < positions["Platform"]
-    assert positions["Platform"] < positions["Framework"]
-    assert positions["Framework"] < positions["N/A"]
