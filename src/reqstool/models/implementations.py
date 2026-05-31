@@ -19,5 +19,9 @@ class MavenImplData(ImplementationDataInterface):
     pass
 
 
+class NpmImplData(ImplementationDataInterface):
+    pass
+
+
 class PypiImplData(ImplementationDataInterface):
     pass

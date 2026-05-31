@@ -19,5 +19,9 @@ class MavenImportData(ImportDataInterface):
     pass
 
 
+class NpmImportData(ImportDataInterface):
+    pass
+
+
 class PypiImportData(ImportDataInterface):
     pass

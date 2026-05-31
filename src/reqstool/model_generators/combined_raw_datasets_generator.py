@@ -303,8 +303,10 @@ class CombinedRawDatasetsGenerator:
         """Extract location_type and location_uri for RawDataset metadata."""
         from reqstool.locations.git_location import GitLocation
         from reqstool.locations.local_maven_location import LocalMavenLocation
+        from reqstool.locations.local_npm_location import LocalNpmLocation
         from reqstool.locations.local_pypi_location import LocalPypiLocation
         from reqstool.locations.maven_location import MavenLocation
+        from reqstool.locations.npm_location import NpmLocation
         from reqstool.locations.pypi_location import PypiLocation
 
         if isinstance(location, LocalLocation):
@@ -313,6 +315,10 @@ class CombinedRawDatasetsGenerator:
             return "git", location.url
         elif isinstance(location, MavenLocation):
             return "maven", f"{location.group_id}:{location.artifact_id}:{location.version}"
+        elif isinstance(location, NpmLocation):
+            return "npm", f"{location.package}@{location.version}"
+        elif isinstance(location, LocalNpmLocation):
+            return "npm", f"file://{os.path.abspath(location.path)}"
         elif isinstance(location, PypiLocation):
             return "pypi", f"{location.package}=={location.version}"
         elif isinstance(location, LocalMavenLocation):

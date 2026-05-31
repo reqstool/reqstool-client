@@ -20,6 +20,7 @@ from reqstool.locations.git_location import GitLocation
 from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.location import LocationInterface
 from reqstool.locations.maven_location import MavenLocation
+from reqstool.locations.npm_location import NpmLocation
 from reqstool.locations.pypi_location import PypiLocation
 from reqstool.model_generators.parsing_config import ParsingConfig
 from reqstool.models.generated.requirements_schema import Model as RequirementsPydanticModel
@@ -28,9 +29,17 @@ from reqstool.models.implementations import (
     ImplementationDataInterface,
     LocalImplData,
     MavenImplData,
+    NpmImplData,
     PypiImplData,
 )
-from reqstool.models.imports import GitImportData, ImportDataInterface, LocalImportData, MavenImportData, PypiImportData
+from reqstool.models.imports import (
+    GitImportData,
+    ImportDataInterface,
+    LocalImportData,
+    MavenImportData,
+    NpmImportData,
+    PypiImportData,
+)
 from reqstool.models.requirements import (
     CATEGORIES,
     IMPLEMENTATION,
@@ -146,6 +155,11 @@ class RequirementsModelGenerator:
                 instance_type=MavenImplData,
                 locations=locations,
             )
+            self.__parse_location_npm(
+                locations_obj=model.implementations,
+                instance_type=NpmImplData,
+                locations=locations,
+            )
             self.__parse_location_pypi(
                 locations_obj=model.implementations,
                 instance_type=PypiImplData,
@@ -171,6 +185,11 @@ class RequirementsModelGenerator:
             self.__parse_location_maven(
                 locations_obj=model.imports,
                 instance_type=MavenImportData,
+                locations=locations,
+            )
+            self.__parse_location_npm(
+                locations_obj=model.imports,
+                instance_type=NpmImportData,
                 locations=locations,
             )
             self.__parse_location_pypi(
@@ -216,6 +235,19 @@ class RequirementsModelGenerator:
                 )
 
                 locations.append(pypi_location)
+
+    def __parse_location_npm(self, locations_obj, instance_type, locations):
+        if locations_obj.npm is not None:
+            for npm in locations_obj.npm:
+                npm_kwargs = {"env_token": npm.env_token, "package": npm.package, "version": npm.version}
+                if npm.url:
+                    npm_kwargs["url"] = npm.url.root
+                npm_location = instance_type(
+                    parent=self.parent,
+                    current_unresolved=NpmLocation(**npm_kwargs),
+                )
+
+                locations.append(npm_location)
 
     def __parse_location_local(self, locations_obj, instance_type, locations):
         if locations_obj.local is not None:
