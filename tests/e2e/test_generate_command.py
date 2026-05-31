@@ -92,12 +92,10 @@ def test_export_nonexistent_id_warns():
 
 
 @pytest.mark.e2e
-def test_generate_json_deprecated():
+def test_generate_json_removed():
+    """generate-json was removed; reqstool should reject it with a non-zero exit code."""
     result = _run_reqstool("generate-json", "local", "-p", TESTDATA_PATH)
-    assert result.returncode == 0
-    assert "deprecated" in result.stderr.lower()
-    data = json.loads(result.stdout)
-    assert "ms-001:REQ_010" in data["requirements"]
+    assert result.returncode != 0
 
 
 @pytest.mark.e2e
