@@ -1,5 +1,6 @@
 # Copyright © LFV
 
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -13,6 +14,7 @@ class MVRData(BaseModel):
     id: UrnId
     comment: Optional[str] = None
     passed: bool
+    date: Optional[datetime] = None
     svc_ids: List[UrnId] = Field(default_factory=list)
     source_line: Optional[int] = None
     source_col_start: Optional[int] = None

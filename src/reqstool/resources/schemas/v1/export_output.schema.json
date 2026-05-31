@@ -279,6 +279,10 @@
                     "type": "boolean",
                     "description": "Whether the manual verification passed"
                 },
+                "date": {
+                    "type": "string",
+                    "description": "RFC 3339 date-time when the verification was performed"
+                },
                 "comment": {
                     "type": ["string", "null"],
                     "description": "Optional comment about the verification result"

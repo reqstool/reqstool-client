@@ -24,13 +24,11 @@ def _compute_meets(req, repo: RequirementsRepository, svc_urn_ids: list, all_pas
             return False
     else:
         raise ValueError(f"Unhandled IMPLEMENTATION value: {req.implementation}")
-    # Check MVR results — automated test_summary misses manual verification outcomes
-    all_mvrs = repo.get_all_mvrs()
+    # Check MVR results using only the effective (latest) verdict per SVC
     for svc_uid in svc_urn_ids:
-        for mvr_id in repo.get_mvrs_for_svc(svc_uid):
-            mvr = all_mvrs.get(mvr_id)
-            if mvr is not None and not mvr.passed:
-                return False
+        effective = repo.get_effective_mvr_for_svc(svc_uid)
+        if effective is not None and not effective.passed:
+            return False
     return True
 
 
@@ -109,9 +107,10 @@ def get_svc_details(
     if svc is None:
         return None
 
-    mvr_urn_ids = repo.get_mvrs_for_svc(svc.id)
     all_mvrs = repo.get_all_mvrs()
+    mvr_urn_ids = repo.get_mvrs_for_svc(svc.id)
     mvrs = [all_mvrs[uid] for uid in mvr_urn_ids if uid in all_mvrs]
+    superseded_ids = {m.id for m in repo.get_superseded_mvrs_for_svc(svc.id)}
 
     test_annotations = repo.get_annotations_tests_for_svc(svc.id)
     test_results = repo.get_test_results_for_svc(svc.id)
@@ -154,7 +153,9 @@ def get_svc_details(
                 "id": m.id.id,
                 "urn": m.id.urn,
                 "passed": m.passed,
+                "date": m.date.isoformat() if m.date is not None else "",
                 "comment": m.comment or "",
+                "superseded": m.id in superseded_ids,
             }
             for m in mvrs
         ],
@@ -181,6 +182,7 @@ def get_mvr_details(
         "id": mvr.id.id,
         "urn": mvr.id.urn,
         "passed": mvr.passed,
+        "date": mvr.date.isoformat() if mvr.date is not None else "",
         "comment": mvr.comment or "",
         "svc_ids": [{"id": s.id, "urn": s.urn} for s in mvr.svc_ids],
         "location": repo.get_urn_location(mvr.id.urn),

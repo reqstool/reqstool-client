@@ -100,14 +100,15 @@ class RequirementsDatabase:
 
     def insert_svc(self, urn: str, svc: SVCData) -> None:
         self._conn.execute(
-            "INSERT INTO svcs (urn, id, title, verification_type, lifecycle_state, lifecycle_reason,"
+            "INSERT INTO svcs (urn, id, title, verification_type, phase, lifecycle_state, lifecycle_reason,"
             " description, instructions, revision, source_line, source_col_start, source_col_end)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 urn,
                 svc.id.id,
                 svc.title,
                 svc.verification.value,
+                svc.phase.value,
                 svc.lifecycle.state.value,
                 svc.lifecycle.reason,
                 svc.description,
@@ -130,13 +131,14 @@ class RequirementsDatabase:
 
     def insert_mvr(self, urn: str, mvr: MVRData) -> None:
         self._conn.execute(
-            "INSERT INTO mvrs (urn, id, passed, comment, source_line, source_col_start, source_col_end)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO mvrs (urn, id, passed, comment, date, source_line, source_col_start, source_col_end)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 urn,
                 mvr.id.id,
                 int(mvr.passed),
                 mvr.comment,
+                mvr.date.isoformat() if mvr.date is not None else None,
                 mvr.source_line,
                 mvr.source_col_start,
                 mvr.source_col_end,
@@ -172,7 +174,7 @@ class RequirementsDatabase:
 
     def insert_test_result(self, urn: str, fqn: str, status: TEST_RUN_STATUS) -> None:
         self._conn.execute(
-            "INSERT INTO test_results (urn, fqn, status) VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO test_results (urn, fqn, status) VALUES (?, ?, ?)",
             (urn, fqn, status.value),
         )
 

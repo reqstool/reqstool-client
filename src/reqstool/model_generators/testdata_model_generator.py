@@ -3,9 +3,10 @@
 import logging
 import os
 import re
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List
+
+from defusedxml import ElementTree as ET
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
@@ -20,8 +21,7 @@ class TestDataModelGenerator:
     def __init__(self, test_result_files: List[Path], urn: str):
         self.test_result_files = test_result_files
         self.urn = urn
-        # key: urn+fqn
-        self.model: Dict[UrnId, TestData] = self.__generate(test_result_files, urn)
+        self.model: TestsData = self.__generate(test_result_files, urn)
 
     def __generate(self, test_result_files: List[Path], urn: str) -> TestsData:
         tests = self.__parse_test_data(test_result_files, urn)

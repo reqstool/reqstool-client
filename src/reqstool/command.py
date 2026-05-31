@@ -323,6 +323,14 @@ class Command:
             action="store_true",
             help="Fail unless all requirements are implemented",
         )
+        status_parser.add_argument(
+            "--with-post-tests",
+            action="append",
+            dest="with_post_tests",
+            metavar="PATH",
+            help="JUnit XML file with post-build test results (repeat for multiple files); activates post-build gating",
+            default=None,
+        )
         status_source_subparsers = status_parser.add_subparsers(dest="source", required=True)
         self._add_subparsers_source(status_source_subparsers, include_report_options=False, include_filter_options=True)
 
@@ -537,6 +545,7 @@ class Command:
             incomplete_only=incomplete_only,
             req_ids=req_ids,
             svc_ids=svc_ids,
+            with_post_tests=getattr(status_args, "with_post_tests", None),
         )
         status, nr_of_incomplete_requirements = result.result
 

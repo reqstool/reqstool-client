@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.common.models.urn_id import UrnId
@@ -13,7 +15,7 @@ from reqstool.models.requirements import (
     ReferenceData,
     VARIANTS,
 )
-from reqstool.models.svcs import SVCData, VERIFICATIONTYPES
+from reqstool.models.svcs import SVCData, VERIFICATIONPHASE, VERIFICATIONTYPES
 from reqstool.models.test_data import TEST_RUN_STATUS
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -416,3 +418,131 @@ def test_non_code_implementation_round_trip(db, impl_type):
     repo = RequirementsRepository(db)
     reqs = repo.get_all_requirements()
     assert reqs[req_id].implementation is impl_type
+
+
+# -- MVR supersession helpers --
+
+
+def _ts(iso: str) -> datetime:
+    return datetime.fromisoformat(iso)
+
+
+def _insert_mvr_dated(db, mvr_id, svc_ids, passed, date_iso: str | None):
+    date = _ts(date_iso) if date_iso else None
+    mvr = MVRData(id=mvr_id, passed=passed, svc_ids=svc_ids, date=date)
+    db.insert_mvr(mvr_id.urn, mvr)
+    return mvr
+
+
+MVR_ID_A = UrnId(urn=URN, id="MVR_A")
+MVR_ID_B = UrnId(urn=URN, id="MVR_B")
+MVR_ID_C = UrnId(urn=URN, id="MVR_C")
+
+
+def test_get_effective_mvr_single_no_date(db):
+    _insert_requirement(db)
+    _insert_svc(db, SVC_ID, req_ids=[REQ_ID])
+    _insert_mvr_dated(db, MVR_ID, [SVC_ID], passed=True, date_iso=None)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    eff = repo.get_effective_mvr_for_svc(SVC_ID)
+    assert eff is not None
+    assert eff.id == MVR_ID
+    assert repo.get_superseded_mvrs_for_svc(SVC_ID) == []
+
+
+def test_get_effective_mvr_latest_wins(db):
+    _insert_requirement(db)
+    _insert_svc(db, SVC_ID, req_ids=[REQ_ID])
+    _insert_mvr_dated(db, MVR_ID_A, [SVC_ID], passed=False, date_iso="2026-01-01T00:00:00Z")
+    _insert_mvr_dated(db, MVR_ID_B, [SVC_ID], passed=True, date_iso="2026-01-02T00:00:00Z")
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    eff = repo.get_effective_mvr_for_svc(SVC_ID)
+    assert eff is not None
+    assert eff.id == MVR_ID_B
+    assert eff.passed is True
+
+    superseded = repo.get_superseded_mvrs_for_svc(SVC_ID)
+    assert len(superseded) == 1
+    assert superseded[0].id == MVR_ID_A
+
+
+def test_get_effective_mvr_mixed_tz_offsets(db):
+    _insert_requirement(db)
+    _insert_svc(db, SVC_ID, req_ids=[REQ_ID])
+    # UTC 13:30 via +01:00 offset (earlier)
+    _insert_mvr_dated(db, MVR_ID_A, [SVC_ID], passed=False, date_iso="2026-01-15T14:30:00+01:00")
+    # UTC 14:30 (later)
+    _insert_mvr_dated(db, MVR_ID_B, [SVC_ID], passed=True, date_iso="2026-01-15T14:30:00+00:00")
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    eff = repo.get_effective_mvr_for_svc(SVC_ID)
+    assert eff is not None
+    assert eff.id == MVR_ID_B  # UTC 14:30 > UTC 13:30
+
+
+def test_get_effective_mvr_none_when_no_mvrs(db):
+    _insert_requirement(db)
+    _insert_svc(db, SVC_ID, req_ids=[REQ_ID])
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    assert repo.get_effective_mvr_for_svc(SVC_ID) is None
+
+
+def test_mvr_date_round_trips_through_db(db):
+    _insert_requirement(db)
+    _insert_svc(db, SVC_ID, req_ids=[REQ_ID])
+    original = _ts("2026-03-15T09:00:00+01:00")
+    mvr = MVRData(id=MVR_ID, passed=True, svc_ids=[SVC_ID], date=original)
+    db.insert_mvr(MVR_ID.urn, mvr)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    loaded = repo.get_all_mvrs()[MVR_ID]
+    assert loaded.date is not None
+    assert loaded.date == original  # TZ-aware equality preserves semantics
+
+
+# -- insert_test_result: duplicate FQN uses last-write-wins --
+
+
+def test_insert_test_result_duplicate_fqn_last_wins(db):
+    _insert_requirement(db)
+    _insert_svc(db)
+    db.insert_test_result(URN, "com.example.FooTest.testBar", TEST_RUN_STATUS.FAILED)
+    db.insert_test_result(URN, "com.example.FooTest.testBar", TEST_RUN_STATUS.PASSED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.FooTest.testBar")
+    db.insert_annotation_test(SVC_ID, ann)
+    results = repo.get_automated_test_results()
+    key = UrnId(urn=URN, id="com.example.FooTest.testBar")
+    assert results[key][0].status == TEST_RUN_STATUS.PASSED
+
+
+# -- VERIFICATIONPHASE round-trip --
+
+
+@pytest.mark.parametrize("phase", list(VERIFICATIONPHASE))
+def test_svc_phase_round_trip(db, phase):
+    _insert_requirement(db)
+    svc = SVCData(
+        id=SVC_ID,
+        title="SVC",
+        verification=VERIFICATIONTYPES.AUTOMATED_TEST,
+        phase=phase,
+        revision="1.0.0",
+        requirement_ids=[REQ_ID],
+    )
+    db.insert_svc(SVC_ID.urn, svc)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    svcs = repo.get_all_svcs()
+    assert svcs[SVC_ID].phase is phase

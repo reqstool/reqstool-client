@@ -7,7 +7,7 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
-from reqstool.models.svcs import VERIFICATIONTYPES
+from reqstool.models.svcs import VERIFICATIONPHASE, VERIFICATIONTYPES
 from reqstool.models.test_data import TEST_RUN_STATUS, TestData
 from reqstool.storage.requirements_repository import RequirementsRepository
 
@@ -97,8 +97,9 @@ class TotalStats:
 
 @Requirements("REQ_028")
 class StatisticsService:
-    def __init__(self, repository: RequirementsRepository):
+    def __init__(self, repository: RequirementsRepository, include_post_build: bool = False):
         self._repo = repository
+        self._include_post_build = include_post_build
         self._requirement_stats: dict[UrnId, RequirementStatus] = {}
         self._totals: TotalStats = TotalStats()
         self._calculate()
@@ -118,31 +119,29 @@ class StatisticsService:
     def _calculate(self):
         requirements = self._repo.get_all_requirements()
         all_svcs = self._repo.get_all_svcs()
-        all_mvrs = self._repo.get_all_mvrs()
         annotations_impls = self._repo.get_annotations_impls()
         annotations_tests = self._repo.get_annotations_tests()
         automated_test_results = self._repo.get_automated_test_results()
 
-        self._calculate_global_totals(all_svcs, all_mvrs, annotations_tests, automated_test_results)
+        self._calculate_global_totals(all_svcs, annotations_tests, automated_test_results)
 
         for urn_id, req_data in requirements.items():
             self._calculate_requirement_stats(
-                urn_id, req_data, all_svcs, all_mvrs, annotations_impls, annotations_tests, automated_test_results
+                urn_id, req_data, all_svcs, annotations_impls, annotations_tests, automated_test_results
             )
 
-    def _calculate_global_totals(self, all_svcs, all_mvrs, annotations_tests, automated_test_results):
+    def _calculate_global_totals(self, all_svcs, annotations_tests, automated_test_results):
         self._totals.total_svcs = len(all_svcs)
-        self._totals.total_manual_tests = len(all_mvrs)
         self._totals.total_annotated_tests = len(automated_test_results)
-        self._totals.total_tests = self._totals.total_annotated_tests + self._totals.total_manual_tests
 
-        for mvr_data in all_mvrs.values():
-            if mvr_data.passed:
-                self._totals.passed_tests += 1
-                self._totals.passed_manual_tests += 1
-            else:
-                self._totals.failed_tests += 1
-                self._totals.failed_manual_tests += 1
+        # Single aggregation query: one effective verdict per SVC, superseded excluded
+        eff_total, eff_passed, eff_failed = self._repo.get_effective_mvr_verdict_counts()
+        self._totals.total_manual_tests = eff_total
+        self._totals.passed_manual_tests = eff_passed
+        self._totals.failed_manual_tests = eff_failed
+        self._totals.passed_tests += eff_passed
+        self._totals.failed_tests += eff_failed
+        self._totals.total_tests = self._totals.total_annotated_tests + eff_total
 
         self._count_automated_test_totals(annotations_tests, automated_test_results)
 
@@ -168,19 +167,26 @@ class StatisticsService:
                                     self._totals.total_tests -= 1
 
     def _calculate_requirement_stats(
-        self, urn_id, req_data, all_svcs, all_mvrs, annotations_impls, annotations_tests, automated_test_results
+        self, urn_id, req_data, all_svcs, annotations_impls, annotations_tests, automated_test_results
     ):
         svcs_urn_ids = self._repo.get_svcs_for_req(urn_id)
         svcs = [all_svcs[sid] for sid in svcs_urn_ids if sid in all_svcs]
+        verdict_svcs = svcs if self._include_post_build else [s for s in svcs if s.phase == VERIFICATIONPHASE.BUILD]
+        verdict_svc_urn_ids = [s.id for s in verdict_svcs]
 
-        should_have_mvrs = any(svc.verification in EXPECTS_MVRS for svc in svcs)
-        should_have_automated_tests = any(svc.verification in EXPECTS_AUTOMATED_TESTS for svc in svcs)
+        should_have_mvrs = any(svc.verification in EXPECTS_MVRS for svc in verdict_svcs)
+        should_have_automated_tests = any(svc.verification in EXPECTS_AUTOMATED_TESTS for svc in verdict_svcs)
 
         nr_of_implementations = len(annotations_impls.get(urn_id, []))
 
-        mvr_stats = self._get_requirement_mvr_stats(svcs_urn_ids, all_mvrs, svcs, should_have_mvrs)
+        mvr_stats = self._get_requirement_mvr_stats(verdict_svc_urn_ids, verdict_svcs, should_have_mvrs)
         automated_test_stats = self._get_requirement_automated_stats(
-            svcs_urn_ids, all_svcs, annotations_tests, automated_test_results, svcs, should_have_automated_tests
+            verdict_svc_urn_ids,
+            all_svcs,
+            annotations_tests,
+            automated_test_results,
+            verdict_svcs,
+            should_have_automated_tests,
         )
 
         implementation_ok = self._check_implementation(
@@ -204,12 +210,30 @@ class StatisticsService:
 
         self._update_requirement_totals(req_data, nr_of_implementations, completed, automated_test_stats, mvr_stats)
 
-    def _get_requirement_mvr_stats(self, svcs_urn_ids, all_mvrs, svcs, should_have_mvrs):
+    def _get_requirement_mvr_stats(self, svcs_urn_ids, svcs, should_have_mvrs) -> TestStats:
         if not should_have_mvrs:
             return TestStats(not_applicable=True)
-        mvr_ids = [mid for svc_uid in svcs_urn_ids for mid in self._repo.get_mvrs_for_svc(svc_uid)]
-        mvrs = [all_mvrs[mid] for mid in mvr_ids if mid in all_mvrs]
-        return self._get_mvr_stats(mvrs=mvrs if mvrs else None, svcs=svcs)
+
+        total = 0
+        passed = 0
+        failed = 0
+        missing = 0
+        svc_map = {s.id: s for s in svcs}
+        for svc_uid in svcs_urn_ids:
+            svc = svc_map.get(svc_uid)
+            if svc is None or svc.verification not in EXPECTS_MVRS:
+                continue
+            effective = self._repo.get_effective_mvr_for_svc(svc_uid)
+            if effective is None:
+                missing += 1
+            elif effective.passed:
+                total += 1
+                passed += 1
+            else:
+                total += 1
+                failed += 1
+
+        return TestStats(total=total, passed=passed, failed=failed, missing=missing)
 
     def _get_requirement_automated_stats(
         self, svcs_urn_ids, all_svcs, annotations_tests, automated_test_results, svcs, should_have_automated_tests
@@ -294,16 +318,6 @@ class StatisticsService:
                     missing += 1
 
         return TestStats(total=total, passed=passed, failed=failed, skipped=skipped, missing=missing)
-
-    def _get_mvr_stats(self, mvrs, svcs) -> TestStats:
-        if not mvrs:
-            no_of_expected = sum(1 for svc in svcs if svc.verification in EXPECTS_MVRS)
-            return TestStats(missing=no_of_expected)
-
-        total = len(mvrs)
-        passed = sum(1 for mvr in mvrs if mvr.passed)
-        failed = total - passed
-        return TestStats(total=total, passed=passed, failed=failed)
 
     def _get_annotated_automated_test_results_for_req(
         self,

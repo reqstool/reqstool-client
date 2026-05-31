@@ -15,7 +15,7 @@ from reqstool.common.validators.syntax_validator import JsonSchemaTypes, SyntaxV
 from reqstool.filters.svcs_filters import SVCFilter
 from reqstool.model_generators.parsing_config import ParsingConfig
 from reqstool.models.generated.software_verification_cases_schema import Model as SVCsPydanticModel
-from reqstool.models.svcs import VERIFICATIONTYPES, SVCData, SVCsData
+from reqstool.models.svcs import VERIFICATIONPHASE, VERIFICATIONTYPES, SVCData, SVCsData
 
 
 class SVCsModelGenerator:
@@ -94,6 +94,7 @@ class SVCsModelGenerator:
                 title=case.title,
                 description=case.description,
                 verification=VERIFICATIONTYPES(case.verification.value),
+                phase=VERIFICATIONPHASE(case.phase.value) if case.phase else VERIFICATIONPHASE.BUILD,
                 instructions=case.instructions,
                 revision=Utils.parse_version(version_str=case.revision, urn_id=urn_id),
                 lifecycle=LifecycleData.from_dict(

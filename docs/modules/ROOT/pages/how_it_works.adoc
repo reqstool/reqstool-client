@@ -36,6 +36,16 @@ For each implementation node, `requirements.yml` is parsed (validation runs) but
 
 NOTE: `imports:` sections of implementation nodes are not followed — an implementation's own imports belong to a different scope.
 
+== MVR verdict and supersession
+
+`StatisticsService` computes the manual-test verdict for each SVC by calling `RequirementsRepository.get_effective_mvr_for_svc()`.
+When a SVC has multiple MVRs, the one with the *latest `date`* (UTC-normalised via SQLite's `datetime()` function so mixed timezone offsets compare correctly) is the verdict; all others are superseded.
+When a SVC has only one MVR — dated or undated — that entry is always the verdict.
+
+The global totals (`total_manual_tests`, `passed_manual_tests`, `failed_manual_tests`) are computed in a single SQL aggregation query and count one effective verdict per SVC, never superseded entries.
+
+See xref:usage.adoc#mvr-supersession[MVR supersession] for the YAML format rules and examples.
+
 == The `variant` field
 
 `variant: system/microservice/external` in `requirements.yml` is optional advisory metadata. It is not a behavioral gate — parsing is entirely presence-based. If a file exists, it is read. If a section exists in YAML, it is parsed.

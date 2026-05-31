@@ -261,3 +261,31 @@ def test_mcp_still_accepts_local_source():
     assert args.command == "mcp"
     assert args.source == "local"
     assert args.path == "/some/path"
+
+
+def test_status_with_post_tests_single_path():
+    args = _make_command_and_parse(["reqstool", "status", "--with-post-tests", "/tmp/e2e.xml", "local", "-p", "/tmp"])
+    assert args.command == "status"
+    assert args.with_post_tests == ["/tmp/e2e.xml"]
+
+
+def test_status_with_post_tests_multiple_paths():
+    args = _make_command_and_parse(
+        [
+            "reqstool",
+            "status",
+            "--with-post-tests",
+            "/tmp/e2e1.xml",
+            "--with-post-tests",
+            "/tmp/e2e2.xml",
+            "local",
+            "-p",
+            "/tmp",
+        ]
+    )
+    assert args.with_post_tests == ["/tmp/e2e1.xml", "/tmp/e2e2.xml"]
+
+
+def test_status_without_post_tests_defaults_to_none():
+    args = _make_command_and_parse(["reqstool", "status", "local", "-p", "/tmp"])
+    assert args.with_post_tests is None

@@ -5,6 +5,7 @@ import json
 import logging
 import shutil
 from enum import Enum
+from pathlib import Path
 
 from rich.columns import Columns
 from rich.console import Console
@@ -16,6 +17,7 @@ from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.location import LocationInterface
+from reqstool.model_generators.testdata_model_generator import TestDataModelGenerator
 from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
 from reqstool.models.svcs import SVCData
@@ -27,6 +29,7 @@ from reqstool.services.statistics_service import (
     TestStats,
     TotalStats,
 )
+from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
@@ -77,6 +80,7 @@ class StatusCommand:
         incomplete_only: bool = False,
         req_ids: list[str] | None = None,
         svc_ids: list[str] | None = None,
+        with_post_tests: list[str] | None = None,
     ):
         self.__initial_location: LocationInterface = location
         self.__format: str = format
@@ -84,6 +88,7 @@ class StatusCommand:
         self.__incomplete_only: bool = incomplete_only
         self.__req_ids: list[str] | None = req_ids
         self.__svc_ids: list[str] | None = svc_ids
+        self.__with_post_tests: list[str] | None = with_post_tests
 
         if self.__format == "json" and self.__verbosity != VerbosityLevel.NORMAL.value:
             logging.warning("--verbosity has no effect when --format json is used; ignoring")
@@ -96,7 +101,9 @@ class StatusCommand:
             semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
         ) as (db, _):
             repo = RequirementsRepository(db)
-            stats_service = StatisticsService(repo)
+            if self.__with_post_tests:
+                self.__inject_post_tests(db, repo.get_initial_urn(), self.__with_post_tests)
+            stats_service = StatisticsService(repo, include_post_build=bool(self.__with_post_tests))
 
             if self.__format == "json":
                 req_filter = None
@@ -122,6 +129,16 @@ class StatusCommand:
                 status,
                 ts.total_requirements - ts.completed_requirements,
             )
+
+    @staticmethod
+    def __inject_post_tests(db: RequirementsDatabase, initial_urn: str, paths: list[str]) -> None:
+        resolved = [Path(p).resolve() for p in paths]
+        missing = [p for p in resolved if not p.is_file()]
+        if missing:
+            raise FileNotFoundError(f"--with-post-tests: file(s) not found: {', '.join(str(p) for p in missing)}")
+        generator = TestDataModelGenerator(test_result_files=resolved, urn=initial_urn)
+        for urn_id, test_data in generator.model.tests.items():
+            db.insert_test_result(urn_id.urn, test_data.fully_qualified_name, test_data.status)
 
 
 def _filtered_status_dict(stats_service: StatisticsService, kept_req_ids: set | None) -> dict:

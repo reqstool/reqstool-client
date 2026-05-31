@@ -7,7 +7,7 @@ from reqstool.common.models.urn_id import UrnId
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.model_generators.svcs_model_generator import SVCsModelGenerator
-from reqstool.models.svcs import VERIFICATIONTYPES
+from reqstool.models.svcs import VERIFICATIONPHASE, VERIFICATIONTYPES
 
 SVCS_YML_FILE = "software_verification_cases.yml"
 URN = "ms-001"
@@ -47,6 +47,25 @@ def test_svcs_model_generator(svcs_model_generator, resource_funcname_rootdir_w_
     assert model.cases[UrnId(urn="ms-001", id="SVC_002")].verification == VERIFICATIONTYPES.MANUAL_TEST
     assert model.cases[UrnId(urn="ms-001", id="SVC_002")].instructions == "Some instructions"
     assert model.cases[UrnId(urn="ms-001", id="SVC_002")].revision.base_version == "0.0.2"
+
+
+def test_phase_default_is_build(svcs_model_generator):
+    cases = svcs_model_generator.model.cases
+    assert cases[UrnId(urn="ms-001", id="SVC_001")].phase == VERIFICATIONPHASE.BUILD
+    assert cases[UrnId(urn="ms-001", id="SVC_002")].phase == VERIFICATIONPHASE.BUILD
+
+
+def test_phase_post_build_model_generator(resource_funcname_rootdir_w_path):
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    gen = SVCsModelGenerator(
+        uri=resource_funcname_rootdir_w_path(SVCS_YML_FILE),
+        semantic_validator=semantic_validator,
+        urn=URN,
+    )
+    cases = gen.model.cases
+    assert cases[UrnId(urn=URN, id="SVC_001")].phase == VERIFICATIONPHASE.BUILD
+    assert cases[UrnId(urn=URN, id="SVC_002")].phase == VERIFICATIONPHASE.POST_BUILD
+    assert cases[UrnId(urn=URN, id="SVC_003")].phase == VERIFICATIONPHASE.BUILD
 
 
 def test_lifecycle_variable_model_generator(svcs_model_generator):
