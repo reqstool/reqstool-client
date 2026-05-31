@@ -108,7 +108,8 @@ The requirements table shows for each requirement:
 ** `framework` -- `framework`: fulfilled by framework auto-configuration (Spring Boot starters, OTel agents); no annotation required
 ** `N/A` -- not applicable, intentionally deferred, or out of scope; no annotation required
 * *Automated Tests* -- test results from JUnit XML: T=total SVCs, P=passed, F=failed, S=skipped, M=missing (no test found for SVC)
-* *Manual Tests* -- manual verification results: T=total, P=passed, F=failed, M=missing
+* *Manual Tests* -- manual verification results: T=total, P=passed, F=failed, M=missing.
+When multiple MVRs exist for the same SVC, only the one with the latest `date` counts (supersession); older ones are retained as audit history in the report but excluded from the verdict.
 
 The summary panels below the table break down requirements by implementation type.
 The `In Code` panel shows total, verified, annotated-not-verified, and missing-annotation counts (all percentages relative to in-code requirements).
@@ -119,6 +120,38 @@ The `N/A`, `Configuration`, `Platform`, and `Framework` panels each show three c
 * *Not Verified* -- count not yet verified, as a percentage of _this type_
 
 The exit code equals the number of unmet requirements, making it suitable for CI/CD gates (`exit 0` = all requirements met).
+
+[[mvr-supersession]]
+=== MVR supersession
+
+When a manual verification is repeated (for example, a first attempt fails and a corrected one passes), add both results as separate MVR entries and set a `date` on each.
+Reqstool selects the entry with the *latest date* as the effective verdict for that SVC.
+Older entries are retained as audit history and shown with a `(superseded)` marker in the report, but are excluded from the pass/fail computation.
+
+[source,yaml]
+----
+results:
+  - id: MVR_001
+    svc_ids: ["SVC_021"]
+    date: "2026-01-10T09:00:00Z"   # <1>
+    pass: false
+    comment: "XSD validation failed."
+
+  - id: MVR_002
+    svc_ids: ["SVC_021"]
+    date: "2026-01-15T14:30:00Z"   # <2>
+    pass: true
+    comment: "All fields present."
+----
+<1> Older entry — superseded, shown as history in the report.
+<2> Latest entry — effective verdict; this determines pass/fail.
+
+*`date` field rules:*
+
+* The `date` value must be a *timezone-aware ISO 8601 date-time* (RFC 3339), for example `"2026-01-15T14:30:00Z"` or `"2026-01-15T14:30:00+01:00"`. Note the required quotes — unquoted dates are parsed by YAML as `date` objects, not strings.
+* `date` is *optional* when only one MVR references a given SVC; the single entry is always the verdict regardless.
+* `date` is *required* on every MVR that references a given SVC as soon as more than one MVR does. A missing `date` in that situation is a semantic validation error.
+* Two MVRs for the same SVC with the *exact same UTC moment* are a validation error — add a time component to disambiguate (e.g. `T09:00:00Z` vs `T14:30:00Z`).
 
 [[report]]
 == Command: report
