@@ -7,7 +7,11 @@ import argparse
 import pytest
 
 from reqstool.command import Command, main
-from reqstool.commands.exit_codes import EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED, EXIT_CODE_ARTIFACT_ERROR, EXIT_CODE_MISSING_REQUIREMENTS_FILE
+from reqstool.commands.exit_codes import (
+    EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED,
+    EXIT_CODE_ARTIFACT_ERROR,
+    EXIT_CODE_MISSING_REQUIREMENTS_FILE,
+)
 from reqstool.common.exceptions import ArtifactDownloadError, MissingRequirementsFileError
 from reqstool.locations.local_npm_location import LocalNpmLocation
 from reqstool.locations.npm_location import NpmLocation

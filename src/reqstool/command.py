@@ -92,7 +92,13 @@ _LOCATION_DEFS = [
         "name": "npm",
         "help": "npm source",
         "args": [
-            {"flags": ["-u", "--url"], "kwargs": {"help": "npm-compatible registry URL (default: https://registry.npmjs.org)", "required": False}},
+            {
+                "flags": ["-u", "--url"],
+                "kwargs": {
+                    "help": "npm-compatible registry URL (default: https://registry.npmjs.org)",
+                    "required": False,
+                },
+            },
             {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the Bearer token"}},
             {"flags": ["--package"], "kwargs": {"help": "npm package name (e.g. @scope/package)", "required": True}},
             {"flags": ["--version"], "kwargs": {"help": "package version (e.g. 1.2.3)", "required": True}},
