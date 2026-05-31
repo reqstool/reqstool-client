@@ -4,9 +4,10 @@ The reqstool command line client is the core tool for managing requirements trac
 
 == Features
 
-* **Status checks** -- verify that all requirements are implemented and tested, with an exit code for CI/CD gates
+* **Status checks** -- verdict surface for developers and CI/CD: compact one-liner, per-requirement reason list, or full drill-down; exit code = unmet requirements
+* **Spec validation** -- check that every requirement has SVCs and every manual SVC has an MVR, without needing code or test results
 * **AsciiDoc reports** -- generate detailed reports for auditors and stakeholders
-* **JSON export** -- raw data export for custom tooling
+* **Data export** -- full dataset as JSON or binary SQLite for custom tooling
 
 == Quick links
 

@@ -57,7 +57,7 @@ See xref:usage.adoc#mvr-supersession[MVR supersession] for the YAML format rules
 @startuml
 !include <C4/C4_Component>
 
-Component(Command, "Command", "Handles user commands (status, report, export)")
+Component(Command, "Command", "Handles user commands (status, validate, report, export)")
 Component(CombinedRawDatasetsGenerator, "CombinedRawDatasetsGenerator", "Two-phase graph traversal and SQLite population")
 Component(DatabaseFilterProcessor, "DatabaseFilterProcessor", "Post-parse requirement/SVC filtering")
 Component(RequirementsRepository, "RequirementsRepository", "Data access layer over SQLite")
@@ -109,7 +109,7 @@ Rel(reqsTool, impl_reqs, "parse + metadata only")
 Rel(reqsTool, impl_svcs, "parse + FK-scoped insert")
 Rel(reqsTool, impl_tests, "parse + scoped insert")
 Rel(reqsTool, reqsTool, "post-parse: delete impl-child requirements")
-Rel(reqsTool, user, "status table (exit code = unmet requirements)")
+Rel(reqsTool, user, "status verdict (exit code = unmet requirements)")
 
 @enduml
 ....

@@ -58,6 +58,25 @@ class ExportService:
             "test_results": self._build_test_results_dict(automated_test_results),
         }
 
+    def resolve_filter_scope(
+        self,
+        req_ids: list[str] | None,
+        svc_ids: list[str] | None,
+        initial_urn: str,
+    ) -> tuple[set, set]:
+        """Return (kept_req_ids, kept_svc_ids) after resolving and expanding relationships."""
+        all_reqs = self._repo.get_all_requirements()
+        all_svcs = self._repo.get_all_svcs()
+
+        resolved_req_ids = self._resolve_ids(req_ids, initial_urn, all_reqs, "Requirement ID")
+        resolved_svc_ids = self._resolve_ids(svc_ids, initial_urn, all_svcs, "SVC ID")
+
+        self._expand_related_svcs(resolved_req_ids, resolved_svc_ids, all_svcs)
+        if svc_ids and not req_ids:
+            self._expand_related_reqs(resolved_svc_ids, resolved_req_ids, all_svcs, all_reqs)
+
+        return resolved_req_ids, resolved_svc_ids
+
     def _apply_id_filters(
         self,
         req_ids,
