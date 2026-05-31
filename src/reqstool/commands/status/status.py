@@ -20,7 +20,13 @@ from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
 from reqstool.models.svcs import SVCData
 from reqstool.services.export_service import ExportService
-from reqstool.services.statistics_service import EXPECTS_MVRS, RequirementStatus, StatisticsService, TestStats, TotalStats
+from reqstool.services.statistics_service import (
+    EXPECTS_MVRS,
+    RequirementStatus,
+    StatisticsService,
+    TestStats,
+    TotalStats,
+)
 from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
@@ -97,12 +103,8 @@ class StatusCommand:
                 if self.__req_ids or self.__svc_ids:
                     initial_urn = repo.get_initial_urn()
                     export_service = ExportService(repo)
-                    req_filter, _ = export_service.resolve_filter_scope(
-                        self.__req_ids, self.__svc_ids, initial_urn
-                    )
-                status = json.dumps(
-                    _filtered_status_dict(stats_service, req_filter), indent=2
-                )
+                    req_filter, _ = export_service.resolve_filter_scope(self.__req_ids, self.__svc_ids, initial_urn)
+                status = json.dumps(_filtered_status_dict(stats_service, req_filter), indent=2)
             else:
                 level = VerbosityLevel(self.__verbosity)
                 match level:
@@ -311,9 +313,7 @@ def _build_drill_down_block(
     return "\n".join(lines)
 
 
-def _render_mvrs(
-    svc_uid: UrnId, all_mvrs: dict[UrnId, MVRData], repo: RequirementsRepository
-) -> list[str]:
+def _render_mvrs(svc_uid: UrnId, all_mvrs: dict[UrnId, MVRData], repo: RequirementsRepository) -> list[str]:
     mvr_ids = repo.get_mvrs_for_svc(svc_uid)
     if not mvr_ids:
         return ["                     ⌀ no manual result"]
@@ -323,7 +323,7 @@ def _render_mvrs(
         if mvr is None:
             continue
         icon = "✓" if mvr.passed else "✗"
-        comment = f"  \"{mvr.comment}\"" if mvr.comment else ""
+        comment = f'  "{mvr.comment}"' if mvr.comment else ""
         lines.append(f"                     {icon} {mvr_uid.id}{comment}")
     return lines
 

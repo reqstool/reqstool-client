@@ -189,7 +189,8 @@ def test_status_incomplete_flag_hides_complete_section(local_testdata_resources_
     assert "INCOMPLETE" in status
     # "COMPLETE (" is a substring of "INCOMPLETE ("; check the standalone COMPLETE section is absent
     import re
-    assert not re.search(r'(?<![A-Z])COMPLETE \(', status)
+
+    assert not re.search(r"(?<![A-Z])COMPLETE \(", status)
 
 
 @SVCs("SVC_021")
