@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS svcs (
     verification_type TEXT NOT NULL CHECK (verification_type IN (
         'automated-test', 'manual-test', 'review', 'platform', 'other'
     )),
+    phase TEXT NOT NULL DEFAULT 'build' CHECK (phase IN ('build', 'post-build')),
     lifecycle_state TEXT NOT NULL CHECK (lifecycle_state IN ('draft', 'effective', 'deprecated', 'obsolete')),
     lifecycle_reason TEXT,
     description TEXT,

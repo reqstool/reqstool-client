@@ -10,7 +10,7 @@ from reqstool.models.requirements import (
     SIGNIFICANCETYPES,
     RequirementData,
 )
-from reqstool.models.svcs import SVCData, VERIFICATIONTYPES
+from reqstool.models.svcs import SVCData, VERIFICATIONPHASE, VERIFICATIONTYPES
 from reqstool.models.test_data import TEST_RUN_STATUS
 from reqstool.services.statistics_service import StatisticsService, TestStats
 from reqstool.storage.database import RequirementsDatabase
@@ -43,11 +43,18 @@ def _insert_req(db, req_id=REQ_ID, implementation=IMPLEMENTATION.IN_CODE):
     db.insert_requirement(req_id.urn, req)
 
 
-def _insert_svc(db, svc_id=SVC_ID, req_ids=None, verification=VERIFICATIONTYPES.AUTOMATED_TEST):
+def _insert_svc(
+    db,
+    svc_id=SVC_ID,
+    req_ids=None,
+    verification=VERIFICATIONTYPES.AUTOMATED_TEST,
+    phase=VERIFICATIONPHASE.BUILD,
+):
     svc = SVCData(
         id=svc_id,
         title="SVC",
         verification=verification,
+        phase=phase,
         revision="1.0.0",
         requirement_ids=req_ids or [REQ_ID],
     )
@@ -337,3 +344,142 @@ def test_total_stats_non_code_properties_all_zero():
     ts = TotalStats()
     assert ts.non_code_total == 0
     assert ts.non_code_completed == 0
+
+
+# -- phase: post-build --
+
+
+def test_post_build_svc_is_non_gating_by_default(db):
+    _insert_req(db)
+    _insert_svc(db, phase=VERIFICATIONPHASE.POST_BUILD)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.E2ETest.testFlow")
+    db.insert_annotation_test(SVC_ID, ann)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    # No include_post_build — post-build SVC should be non-gating; req still incomplete due to no impl verdict
+    stats = StatisticsService(repo, include_post_build=False)
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    # automated_tests should be not_applicable (no build-phase automated-test SVCs)
+    assert req_status.automated_tests.not_applicable is True
+    # requirement is incomplete because there are no build-phase SVCs to verify against
+    assert req_status.completed is False
+
+
+def test_post_build_svc_gates_when_include_post_build_true_and_test_passes(db):
+    _insert_req(db)
+    _insert_svc(db, phase=VERIFICATIONPHASE.POST_BUILD)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.E2ETest.testFlow")
+    db.insert_annotation_test(SVC_ID, ann)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.insert_test_result(URN, "com.example.E2ETest.testFlow", TEST_RUN_STATUS.PASSED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo, include_post_build=True)
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    assert req_status.automated_tests.passed == 1
+    assert req_status.completed is True
+
+
+def test_post_build_svc_gates_when_include_post_build_true_and_test_missing(db):
+    _insert_req(db)
+    _insert_svc(db, phase=VERIFICATIONPHASE.POST_BUILD)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.E2ETest.testFlow")
+    db.insert_annotation_test(SVC_ID, ann)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo, include_post_build=True)
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    assert req_status.automated_tests.missing == 1
+    assert req_status.completed is False
+
+
+def test_build_svc_gates_regardless_of_include_post_build(db):
+    _insert_req(db)
+    svc_build = UrnId(urn=URN, id="SVC_BUILD")
+    _insert_svc(db, svc_id=svc_build, phase=VERIFICATIONPHASE.BUILD)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.UnitTest.testUnit")
+    db.insert_annotation_test(svc_build, ann)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.insert_test_result(URN, "com.example.UnitTest.testUnit", TEST_RUN_STATUS.PASSED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo, include_post_build=False)
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    assert req_status.automated_tests.passed == 1
+    assert req_status.completed is True
+
+
+def test_mixed_phase_only_build_svc_gates_by_default(db):
+    _insert_req(db)
+    svc_build = UrnId(urn=URN, id="SVC_BUILD")
+    svc_post = UrnId(urn=URN, id="SVC_POST")
+    _insert_svc(db, svc_id=svc_build, phase=VERIFICATIONPHASE.BUILD)
+    _insert_svc(db, svc_id=svc_post, phase=VERIFICATIONPHASE.POST_BUILD)
+    ann_unit = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.UnitTest.testUnit")
+    ann_e2e = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.E2ETest.testFlow")
+    db.insert_annotation_test(svc_build, ann_unit)
+    db.insert_annotation_test(svc_post, ann_e2e)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.insert_test_result(URN, "com.example.UnitTest.testUnit", TEST_RUN_STATUS.PASSED)
+    # No e2e result inserted
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo, include_post_build=False)
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    # Build SVC passed; post-build SVC non-gating → requirement completed
+    assert req_status.automated_tests.passed == 1
+    assert req_status.completed is True
+
+
+def test_statistics_service_default_excludes_post_build(db):
+    _insert_req(db)
+    _insert_svc(db, phase=VERIFICATIONPHASE.POST_BUILD)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.E2ETest.testFlow")
+    db.insert_annotation_test(SVC_ID, ann)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo)  # no include_post_build kwarg — default is False
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    assert req_status.automated_tests.not_applicable is True
+
+
+def test_post_build_manual_test_svc_is_non_gating_by_default(db):
+    _insert_req(db, implementation=IMPLEMENTATION.NOT_APPLICABLE)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST, phase=VERIFICATIONPHASE.POST_BUILD)
+    _insert_mvr(db, passed=True)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo, include_post_build=False)
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    assert req_status.manual_tests.not_applicable is True
+
+
+def test_post_build_manual_test_svc_gates_when_include_post_build_true(db):
+    _insert_req(db, implementation=IMPLEMENTATION.NOT_APPLICABLE)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST, phase=VERIFICATIONPHASE.POST_BUILD)
+    _insert_mvr(db, passed=True)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    stats = StatisticsService(repo, include_post_build=True)
+
+    req_status = stats.requirement_statistics[REQ_ID]
+    assert req_status.manual_tests.passed == 1
+    assert req_status.completed is True
