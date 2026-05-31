@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
+
+metadata:
+  urn: ts-001
+  variant: microservice
+  title: Test npm location parsing
+
+imports:
+  npm:
+    - env_token: "NPM_TOKEN"
+      url: https://my.registry.example.com
+      package: "@my-org/my-service-reqstool"
+      version: 1.2.3
+
+    - package: my-lib-reqstool
+      version: 0.5.0
+
+implementations:
+  npm:
+    - package: "@my-org/my-impl-reqstool"
+      version: 2.0.0
+
+requirements:
+  - id: REQ_001
+    title: Test requirement
+    significance: shall
+    description: Test
+    categories: ["functional-suitability"]
+    revision: 0.0.1

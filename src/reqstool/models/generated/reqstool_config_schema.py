@@ -24,10 +24,12 @@ class Build(StrEnum):
     The build tool used for the project.
     """
 
+    bun = 'bun'
     gradle = 'gradle'
     hatch = 'hatch'
     maven = 'maven'
     npm = 'npm'
+    pnpm = 'pnpm'
     poetry = 'poetry'
     yarn = 'yarn'
 

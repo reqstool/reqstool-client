@@ -2,11 +2,19 @@
 
 from unittest.mock import patch
 
+import argparse
+
 import pytest
 
 from reqstool.command import Command, main
-from reqstool.commands.exit_codes import EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED, EXIT_CODE_MISSING_REQUIREMENTS_FILE
-from reqstool.common.exceptions import MissingRequirementsFileError
+from reqstool.commands.exit_codes import (
+    EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED,
+    EXIT_CODE_ARTIFACT_ERROR,
+    EXIT_CODE_MISSING_REQUIREMENTS_FILE,
+)
+from reqstool.common.exceptions import ArtifactDownloadError, MissingRequirementsFileError
+from reqstool.locations.local_npm_location import LocalNpmLocation
+from reqstool.locations.npm_location import NpmLocation
 
 
 # ---------------------------------------------------------------------------
@@ -166,6 +174,80 @@ def test_pypi_source_parser_requires_package_and_version():
     assert args.source == "pypi"
     assert args.package == "my-package"
     assert args.version == "2.3.4"
+
+
+def test_npm_source_parser_requires_package_and_version():
+    args = _make_command_and_parse(["reqstool", "report", "npm", "--package", "@scope/my-pkg", "--version", "1.2.3"])
+    assert args.command == "report"
+    assert args.source == "npm"
+    assert args.package == "@scope/my-pkg"
+    assert args.version == "1.2.3"
+
+
+def test_npm_source_parser_accepts_custom_url_and_token():
+    args = _make_command_and_parse(
+        [
+            "reqstool",
+            "report",
+            "npm",
+            "--package",
+            "my-pkg",
+            "--version",
+            "1.0.0",
+            "--url",
+            "https://my.registry.example.com",
+            "--env_token",
+            "NPM_TOKEN",
+        ]
+    )
+    assert args.url == "https://my.registry.example.com"
+    assert args.env_token == "NPM_TOKEN"
+
+
+def test_local_source_parser_accepts_npm_path_arg():
+    args = _make_command_and_parse(["reqstool", "report", "local", "--npm", "path/to/pkg.tgz"])
+    assert args.source == "local"
+    assert args.npm == "path/to/pkg.tgz"
+
+
+def test_get_initial_source_npm_returns_npm_location():
+    args = argparse.Namespace(source="npm", package="my-pkg-reqstool", version="1.0.0", url=None, env_token=None)
+    loc = Command()._get_initial_source(args)
+    assert isinstance(loc, NpmLocation)
+    assert loc.package == "my-pkg-reqstool"
+    assert loc.version == "1.0.0"
+    assert loc.url == "https://registry.npmjs.org"
+
+
+def test_get_initial_source_npm_with_custom_url():
+    args = argparse.Namespace(
+        source="npm",
+        package="my-pkg-reqstool",
+        version="1.0.0",
+        url="https://my.registry.example.com",
+        env_token="NPM_TOKEN",
+    )
+    loc = Command()._get_initial_source(args)
+    assert isinstance(loc, NpmLocation)
+    assert loc.url == "https://my.registry.example.com"
+    assert loc.env_token == "NPM_TOKEN"
+
+
+def test_get_initial_source_local_npm_returns_local_npm_location():
+    args = argparse.Namespace(source="local", npm="path/to/pkg.tgz", maven=None, pypi=None, path=None)
+    loc = Command()._get_initial_source(args)
+    assert isinstance(loc, LocalNpmLocation)
+    assert loc.path == "path/to/pkg.tgz"
+
+
+def test_artifact_download_error_exits_with_correct_code():
+    with (
+        patch.object(Command, "command_report", side_effect=ArtifactDownloadError("download failed")),
+        patch("sys.argv", ["reqstool", "report", "local", "-p", "/tmp"]),
+        patch("sys.exit") as mock_exit,
+    ):
+        main()
+        mock_exit.assert_any_call(EXIT_CODE_ARTIFACT_ERROR)
 
 
 def test_mcp_parses_without_source():

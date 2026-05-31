@@ -18,10 +18,12 @@
     "build": {
       "type": "string",
       "enum": [
+        "bun",
         "gradle",
         "hatch",
         "maven",
         "npm",
+        "pnpm",
         "poetry",
         "yarn"
       ],
