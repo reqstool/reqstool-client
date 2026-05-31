@@ -2,7 +2,7 @@
 
 [source,bash]
 ----
-reqstool [-h] {command: report,export,status} {location: local,git,maven,pypi} ...
+reqstool [-h] {command: report,export,status,validate} {location: local,git,maven,pypi} ...
 ----
 
 Use `-h/--help` for more information about each command and location.
@@ -63,62 +63,99 @@ imports:
 [[status]]
 == Command: status
 
-Shows the status of all requirements -- whether they are implemented, have passing tests, and have manual verification results.
+Verdict surface for developers and CI/CD: shows which requirements are met, why the unmet ones are failing, and exits with the number of unmet requirements (`exit 0` = all met).
 
 *Usage:*
 [source,bash]
 ----
-reqstool status local -p path_to_dir
+reqstool status [--verbosity compact|normal|verbose|extra-verbose] [--incomplete] [--format console|json] \
+    local -p path_to_dir [--req-ids ID...] [--svc-ids ID...]
+----
+
+Options:
+
+* `--verbosity` -- console detail level (default: `normal`); ignored for `--format json`
+* `--incomplete` -- show only incomplete requirements (console only)
+* `--format` -- `console` (default) or `json`
+* `--req-ids` / `--svc-ids` -- scope JSON output to specific IDs (must follow the location subcommand)
+* `--check-all-reqs-met` -- exit 1 unless every requirement is met
+
+=== Verbosity levels
+
+[cols="1,4"]
+|===
+| Level | Output
+
+| `compact`
+| Single line -- ideal for CI logs.
+`ms-001: 6 requirements · 1 complete · 5 incomplete · FAIL`
+
+| `normal` *(default)*
+| Verdict list grouped COMPLETE first, then INCOMPLETE with one reason per line.
+Actionable failures appear nearest the prompt.
+
+| `verbose`
+| Per-requirement table (URN / ID / Implementation / Automated Tests / Manual Tests).
+
+| `extra-verbose`
+| Verdict list with full drill-down per incomplete requirement: SVCs, individual test results (✓/✗), MVR pass/fail, and implementation annotations.
+|===
+
+*Example -- `normal` output:*
+[source]
+----
+Requirements status · ms-001
+
+COMPLETE (1)
+  REQ_ext001_100      ext-001
+
+INCOMPLETE (5)
+  REQ_010             ms-001      automated test failed (2/3 passed)
+  REQ_020             ms-001      manual verification failed
+  REQ_sys001_505      sys-001     not implemented · automated test missing · manual result missing
+  REQ_ext002_300      ext-002     automated test missing
+  REQ_ext002_400      ext-002     manual result missing
+
+1/6 complete · 5 incomplete · FAIL
+----
+
+*Example -- show only what's still missing:*
+[source,bash]
+----
+reqstool status --incomplete --verbosity extra-verbose local -p path_to_dir
+----
+
+[[validate]]
+== Command: validate
+
+Checks spec completeness using only authored data (`requirements.yml`, `svcs.yml`, `mvrs.yml`) -- no code or test results required.
+Useful while authoring requirements, before any implementation exists.
+
+Checks performed:
+
+* Every requirement has at least one SVC defined.
+* Every manual SVC has at least one MVR defined.
+* All SVC/MVR/annotation cross-references point to existing IDs (referential integrity via `SemanticValidator`).
+
+Referential errors are always fatal (exit 1). Coverage gaps are warnings by default; use `--strict` to promote them to errors (CI gate for spec completeness).
+
+*Usage:*
+[source,bash]
+----
+reqstool validate [--strict] local -p path_to_dir
 ----
 
 *Example output:*
 [source]
 ----
-╒═══════════════════════════════════════════════════════════════════════════╕
-│                              REQUIREMENTS: 6                             │
-╘═══════════════════════════════════════════════════════════════════════════╛
-╒═════════╤════════════════╤══════════════════╤═══════════════════╤════════════════╕
-│   URN   │       ID       │  Implementation  │  Automated Tests  │  Manual Tests  │
-╞═════════╪════════════════╪══════════════════╪═══════════════════╪════════════════╡
-│ ms-001  │    REQ_010     │   Implemented    │    T3 P2 F1 M1    │     T1 P1      │
-├─────────┼────────────────┼──────────────────┼───────────────────┼────────────────┤
-│ ms-001  │    REQ_020     │   Implemented    │     T1 P1 M1      │     T1 F1      │
-├─────────┼────────────────┼──────────────────┼───────────────────┼────────────────┤
-│ sys-001 │ REQ_sys001_505 │     Missing      │     T1 P1 M2      │     T0 M1      │
-├─────────┼────────────────┼──────────────────┼───────────────────┼────────────────┤
-│ ext-001 │ REQ_ext001_100 │   Implemented    │        N/A        │     T1 P1      │
-├─────────┼────────────────┼──────────────────┼───────────────────┼────────────────┤
-│ ext-002 │ REQ_ext002_300 │   Implemented    │       T0 M1       │      N/A       │
-├─────────┼────────────────┼──────────────────┼───────────────────┼────────────────┤
-│ ext-002 │ REQ_ext002_400 │   Implemented    │     T1 P1 M1      │     T0 M1      │
-╘═════════╧════════════════╧══════════════════╧═══════════════════╧════════════════╛
-╒═══════════╤════════════╤════════════╤═════════════╤═════════════╕
-│ T = Total │ P = Passed │ F = Failed │ S = Skipped │ M = Missing │
-╘═══════════╧════════════╧════════════╧═════════════╧═════════════╛
+Validating reqstool setup · ms-001
+
+⚠ ms-001:SVC_026    manual-test — no MVR defined
+⚠ sys-001:SVC_sys001_600    manual-test — no MVR defined
+
+2 warnings
+  (use --strict to treat warnings as errors)
 ----
-
-The requirements table shows for each requirement:
-
-* *URN* -- the source system or microservice
-* *ID* -- the requirement identifier
-* *Implementation* -- how the requirement is fulfilled, determined by the `implementation` field in `requirements.yml`:
-** a number (green/red) -- `in-code` (default): count of `@Requirements` annotations found; red means none found
-** `configuration` -- `configuration`: fulfilled by application config (YAML properties, env vars); no annotation required
-** `platform` -- `platform`: fulfilled by infrastructure or platform layer (Kubernetes, load balancing, network policies); no annotation required
-** `framework` -- `framework`: fulfilled by framework auto-configuration (Spring Boot starters, OTel agents); no annotation required
-** `N/A` -- not applicable, intentionally deferred, or out of scope; no annotation required
-* *Automated Tests* -- test results from JUnit XML: T=total SVCs, P=passed, F=failed, S=skipped, M=missing (no test found for SVC)
-* *Manual Tests* -- manual verification results: T=total, P=passed, F=failed, M=missing
-
-The summary panels below the table break down requirements by implementation type.
-The `In Code` panel shows total, verified, annotated-not-verified, and missing-annotation counts (all percentages relative to in-code requirements).
-The `N/A`, `Configuration`, `Platform`, and `Framework` panels each show three columns:
-
-* *Total (% of all)* -- count of this type, as a percentage of _all_ requirements; shows the type's share of the full requirement set
-* *Verified* -- count verified, as a percentage of _this type_
-* *Not Verified* -- count not yet verified, as a percentage of _this type_
-
-The exit code equals the number of unmet requirements, making it suitable for CI/CD gates (`exit 0` = all requirements met).
 
 [[report]]
 == Command: report
@@ -150,37 +187,26 @@ This command still works but delegates to the `report` command with `--format as
 [[export]]
 == Command: export
 
-Exports requirement data in the specified format, with optional filters for specific requirements or SVCs.
+Full data dump for interchange, archival, and tooling.
+Two serialization formats of the same dataset:
+
+* `json` (default) -- structured JSON conforming to `export_output.schema.json`
+* `sqlite` -- binary SQLite database written via the SQLite backup API; requires `-o <file>`
 
 *Usage:*
 [source,bash]
 ----
 reqstool export local -p path_to_requirements_dir -o path_to_output_file.json
+reqstool export --format sqlite local -p path_to_requirements_dir -o path_to_output.db
 reqstool export local -p path_to_requirements_dir --req-ids REQ_001 REQ_002
 reqstool export local -p path_to_requirements_dir --svc-ids SVC_001
 ----
 
 Options:
 
-* `--format` -- output format (default: `json`)
-* `--req-ids` -- filter by specific requirement IDs
-* `--svc-ids` -- filter by specific SVC IDs
+* `--format` -- `json` (default) or `sqlite`
+* `--req-ids` / `--svc-ids` -- filter JSON output to specific IDs (must follow the location subcommand)
 * `--no-filters` -- disable requirement/SVC filters defined in YAML
-
-[[generate-json]]
-== Command: generate-json (deprecated)
-
-WARNING: `generate-json` is deprecated. Use `export --format json` instead.
-
-Exports all requirement data as JSON.
-
-*Usage:*
-[source,bash]
-----
-reqstool generate-json local -p path_to_requirements_dir -o path_to_output_file.json
-----
-
-NOTE: There is currently no JSON Schema for this file and it is a raw dump of the data structures using https://github.com/jsonpickle/jsonpickle[jsonpickle]. The format might change at any time.
 
 == Using the Docker image
 
