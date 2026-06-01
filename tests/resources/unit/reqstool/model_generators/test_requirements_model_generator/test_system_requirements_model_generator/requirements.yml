@@ -7,7 +7,7 @@ metadata:
 
 imports:
   git:
-    - env_token: "GITLAB_TOKEN"
+    - token: "GITLAB_TOKEN"
       url: https://gitlab.sys-example.com
       ref: feature/sys
       path: /some/path
@@ -15,7 +15,7 @@ imports:
     - path: /some/local-sys-path
 
   maven:
-    - env_token: "MAVEN_TOKEN"
+    - token: "MAVEN_TOKEN"
       url: https://repo.maven.org
       group_id: com.example.one
       artifact_id: test-one
@@ -27,7 +27,7 @@ imports:
       version: 0.0.2
 
   pypi:
-    - env_token: "PYPI_TOKEN"
+    - token: "PYPI_TOKEN"
       url: https://example.com/simple/
       package: package1
       version: 1.0.0
@@ -51,7 +51,7 @@ filters:
 
 implementations: # only used with type = system
   git:
-    - env_token: GITLAB_TOKEN
+    - token: GITLAB_TOKEN
       url: https://gitlab.impl-example.com
       ref: feature/impl
       path: README.md
@@ -59,14 +59,14 @@ implementations: # only used with type = system
   local: # for future use
     - path: /some/local-impl-path
   maven:
-    - env_token: "MAVEN_TOKEN"
+    - token: "MAVEN_TOKEN"
       url: https://repo.maven.org
       group_id: com.example.one
       artifact_id: test-one
       version: 0.0.1
       classifier: classifier1
 
-    - env_token: "MAVEN_TOKEN"
+    - token: "MAVEN_TOKEN"
       url: https://repo2.maven.org
       group_id: com.example.two
       artifact_id: test-two

@@ -109,9 +109,9 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "env_token": {
+                "token": {
                     "type": "string",
-                    "description": "Token to authenticate. E.g. GITLAB_TOKEN or empty."
+                    "description": "Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${GITLAB_TOKEN}."
                 },
                 "ref": {
                     "type": "string",
@@ -135,9 +135,9 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "env_token": {
+                "token": {
                     "type": "string",
-                    "description": "Token to authenticate. E.g. MAVEN_TOKEN or empty."
+                    "description": "Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${MAVEN_TOKEN}."
                 },
                 "url": {
                     "$ref": "#/$defs/url",
@@ -171,9 +171,9 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "env_token": {
+                "token": {
                     "type": "string",
-                    "description": "Token to authenticate. E.g. NPM_TOKEN or empty."
+                    "description": "Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${NPM_TOKEN}."
                 },
                 "url": {
                     "$ref": "#/$defs/url",
@@ -198,9 +198,9 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "env_token": {
+                "token": {
                     "type": "string",
-                    "description": "Token to authenticate. E.g. PYPI_TOKEN or empty."
+                    "description": "Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${PYPI_TOKEN}."
                 },
                 "url": {
                     "$ref": "#/$defs/url",

@@ -1,7 +1,6 @@
 # Copyright © LFV
 
 import logging
-import os
 from typing import Optional
 
 from maven_artifact import Artifact, Downloader, RequestException
@@ -19,13 +18,13 @@ class MavenLocation(LocationInterface):
     artifact_id: str
     version: str
     classifier: str = "reqstool"
-    env_token: Optional[str] = None
+    token: Optional[str] = None
 
     def tmpdir_key(self) -> str:
         return make_safe_tmpdir_suffix("maven", f"{self.group_id}:{self.artifact_id}:{self.version}")
 
     def _make_available_on_localdisk(self, dst_path: str):
-        token = os.getenv(self.env_token) if self.env_token else None
+        token = self.token
 
         # assume OAuth Bearer, see: https://georgearisty.dev/posts/oauth2-token-bearer-usage/
         downloader = Downloader(base=self.url, token=token)

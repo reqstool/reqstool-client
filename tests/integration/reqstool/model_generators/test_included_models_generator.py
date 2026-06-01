@@ -12,11 +12,8 @@ from reqstool.locations.maven_location import MavenLocation
 from reqstool.model_generators import combined_raw_datasets_generator
 
 
-def choose_token() -> str:
-    if os.getenv("GITHUB_TOKEN"):
-        return "GITHUB_TOKEN"
-    else:
-        return "GITLAB_TOKEN"
+def choose_token():
+    return os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")
 
 
 @SVCs("SVC_002")
@@ -30,7 +27,7 @@ def test_basic_git():
 
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
         initial_location=GitLocation(
-            env_token=choose_token(),
+            token=choose_token(),
             url="https://github.com/reqstool/reqstool-client.git",
             path="tests/resources/test_data/data/remote/test_standard/test_standard_maven_git/ms-001",
             ref="main",
@@ -51,7 +48,7 @@ def test_basic_maven():
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
         # Setup
         initial_location=MavenLocation(
-            env_token=choose_token(),
+            token=choose_token(),
             url="https://maven.pkg.github.com/reqstool/reqstool-demo",
             group_id="se.lfv.reqstool",
             artifact_id="reqstool-demo",

@@ -1,7 +1,6 @@
 # Copyright © LFV
 
 import logging
-import os
 import re
 from typing import Optional
 
@@ -21,7 +20,7 @@ _VALID_REF_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._/\-]*$")
 class GitLocation(LocationInterface):
     url: str
     ref: str
-    env_token: Optional[str] = None
+    token: Optional[str] = None
     path: str = ""
 
     @field_validator("ref")
@@ -44,7 +43,7 @@ class GitLocation(LocationInterface):
         return make_safe_tmpdir_suffix("git", f"{urlunparse(parsed)}@{self.ref}")
 
     def _make_available_on_localdisk(self, dst_path: str) -> str:
-        api_token = os.getenv(self.env_token) if self.env_token else None
+        api_token = self.token
 
         repo = clone_repository(url=self.url, path=dst_path, callbacks=self.MyRemoteCallbacks(api_token))
 

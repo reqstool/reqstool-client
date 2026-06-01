@@ -1,5 +1,7 @@
 # Copyright © reqstool
 
+import os
+
 import pytest
 
 from integration.reqstool.model_generators._regression_shared import (
@@ -28,7 +30,7 @@ def _make_generator(path: str, tmpdir_manager=None):
     holder = ValidationErrorHolder()
     gen = combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
         initial_location=GitLocation(
-            env_token=_GITHUB_TOKEN_ENV,
+            token=os.getenv(_GITHUB_TOKEN_ENV),
             url=_REGRESSION_REPO_URL,
             ref=_REGRESSION_REPO_REF,
             path=path,

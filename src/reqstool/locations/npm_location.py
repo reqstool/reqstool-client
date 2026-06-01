@@ -1,7 +1,6 @@
 # Copyright © LFV
 
 import logging
-import os
 import tarfile
 from typing import Optional
 from urllib.parse import quote, urlparse
@@ -21,7 +20,7 @@ class NpmLocation(LocationInterface):
     url: str = "https://registry.npmjs.org"
     package: str
     version: str
-    env_token: Optional[str] = None
+    token: Optional[str] = None
 
     @field_validator("url")
     @classmethod
@@ -34,8 +33,8 @@ class NpmLocation(LocationInterface):
         return make_safe_tmpdir_suffix("npm", f"{self.package}@{self.version}")
 
     def _make_available_on_localdisk(self, dst_path: str):
-        """Resolve token → fetch tarball URL → SSRF check → download → extract."""
-        token = os.getenv(self.env_token) if self.env_token else None
+        """Fetch tarball URL → SSRF check → download → extract."""
+        token = self.token
 
         try:
             tarball_url = self._get_tarball_url(token)

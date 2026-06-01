@@ -196,12 +196,12 @@ def test_npm_source_parser_accepts_custom_url_and_token():
             "1.0.0",
             "--url",
             "https://my.registry.example.com",
-            "--env_token",
+            "--token",
             "NPM_TOKEN",
         ]
     )
     assert args.url == "https://my.registry.example.com"
-    assert args.env_token == "NPM_TOKEN"
+    assert args.token == "NPM_TOKEN"
 
 
 def test_local_source_parser_accepts_npm_path_arg():
@@ -211,7 +211,7 @@ def test_local_source_parser_accepts_npm_path_arg():
 
 
 def test_get_initial_source_npm_returns_npm_location():
-    args = argparse.Namespace(source="npm", package="my-pkg-reqstool", version="1.0.0", url=None, env_token=None)
+    args = argparse.Namespace(source="npm", package="my-pkg-reqstool", version="1.0.0", url=None, token=None)
     loc = Command()._get_initial_source(args)
     assert isinstance(loc, NpmLocation)
     assert loc.package == "my-pkg-reqstool"
@@ -225,12 +225,12 @@ def test_get_initial_source_npm_with_custom_url():
         package="my-pkg-reqstool",
         version="1.0.0",
         url="https://my.registry.example.com",
-        env_token="NPM_TOKEN",
+        token="NPM_TOKEN",
     )
     loc = Command()._get_initial_source(args)
     assert isinstance(loc, NpmLocation)
     assert loc.url == "https://my.registry.example.com"
-    assert loc.env_token == "NPM_TOKEN"
+    assert loc.token == "NPM_TOKEN"
 
 
 def test_get_initial_source_local_npm_returns_local_npm_location():

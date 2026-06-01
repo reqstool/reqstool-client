@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 from reqstool.locations.maven_location import MavenLocation
 
 
-def test_maven_location_env_token_defaults_to_none():
+def test_maven_location_token_defaults_to_none():
     loc = MavenLocation(group_id="com.example", artifact_id="my-lib", version="1.0.0")
-    assert loc.env_token is None
+    assert loc.token is None
 
 
-def test_maven_location_make_available_no_env_token(tmp_path):
+def test_maven_location_make_available_no_token(tmp_path):
     loc = MavenLocation(group_id="com.example", artifact_id="my-lib", version="1.0.0")
     mock_downloader = MagicMock()
     mock_downloader.download.return_value = True
