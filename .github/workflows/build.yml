@@ -11,6 +11,9 @@ on:
       - reopened
       - synchronize
 
+permissions:
+  contents: read
+
 jobs:
   linting:
     name: Reuse linting job

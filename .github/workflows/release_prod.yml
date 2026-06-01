@@ -9,6 +9,9 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: "${{ github.repository_owner }}/reqstool"
 
+permissions:
+  contents: read
+
 jobs:
   check-release:
     name: Reuse check release
