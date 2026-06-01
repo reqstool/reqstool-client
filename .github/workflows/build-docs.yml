@@ -10,6 +10,9 @@ on:
     paths:
       - "docs/**"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     uses: reqstool/.github/.github/workflows/common-build-docs.yml@main
