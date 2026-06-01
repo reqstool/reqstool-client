@@ -2,6 +2,8 @@ name: Check Release
 on:
   workflow_call:
 
+permissions: {}
+
 jobs:
   check-release:
     runs-on: ubuntu-latest
