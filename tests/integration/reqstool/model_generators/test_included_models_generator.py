@@ -19,8 +19,8 @@ def choose_token():
 @SVCs("SVC_002")
 @pytest.mark.integration
 @pytest.mark.skipif(
-    not (os.getenv("GITHUB_TOKEN")),
-    reason="Test needs GITHUB_TOKEN",
+    not (os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")),
+    reason="Test needs GITHUB_TOKEN or GITLAB_TOKEN",
 )
 def test_basic_git():
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
@@ -39,8 +39,8 @@ def test_basic_git():
 @SVCs("SVC_003", "SVC_008")
 @pytest.mark.integration
 @pytest.mark.skipif(
-    not (os.getenv("GITHUB_TOKEN")),
-    reason="Test needs GITHUB_TOKEN",
+    not (os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")),
+    reason="Test needs GITHUB_TOKEN or GITLAB_TOKEN",
 )
 def test_basic_maven():
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())

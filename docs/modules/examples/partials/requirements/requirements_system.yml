@@ -8,7 +8,7 @@ metadata:
 
 imports:
   git:
-    - token: ${GITLAB_TOKEN}  # use ${VAR} interpolation to supply from environment
+    - token: "${GITLAB_TOKEN}"  # use ${VAR} interpolation to supply from environment
       ref:
       url:
       path:
@@ -26,7 +26,7 @@ filters:
 
 implementations: # only used with type = system
   git:
-    - token: ${GITLAB_TOKEN}  # use ${VAR} interpolation to supply from environment
+    - token: "${GITLAB_TOKEN}"  # use ${VAR} interpolation to supply from environment
       ref:
       url:
       path:

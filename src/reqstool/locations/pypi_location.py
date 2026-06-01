@@ -1,3 +1,5 @@
+# Copyright © LFV
+
 import logging
 import re
 import tarfile
@@ -6,6 +8,7 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from pydantic import SecretStr
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.common.utils import Utils
 from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
@@ -15,7 +18,7 @@ class PypiLocation(LocationInterface):
     url: str = "https://pypi.org/simple"
     package: str
     version: str
-    token: Optional[str] = None
+    token: Optional[SecretStr] = None
 
     @staticmethod
     def normalize_pypi_package_name(package_name):
@@ -25,7 +28,7 @@ class PypiLocation(LocationInterface):
         return make_safe_tmpdir_suffix("pypi", f"{self.package}=={self.version}")
 
     def _make_available_on_localdisk(self, dst_path: str):
-        token = self.token
+        token = self.token.get_secret_value() if self.token else None
 
         if token:
             logging.debug("Using OAuth Bearer token for authentication")
@@ -33,7 +36,7 @@ class PypiLocation(LocationInterface):
         package_url = self.get_package_url(self.package, self.version, self.url, token)
 
         if not package_url:
-            token_info = "(with authentication token)" if self.token else ""
+            token_info = "(with authentication token)" if token else ""
             raise RuntimeError(
                 f"Unable to find a sdist pypi package for {self.package} == {self.version} in repo {self.url}{token_info}"
             )
@@ -49,7 +52,7 @@ class PypiLocation(LocationInterface):
         except Exception as e:
             raise ArtifactDownloadError(
                 f"Error when downloading etc sdist pypi package for {self.package}=={self.version}"
-                f" in repo {self.url} {'with token' if token else ''}: {e}"
+                f" in repo {self.url} {'with token' if token else ''}: {type(e).__name__}"
             ) from e
 
     @staticmethod

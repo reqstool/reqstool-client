@@ -19,7 +19,7 @@ def test_git_location():
         path=PATH,
     )
 
-    assert git_location.token == "GITLAB_TOKEN"
+    assert git_location.token.get_secret_value() == "GITLAB_TOKEN"
     assert git_location.url == "https://git.example.com/example/repo.git"
     assert git_location.ref == "main"
     assert git_location.path == PATH
@@ -31,7 +31,7 @@ def test_git_location():
         path=PATH,
     )
 
-    assert git_location.token == "CI_TOKEN"
+    assert git_location.token.get_secret_value() == "CI_TOKEN"
     assert git_location.url == "https://git.example.com/repo.git"
     assert git_location.ref == "v1.2.0"
     assert git_location.path == PATH
@@ -161,3 +161,30 @@ def test_git_location_make_available_git_error_treated_as_not_found(tmp_path):
     with patch("reqstool.locations.git_location.clone_repository", return_value=mock_repo):
         with pytest.raises(GitRefNotFoundError):
             git_location._make_available_on_localdisk(str(tmp_path))
+
+
+def test_git_location_make_available_with_token(tmp_path):
+    git_location = GitLocation(url="https://git.example.com/repo.git", ref="main", path="", token="secret-token")
+    mock_repo = _mock_repo(tmp_path)
+
+    with patch("reqstool.locations.git_location.clone_repository", return_value=mock_repo) as mock_clone:
+        git_location._make_available_on_localdisk(str(tmp_path))
+
+    callbacks = mock_clone.call_args[1]["callbacks"]
+    assert callbacks is not None
+    assert callbacks.api_token == "secret-token"
+
+
+def test_git_location_make_available_no_token_passes_no_callbacks(tmp_path):
+    git_location = GitLocation(url="https://git.example.com/repo.git", ref="main", path="")
+    mock_repo = _mock_repo(tmp_path)
+
+    with patch("reqstool.locations.git_location.clone_repository", return_value=mock_repo) as mock_clone:
+        git_location._make_available_on_localdisk(str(tmp_path))
+
+    assert mock_clone.call_args[1]["callbacks"] is None
+
+
+def test_git_location_token_not_in_repr():
+    loc = GitLocation(url="https://git.example.com/repo.git", ref="main", token="super-secret")
+    assert "super-secret" not in repr(loc)

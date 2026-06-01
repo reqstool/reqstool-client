@@ -48,7 +48,7 @@ def implementations_data(maven_impl_data):
 
 def test_git_impl_data(git_impl_data):
     assert git_impl_data.parent is None
-    assert git_impl_data.current.token == "GITLAB_TOKEN"
+    assert git_impl_data.current.token.get_secret_value() == "GITLAB_TOKEN"
     assert git_impl_data.current.ref == "main"
     assert git_impl_data.current.url == "https://github.com/reqstool/reqstool-client"
     assert git_impl_data.current.path == "/examples/README.adoc"
@@ -61,7 +61,7 @@ def test_local_impl_data(local_impl_data):
 
 def test_maven_impl_data(maven_impl_data):
     assert maven_impl_data.parent is None
-    assert maven_impl_data.current.token == "MAVEN_TOKEN"
+    assert maven_impl_data.current.token.get_secret_value() == "MAVEN_TOKEN"
     assert maven_impl_data.current.url == "https://repo1.maven.org/maven2"
     assert maven_impl_data.current.group_id == "com.example"
     assert maven_impl_data.current.artifact_id == "artifactexample"

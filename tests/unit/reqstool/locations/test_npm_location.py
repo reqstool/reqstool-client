@@ -204,6 +204,25 @@ def test_npm_location_get_tarball_uses_timeout(tmp_path):
     assert mock_get.call_args[1].get("timeout") == 30
 
 
+def test_npm_location_make_available_empty_string_token_treated_as_no_auth(tmp_path):
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0", token="")
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"dist": {"tarball": "https://registry.npmjs.org/tarball.tgz"}}
+    extracted = str(tmp_path / "package")
+    with (
+        patch("reqstool.locations.npm_location.requests.get", return_value=mock_response) as mock_get,
+        patch("reqstool.locations.npm_location.Utils.download_file", return_value=tmp_path / "tarball.tgz"),
+        patch("reqstool.locations.npm_location.Utils.extract_targz", return_value=extracted),
+    ):
+        loc._make_available_on_localdisk(str(tmp_path))
+    assert "Authorization" not in mock_get.call_args[1]["headers"]
+
+
+def test_npm_location_token_not_in_repr():
+    loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0", token="super-secret")
+    assert "super-secret" not in repr(loc)
+
+
 def test_npm_location_make_available_no_token_sends_no_auth(tmp_path):
     loc = NpmLocation(package="my-pkg-reqstool", version="1.0.0")
 

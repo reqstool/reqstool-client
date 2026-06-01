@@ -8,14 +8,14 @@ metadata:
 
 imports:
   git:
-    - token: "GITLAB_TOKEN"
+    - token: "dummy-gitlab-token"
       url: https://gitlab.ms-example.com
       ref: main
       path: /some/ms-path
   local:
     - path: /some/local-ms-path
   maven:
-    - token: "MAVEN_TOKEN"
+    - token: "dummy-maven-token"
       url: https://repo.maven.org
       group_id: com.example.one
       artifact_id: test-one

@@ -6,7 +6,7 @@ import pytest
 
 from integration.reqstool.model_generators._regression_shared import (
     ECOSYSTEM_PATHS,
-    _GITHUB_TOKEN_ENV,
+    _GITHUB_TOKEN_VAR_NAME,
     _REGRESSION_REPO_REF,
     _REGRESSION_REPO_URL,
 )
@@ -30,7 +30,7 @@ def _make_generator(path: str, tmpdir_manager=None):
     holder = ValidationErrorHolder()
     gen = combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
         initial_location=GitLocation(
-            token=os.getenv(_GITHUB_TOKEN_ENV),
+            token=os.getenv(_GITHUB_TOKEN_VAR_NAME),
             url=_REGRESSION_REPO_URL,
             ref=_REGRESSION_REPO_REF,
             path=path,

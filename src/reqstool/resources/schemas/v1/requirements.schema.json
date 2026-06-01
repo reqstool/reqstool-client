@@ -111,6 +111,7 @@
             "properties": {
                 "token": {
                     "type": "string",
+                    "writeOnly": true,
                     "description": "Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${GITLAB_TOKEN}."
                 },
                 "ref": {
@@ -137,6 +138,7 @@
             "properties": {
                 "token": {
                     "type": "string",
+                    "writeOnly": true,
                     "description": "Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${MAVEN_TOKEN}."
                 },
                 "url": {
@@ -173,6 +175,7 @@
             "properties": {
                 "token": {
                     "type": "string",
+                    "writeOnly": true,
                     "description": "Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${NPM_TOKEN}."
                 },
                 "url": {
@@ -200,6 +203,7 @@
             "properties": {
                 "token": {
                     "type": "string",
+                    "writeOnly": true,
                     "description": "Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${PYPI_TOKEN}."
                 },
                 "url": {

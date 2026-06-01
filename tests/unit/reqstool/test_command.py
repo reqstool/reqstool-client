@@ -13,6 +13,9 @@ from reqstool.commands.exit_codes import (
     EXIT_CODE_MISSING_REQUIREMENTS_FILE,
 )
 from reqstool.common.exceptions import ArtifactDownloadError, MissingRequirementsFileError
+from reqstool.locations.git_location import GitLocation
+from reqstool.locations.maven_location import MavenLocation
+from reqstool.locations.pypi_location import PypiLocation
 from reqstool.locations.local_npm_location import LocalNpmLocation
 from reqstool.locations.npm_location import NpmLocation
 
@@ -142,6 +145,58 @@ def test_git_source_parser_requires_url_path_and_ref():
     assert args.ref == "v1.0.0"
 
 
+def test_git_source_parser_accepts_token():
+    args = _make_command_and_parse(
+        ["reqstool", "report", "git", "-u", "https://example.com/repo", "-p", "docs", "-r", "main", "-t", "secret"]
+    )
+    assert args.token == "secret"
+
+
+def test_maven_source_parser_accepts_token():
+    args = _make_command_and_parse(
+        ["reqstool", "report", "maven", "--group_id", "com.ex", "--artifact_id", "lib", "--version", "1.0.0", "-t", "s"]
+    )
+    assert args.token == "s"
+
+
+def test_pypi_source_parser_accepts_token():
+    args = _make_command_and_parse(
+        ["reqstool", "report", "pypi", "--package", "mypkg", "--version", "1.0.0", "-t", "secret"]
+    )
+    assert args.token == "secret"
+
+
+def test_get_initial_source_git_with_token():
+    args = argparse.Namespace(source="git", url="https://example.com/repo.git", path="docs", ref="main", token="sec")
+    loc = Command()._get_initial_source(args)
+    assert isinstance(loc, GitLocation)
+    assert loc.token.get_secret_value() == "sec"
+
+
+def test_get_initial_source_maven_with_token():
+    args = argparse.Namespace(
+        source="maven",
+        url=None,
+        group_id="com.example",
+        artifact_id="lib",
+        version="1.0.0",
+        classifier="reqstool",
+        token="sec",
+    )
+    loc = Command()._get_initial_source(args)
+    assert isinstance(loc, MavenLocation)
+    assert loc.token.get_secret_value() == "sec"
+
+
+def test_get_initial_source_pypi_with_token():
+    args = argparse.Namespace(
+        source="pypi", url="https://pypi.org/simple", package="mypkg", version="1.0.0", token="sec"
+    )
+    loc = Command()._get_initial_source(args)
+    assert isinstance(loc, PypiLocation)
+    assert loc.token.get_secret_value() == "sec"
+
+
 def test_git_source_parser_missing_ref_errors():
     with pytest.raises(SystemExit):
         _make_command_and_parse(["reqstool", "report", "git", "-u", "https://example.com/repo", "-p", "docs/reqstool"])
@@ -230,7 +285,7 @@ def test_get_initial_source_npm_with_custom_url():
     loc = Command()._get_initial_source(args)
     assert isinstance(loc, NpmLocation)
     assert loc.url == "https://my.registry.example.com"
-    assert loc.token == "NPM_TOKEN"
+    assert loc.token.get_secret_value() == "NPM_TOKEN"
 
 
 def test_get_initial_source_local_npm_returns_local_npm_location():

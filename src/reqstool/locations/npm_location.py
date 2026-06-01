@@ -6,7 +6,7 @@ from typing import Optional
 from urllib.parse import quote, urlparse
 
 import requests
-from pydantic import field_validator
+from pydantic import SecretStr, field_validator
 
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.common.utils import Utils
@@ -20,7 +20,7 @@ class NpmLocation(LocationInterface):
     url: str = "https://registry.npmjs.org"
     package: str
     version: str
-    token: Optional[str] = None
+    token: Optional[SecretStr] = None
 
     @field_validator("url")
     @classmethod
@@ -34,7 +34,7 @@ class NpmLocation(LocationInterface):
 
     def _make_available_on_localdisk(self, dst_path: str):
         """Fetch tarball URL → SSRF check → download → extract."""
-        token = self.token
+        token = self.token.get_secret_value() if self.token else None
 
         try:
             tarball_url = self._get_tarball_url(token)

@@ -35,7 +35,7 @@ def maven_location_data():
 
 
 def test_git_location_data(git_location_data):
-    assert git_location_data.token == "GITLAB_TOKEN"
+    assert git_location_data.token.get_secret_value() == "GITLAB_TOKEN"
     assert git_location_data.ref == "main"
     assert git_location_data.url == "https://gitlab.example.com"
     assert git_location_data.path == "some/path"
@@ -46,7 +46,7 @@ def test_local_location_data(local_location_data):
 
 
 def test_maven_location_data(maven_location_data):
-    assert maven_location_data.token == "MAVEN_TOKEN"
+    assert maven_location_data.token.get_secret_value() == "MAVEN_TOKEN"
     assert maven_location_data.url == "https://repo1.maven.org/maven2"
     assert maven_location_data.group_id == "com.example"
     assert maven_location_data.artifact_id == "artifactexample"

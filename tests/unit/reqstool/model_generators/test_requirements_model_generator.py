@@ -45,13 +45,13 @@ def test_system_requirements_model_generator(resource_funcname_rootdir_w_path):
     assert model.imports[0].current_unresolved.path == "/some/local-sys-path"
 
     # git
-    assert model.imports[1].current_unresolved.token == "GITLAB_TOKEN"
+    assert model.imports[1].current_unresolved.token.get_secret_value() == "dummy-gitlab-token"
     assert model.imports[1].current_unresolved.url == "https://gitlab.sys-example.com"
     assert model.imports[1].current_unresolved.ref == "feature/sys"
     assert model.imports[1].current_unresolved.path == "/some/path"
 
     # maven #1
-    assert model.imports[2].current_unresolved.token == "MAVEN_TOKEN"
+    assert model.imports[2].current_unresolved.token.get_secret_value() == "dummy-maven-token"
     assert model.imports[2].current_unresolved.url == "https://repo.maven.org"
     assert model.imports[2].current_unresolved.group_id == "com.example.one"
     assert model.imports[2].current_unresolved.artifact_id == "test-one"
@@ -67,7 +67,7 @@ def test_system_requirements_model_generator(resource_funcname_rootdir_w_path):
     assert model.imports[3].current_unresolved.classifier == "reqstool"
 
     # pypi #1
-    assert model.imports[4].current_unresolved.token == "PYPI_TOKEN"
+    assert model.imports[4].current_unresolved.token.get_secret_value() == "dummy-pypi-token"
     assert model.imports[4].current_unresolved.url == "https://example.com/simple/"
     assert model.imports[4].current_unresolved.package == "package1"
     assert model.imports[4].current_unresolved.version == "1.0.0"
@@ -85,7 +85,7 @@ def test_system_requirements_model_generator(resource_funcname_rootdir_w_path):
     assert model.implementations[0].current_unresolved.path == "/some/local-impl-path"
 
     # git
-    assert model.implementations[1].current_unresolved.token == "GITLAB_TOKEN"
+    assert model.implementations[1].current_unresolved.token.get_secret_value() == "dummy-gitlab-token"
     assert model.implementations[1].current_unresolved.url == "https://gitlab.impl-example.com"
     assert model.implementations[1].current_unresolved.ref == "feature/impl"
     assert model.implementations[1].current_unresolved.path == "README.md"
@@ -147,7 +147,7 @@ def test_microservice_requirements_model_generator(resource_funcname_rootdir_w_p
     assert model.imports[0].current_unresolved.path == "/some/local-ms-path"
 
     # git
-    assert model.imports[1].current_unresolved.token == "GITLAB_TOKEN"
+    assert model.imports[1].current_unresolved.token.get_secret_value() == "dummy-gitlab-token"
     assert model.imports[1].current_unresolved.url == "https://gitlab.ms-example.com"
     assert model.imports[1].current_unresolved.ref == "main"
     assert model.imports[1].current_unresolved.path == "/some/ms-path"
@@ -278,7 +278,7 @@ def test_npm_requirements_model_generator(resource_funcname_rootdir_w_path):
     # npm import #1 — with token and custom registry
     npm_import_1 = model.imports[0].current_unresolved
     assert isinstance(npm_import_1, NpmLocation)
-    assert npm_import_1.token == "NPM_TOKEN"
+    assert npm_import_1.token.get_secret_value() == "dummy-npm-token"
     assert str(npm_import_1.url) == "https://my.registry.example.com"
     assert npm_import_1.package == "@my-org/my-service-reqstool"
     assert npm_import_1.version == "1.2.3"

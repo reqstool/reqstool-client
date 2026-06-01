@@ -43,7 +43,7 @@ def maven_import_data():
 
 def test_git_import_data(git_import_data):
     assert git_import_data.parent is None
-    assert git_import_data.current.token == "GITLAB_TOKEN"
+    assert git_import_data.current.token.get_secret_value() == "GITLAB_TOKEN"
     assert git_import_data.current.ref == "main"
     assert git_import_data.current.url == "https://gitlab.example.com"
     assert git_import_data.current.path == "git/some/path"
@@ -56,7 +56,7 @@ def test_local_system_data(local_import_data):
 
 def test_maven_system_data(maven_import_data):
     assert maven_import_data.parent is None
-    assert maven_import_data.current.token == "MAVEN_TOKEN"
+    assert maven_import_data.current.token.get_secret_value() == "MAVEN_TOKEN"
     assert maven_import_data.current.url == "https://repo1.maven.org/maven2"
     assert maven_import_data.current.group_id == "com.example"
     assert maven_import_data.current.artifact_id == "artifactexample"

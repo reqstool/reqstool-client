@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 
 from maven_artifact import Artifact, Downloader, RequestException
+from pydantic import SecretStr
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
@@ -18,13 +19,13 @@ class MavenLocation(LocationInterface):
     artifact_id: str
     version: str
     classifier: str = "reqstool"
-    token: Optional[str] = None
+    token: Optional[SecretStr] = None
 
     def tmpdir_key(self) -> str:
         return make_safe_tmpdir_suffix("maven", f"{self.group_id}:{self.artifact_id}:{self.version}")
 
     def _make_available_on_localdisk(self, dst_path: str):
-        token = self.token
+        token = self.token.get_secret_value() if self.token else None
 
         # assume OAuth Bearer, see: https://georgearisty.dev/posts/oauth2-token-bearer-usage/
         downloader = Downloader(base=self.url, token=token)
