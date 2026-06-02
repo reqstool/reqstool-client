@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.StatusServiceTest" tests="7" skipped="0" failures="1" errors="0"
+           timestamp="2026-06-01T12:00:00.000Z" hostname="ci" time="0.1">
+  <properties/>
+  <!-- Maven-style: UNIT regex matches, worst-status-wins applies across all three instances -->
+  <testcase name="checkStatusMaven(StatusType)[1]" classname="com.example.StatusServiceTest" time="0.001"/>
+  <testcase name="checkStatusMaven(StatusType)[2]" classname="com.example.StatusServiceTest" time="0.001"/>
+  <testcase name="checkStatusMaven(StatusType)[3]" classname="com.example.StatusServiceTest" time="0.001">
+    <failure message="expected not equal" type="org.opentest4j.AssertionFailedError"><![CDATA[failure details]]></failure>
+  </testcase>
+  <!-- Gradle default [N] format: no method name → WARNING + skip -->
+  <testcase name="[1] ACTIVE" classname="com.example.StatusServiceTest" time="0.001"/>
+  <testcase name="[2] PENDING" classname="com.example.StatusServiceTest" time="0.001"/>
+  <!-- Gradle custom {index} format (N text): no method name → WARNING + skip -->
+  <testcase name="1 status=ACTIVE" classname="com.example.StatusServiceTest" time="0.001"/>
+  <testcase name="2 status=PENDING" classname="com.example.StatusServiceTest" time="0.001"/>
+</testsuite>
