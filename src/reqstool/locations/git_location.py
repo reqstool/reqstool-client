@@ -1,11 +1,10 @@
 # Copyright © LFV
 
 import logging
-import os
 import re
 from typing import Optional
 
-from pydantic import field_validator
+from pydantic import SecretStr, field_validator
 from pygit2 import Commit, GitError, RemoteCallbacks, UserPass, clone_repository
 from reqstool_python_decorators.decorators.decorators import Requirements
 
@@ -21,7 +20,7 @@ _VALID_REF_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._/\-]*$")
 class GitLocation(LocationInterface):
     url: str
     ref: str
-    env_token: Optional[str] = None
+    token: Optional[SecretStr] = None
     path: str = ""
 
     @field_validator("ref")
@@ -44,9 +43,10 @@ class GitLocation(LocationInterface):
         return make_safe_tmpdir_suffix("git", f"{urlunparse(parsed)}@{self.ref}")
 
     def _make_available_on_localdisk(self, dst_path: str) -> str:
-        api_token = os.getenv(self.env_token) if self.env_token else None
+        api_token = self.token.get_secret_value() if self.token else None
+        callbacks = self.MyRemoteCallbacks(api_token) if api_token else None
 
-        repo = clone_repository(url=self.url, path=dst_path, callbacks=self.MyRemoteCallbacks(api_token))
+        repo = clone_repository(url=self.url, path=dst_path, callbacks=callbacks)
 
         # Try direct lookup first (tag, default branch, or commit SHA), then fall back to the
         # remote-tracking ref — non-default branches only exist as origin/<ref> after a plain clone.

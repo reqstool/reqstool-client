@@ -8,7 +8,7 @@ _REGRESSION_REPO_URL = "https://github.com/reqstool/reqstool-regression.git"
 #   _REGRESSION_REPO_REF = "v1.0.0"   # resolves directly (no fallback needed)
 #   _REGRESSION_REPO_REF = "abc1234"  # resolves directly as commit SHA
 _REGRESSION_REPO_REF = "main"
-_GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
+_GITHUB_TOKEN_VAR_NAME = "GITHUB_TOKEN"
 
 # Single source of truth for ecosystem names.
 # Both ECOSYSTEM_PATHS (for entry-point tests) and ECOSYSTEM_URNS (for structural tests)

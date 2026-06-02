@@ -4,14 +4,14 @@ import os
 
 import pytest
 
-from integration.reqstool.model_generators._regression_shared import _GITHUB_TOKEN_ENV
+from integration.reqstool.model_generators._regression_shared import _GITHUB_TOKEN_VAR_NAME
 from reqstool.common.utils import TempDirectoryManager
 
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        not os.getenv(_GITHUB_TOKEN_ENV, "").strip(),
-        reason=f"Test needs {_GITHUB_TOKEN_ENV}",
+        not os.getenv(_GITHUB_TOKEN_VAR_NAME, "").strip(),
+        reason=f"Test needs {_GITHUB_TOKEN_VAR_NAME}",
     ),
 ]
 

@@ -19,7 +19,7 @@ filters:
 implementations:
   git:
     - ref: main
-      env_token: GITLAB_TOKEN
+      token: "${GITLAB_TOKEN:-}"
       url: "https://github.com/reqstool/requirements-tool-testdata.git"
       path: "data/remote/test_standard/test_standard_maven_git/ms-001"
 

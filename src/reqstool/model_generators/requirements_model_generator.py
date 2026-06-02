@@ -208,7 +208,7 @@ class RequirementsModelGenerator:
                 maven_location = instance_type(
                     parent=self.parent,
                     current_unresolved=MavenLocation(
-                        env_token=maven.env_token,
+                        token=maven.token,
                         url=maven.url.root if maven.url else MAVEN_CENTRAL_REPO_URL,
                         group_id=maven.group_id,
                         artifact_id=maven.artifact_id,
@@ -227,7 +227,7 @@ class RequirementsModelGenerator:
                 pypi_location = instance_type(
                     parent=self.parent,
                     current_unresolved=PypiLocation(
-                        env_token=pypi.env_token,
+                        token=pypi.token,
                         url=pypi.url.root if pypi.url else PYPI_ORG_SIMPLE_API_URL,
                         package=pypi.package,
                         version=pypi.version,
@@ -239,7 +239,7 @@ class RequirementsModelGenerator:
     def __parse_location_npm(self, locations_obj, instance_type, locations):
         if locations_obj.npm is not None:
             for npm in locations_obj.npm:
-                npm_kwargs = {"env_token": npm.env_token, "package": npm.package, "version": npm.version}
+                npm_kwargs = {"token": npm.token, "package": npm.package, "version": npm.version}
                 if npm.url:
                     npm_kwargs["url"] = npm.url.root
                 npm_location = instance_type(
@@ -262,7 +262,7 @@ class RequirementsModelGenerator:
                 git_location = instance_type(
                     parent=self.parent,
                     current_unresolved=GitLocation(
-                        env_token=git.env_token,
+                        token=git.token,
                         url=git.url,
                         ref=git.ref,
                         path=git.path or "",

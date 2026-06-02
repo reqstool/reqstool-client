@@ -12,25 +12,22 @@ from reqstool.locations.maven_location import MavenLocation
 from reqstool.model_generators import combined_raw_datasets_generator
 
 
-def choose_token() -> str:
-    if os.getenv("GITHUB_TOKEN"):
-        return "GITHUB_TOKEN"
-    else:
-        return "GITLAB_TOKEN"
+def choose_token():
+    return os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")
 
 
 @SVCs("SVC_002")
 @pytest.mark.integration
 @pytest.mark.skipif(
-    not (os.getenv("GITHUB_TOKEN")),
-    reason="Test needs GITHUB_TOKEN",
+    not (os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")),
+    reason="Test needs GITHUB_TOKEN or GITLAB_TOKEN",
 )
 def test_basic_git():
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
 
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
         initial_location=GitLocation(
-            env_token=choose_token(),
+            token=choose_token(),
             url="https://github.com/reqstool/reqstool-client.git",
             path="tests/resources/test_data/data/remote/test_standard/test_standard_maven_git/ms-001",
             ref="main",
@@ -42,8 +39,8 @@ def test_basic_git():
 @SVCs("SVC_003", "SVC_008")
 @pytest.mark.integration
 @pytest.mark.skipif(
-    not (os.getenv("GITHUB_TOKEN")),
-    reason="Test needs GITHUB_TOKEN",
+    not (os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")),
+    reason="Test needs GITHUB_TOKEN or GITLAB_TOKEN",
 )
 def test_basic_maven():
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
@@ -51,7 +48,7 @@ def test_basic_maven():
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
         # Setup
         initial_location=MavenLocation(
-            env_token=choose_token(),
+            token=choose_token(),
             url="https://maven.pkg.github.com/reqstool/reqstool-demo",
             group_id="se.lfv.reqstool",
             artifact_id="reqstool-demo",

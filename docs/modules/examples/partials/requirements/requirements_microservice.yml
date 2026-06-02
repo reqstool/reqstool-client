@@ -8,19 +8,19 @@ metadata:
 
 imports: #Optional
   git:
-    - env_token: e.g. GITLAB_TOKEN or empty
+    - token: "${GITLAB_TOKEN}"  # use ${VAR} interpolation to supply from environment
       ref:
       url: url
       path: path
   maven:
-    - env_token: e.g. MAVEN_TOKEN or empty
+    - token: "${MAVEN_TOKEN}"  # use ${VAR} interpolation to supply from environment
       url: x.se
       group_id: x
       artifact_id: y
       classifier: s
       version: 1.0.0
   pypi:
-    - env_token: e.g. PYPI_TOKEN or empty
+    - token: "${PYPI_TOKEN}"  # use ${VAR} interpolation to supply from environment
       url: url
       package: package-name
       version: 1.0.0

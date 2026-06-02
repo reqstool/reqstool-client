@@ -1,10 +1,12 @@
 # Copyright © reqstool
 
+import os
+
 import pytest
 
 from integration.reqstool.model_generators._regression_shared import (
     ECOSYSTEM_URNS,
-    _GITHUB_TOKEN_ENV,
+    _GITHUB_TOKEN_VAR_NAME,
     _REGRESSION_REPO_REF,
     _REGRESSION_REPO_URL,
 )
@@ -38,7 +40,7 @@ def repo():
     holder = ValidationErrorHolder()
     with build_database(
         location=GitLocation(
-            env_token=_GITHUB_TOKEN_ENV,
+            token=os.getenv(_GITHUB_TOKEN_VAR_NAME),
             url=_REGRESSION_REPO_URL,
             ref=_REGRESSION_REPO_REF,
             path="fixtures/parent",

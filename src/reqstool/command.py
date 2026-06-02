@@ -74,7 +74,10 @@ _LOCATION_DEFS = [
             {"flags": ["-u", "--url"], "kwargs": {"help": "git repository URL", "required": True}},
             {"flags": ["-p", "--path"], "kwargs": {"help": "path within the repository", "required": True}},
             {"flags": ["-r", "--ref"], "kwargs": {"help": "git branch, tag, or commit SHA", "required": True}},
-            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the access token"}},
+            {
+                "flags": ["-t", "--token"],
+                "kwargs": {"help": "authentication token value (use ${VAR} in YAML or shell expansion for CLI)"},
+            },
         ],
     },
     {
@@ -82,7 +85,10 @@ _LOCATION_DEFS = [
         "help": "maven source",
         "args": [
             {"flags": ["-u", "--url"], "kwargs": {"help": "Maven repository URL", "required": False}},
-            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the access token"}},
+            {
+                "flags": ["-t", "--token"],
+                "kwargs": {"help": "authentication token value (use ${VAR} in YAML or shell expansion for CLI)"},
+            },
             {"flags": ["--group_id"], "kwargs": {"help": "Maven group ID", "required": True}},
             {"flags": ["--artifact_id"], "kwargs": {"help": "Maven artifact ID", "required": True}},
             {"flags": ["--version"], "kwargs": {"help": "artifact version (e.g. 1.2.3)", "required": True}},
@@ -100,7 +106,10 @@ _LOCATION_DEFS = [
                     "required": False,
                 },
             },
-            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the Bearer token"}},
+            {
+                "flags": ["-t", "--token"],
+                "kwargs": {"help": "authentication token value (use ${VAR} in YAML or shell expansion for CLI)"},
+            },
             {"flags": ["--package"], "kwargs": {"help": "npm package name (e.g. @scope/package)", "required": True}},
             {"flags": ["--version"], "kwargs": {"help": "package version (e.g. 1.2.3)", "required": True}},
         ],
@@ -110,7 +119,10 @@ _LOCATION_DEFS = [
         "help": "pypi source",
         "args": [
             {"flags": ["-u", "--url"], "kwargs": {"help": "PyPI index URL", "required": False}},
-            {"flags": ["-t", "--env_token"], "kwargs": {"help": "env var name holding the access token"}},
+            {
+                "flags": ["-t", "--token"],
+                "kwargs": {"help": "authentication token value (use ${VAR} in YAML or shell expansion for CLI)"},
+            },
             {"flags": ["--package"], "kwargs": {"help": "PyPI package name", "required": True}},
             {"flags": ["--version"], "kwargs": {"help": "package version (e.g. 1.2.3)", "required": True}},
         ],
@@ -437,28 +449,28 @@ class Command:
                 artifact_id=args_source.artifact_id,
                 version=args_source.version,
                 classifier=args_source.classifier if args_source.classifier else None,
-                env_token=args_source.env_token if args_source.env_token else None,
+                token=args_source.token or None,
             )
         elif args_source.source == "npm":
             location = NpmLocation(
                 url=args_source.url if args_source.url else "https://registry.npmjs.org",
                 package=args_source.package,
                 version=args_source.version,
-                env_token=args_source.env_token if args_source.env_token else None,
+                token=args_source.token or None,
             )
         elif args_source.source == "pypi":
             location = PypiLocation(
                 url=args_source.url if args_source.url else None,
                 package=args_source.package,
                 version=args_source.version,
-                env_token=args_source.env_token if args_source.env_token else None,
+                token=args_source.token or None,
             )
         elif args_source.source == "git":
             location = GitLocation(
                 url=args_source.url,
                 path=args_source.path,
                 ref=args_source.ref,
-                env_token=args_source.env_token if args_source.env_token else None,
+                token=args_source.token or None,
             )
         elif args_source.source == "local":
             if args_source.maven:

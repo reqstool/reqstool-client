@@ -51,9 +51,9 @@ class Git(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    env_token: str | None = None
+    token: str | None = None
     """
-    Token to authenticate. E.g. GITLAB_TOKEN or empty.
+    Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${GITLAB_TOKEN}.
     """
     ref: str
     """
@@ -211,9 +211,9 @@ class Maven(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    env_token: str | None = None
+    token: str | None = None
     """
-    Token to authenticate. E.g. MAVEN_TOKEN or empty.
+    Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${MAVEN_TOKEN}.
     """
     url: Url | None = None
     """
@@ -241,9 +241,9 @@ class Npm(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    env_token: str | None = None
+    token: str | None = None
     """
-    Token to authenticate. E.g. NPM_TOKEN or empty.
+    Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${NPM_TOKEN}.
     """
     url: Url | None = None
     """
@@ -263,9 +263,9 @@ class Pypi(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    env_token: str | None = None
+    token: str | None = None
     """
-    Token to authenticate. E.g. PYPI_TOKEN or empty.
+    Authentication token value. Use ${VAR} interpolation to supply from environment, e.g. ${PYPI_TOKEN}.
     """
     url: Url | None = None
     """

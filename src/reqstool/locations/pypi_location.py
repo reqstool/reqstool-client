@@ -1,5 +1,6 @@
+# Copyright © LFV
+
 import logging
-import os
 import re
 import tarfile
 from typing import Optional
@@ -7,6 +8,7 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from pydantic import SecretStr
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.common.utils import Utils
 from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
@@ -16,7 +18,7 @@ class PypiLocation(LocationInterface):
     url: str = "https://pypi.org/simple"
     package: str
     version: str
-    env_token: Optional[str] = None
+    token: Optional[SecretStr] = None
 
     @staticmethod
     def normalize_pypi_package_name(package_name):
@@ -26,11 +28,7 @@ class PypiLocation(LocationInterface):
         return make_safe_tmpdir_suffix("pypi", f"{self.package}=={self.version}")
 
     def _make_available_on_localdisk(self, dst_path: str):
-        """
-        Download the PyPI package and extract it to the local disk.
-        """
-        # Retrieve token from environment variable
-        token = os.getenv(self.env_token) if self.env_token else None
+        token = self.token.get_secret_value() if self.token else None
 
         if token:
             logging.debug("Using OAuth Bearer token for authentication")
@@ -38,7 +36,7 @@ class PypiLocation(LocationInterface):
         package_url = self.get_package_url(self.package, self.version, self.url, token)
 
         if not package_url:
-            token_info = f"(with token in environment variable '{self.env_token}')" if self.env_token else ""
+            token_info = "(with authentication token)" if token else ""
             raise RuntimeError(
                 f"Unable to find a sdist pypi package for {self.package} == {self.version} in repo {self.url}{token_info}"
             )
@@ -54,7 +52,7 @@ class PypiLocation(LocationInterface):
         except Exception as e:
             raise ArtifactDownloadError(
                 f"Error when downloading etc sdist pypi package for {self.package}=={self.version}"
-                f" in repo {self.url} {'with token' if token else ''}: {e}"
+                f" in repo {self.url} {'with token' if token else ''}: {type(e).__name__}"
             ) from e
 
     @staticmethod
