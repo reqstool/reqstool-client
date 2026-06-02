@@ -56,9 +56,7 @@ def test_display_name_index_regex(method_name):
 def test_parameterized_testdata_model_generator(resource_funcname_rootdir_w_path, caplog):
     with caplog.at_level(logging.WARNING):
         tdmg = TestDataModelGenerator(
-            test_result_files=[
-                resource_funcname_rootdir_w_path("TEST-com.example.StatusServiceTest.xml")
-            ],
+            test_result_files=[resource_funcname_rootdir_w_path("TEST-com.example.StatusServiceTest.xml")],
             urn="test",
         )
 
