@@ -30,7 +30,7 @@ from reqstool.requirements_indata.requirements_indata import RequirementsIndata
 from reqstool.storage.database import RequirementsDatabase
 
 
-@Requirements("INGEST_0001")
+@Requirements("INGEST_0001", "IMPORT_0001", "IMPORT_0002", "IMPORT_0003", "IMPORT_0004", "IMPORT_0005")
 class CombinedRawDatasetsGenerator:
     def __init__(
         self,
@@ -346,7 +346,7 @@ class CombinedRawDatasetsGenerator:
             source_paths["annotations"] = paths.annotations_yml.path
         return source_paths
 
-    @Requirements("INGEST_0004", "INGEST_0007")
+    @Requirements("INGEST_0002", "INGEST_0003", "INGEST_0004", "INGEST_0007")
     def __parse_source_other(
         self, actual_tmp_path: str, requirements_indata: RequirementsIndata, rmg: RequirementsModelGenerator
     ):

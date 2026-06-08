@@ -484,7 +484,7 @@ class Command:
 
         return location
 
-    @Requirements("REPORT_0005")
+    @Requirements("REPORT_0005", "REPORT_0006")
     def command_report(self, report_args: argparse.Namespace):
         initial_source = self._get_initial_source(report_args)
 
@@ -499,6 +499,7 @@ class Command:
 
         output.write(result.result)
 
+    @Requirements("EXPORT_0002", "EXPORT_0003", "EXPORT_0004", "EXPORT_0005")
     def command_export(self, export_args: argparse.Namespace):
         initial_source = self._get_initial_source(export_args)
         fmt = getattr(export_args, "format", "json")
@@ -569,6 +570,7 @@ class Command:
             else 0
         )
 
+    @Requirements("LSP_0001", "LSP_0002", "LSP_0003", "LSP_0004")
     def command_lsp(self, lsp_args: argparse.Namespace):
         try:
             from reqstool.lsp.server import start_server
@@ -584,6 +586,7 @@ class Command:
             logging.fatal("reqstool LSP server crashed: %s", exc)
             sys.exit(1)
 
+    @Requirements("MCP_0001", "MCP_0002", "MCP_0003", "MCP_0004")
     def command_mcp(self, mcp_args: argparse.Namespace):
         try:
             from reqstool.mcp.server import start_server

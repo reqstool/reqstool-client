@@ -3,7 +3,10 @@
 import os
 
 import pytest
-from reqstool_python_decorators.decorators.decorators import SVCs
+
+# Note: SVC_SOURCE_0004 (git) and SVC_SOURCE_0005 (maven) are exercised by this integration test,
+# but linked via tests/unit/.../traceability instead — this test is skipped without GITHUB/GITLAB
+# tokens, so its (skipped) result cannot satisfy those SVCs in credential-less CI.
 
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator
@@ -16,7 +19,6 @@ def choose_token():
     return os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")
 
 
-@SVCs("SVC_SOURCE_0004")
 @pytest.mark.integration
 @pytest.mark.skipif(
     not (os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")),
@@ -36,7 +38,6 @@ def test_basic_git():
     )
 
 
-@SVCs("SVC_SOURCE_0005")
 @pytest.mark.integration
 @pytest.mark.skipif(
     not (os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")),

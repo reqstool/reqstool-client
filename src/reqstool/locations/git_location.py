@@ -16,7 +16,7 @@ from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suff
 _VALID_REF_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._/\-]*$")
 
 
-@Requirements("SOURCE_0004")
+@Requirements("SOURCE_0004", "SOURCE_0008")
 class GitLocation(LocationInterface):
     url: str
     ref: str

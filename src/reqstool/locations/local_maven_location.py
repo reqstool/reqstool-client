@@ -3,9 +3,11 @@
 import os
 
 from reqstool.common.utils import Utils
+from reqstool_python_decorators.decorators.decorators import Requirements
 from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
 
 
+@Requirements("SOURCE_0003")
 class LocalMavenLocation(LocationInterface):
     path: str  # path to a local Maven ZIP artifact (.zip)
 
