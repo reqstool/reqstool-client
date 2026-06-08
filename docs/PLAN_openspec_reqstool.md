@@ -107,6 +107,13 @@ Other open items:
   scenarios/at the flip, not in requirement text). Applies to all command specs.
 - **2026-06-08** — Source-location selection (local/git/maven/npm/pypi) is **cross-cutting**; specced
   once in the locations domain (Pass 3), not duplicated per command spec.
+- **2026-06-08** — Pass 4 ID scheme: **capability-prefixed** (`STATUS_0001`, `SVC_STATUS_0001`),
+  4-digit zero-padded, SVC mirrors req prefix — convention-aligned (`req_prefix:""` + manual domain
+  prefixes per reqstool-ai skills). Prefixes: STATUS/REPORT/EXPORT/VALIDATE/ENRICH/LSP/MCP/SOURCE/
+  INGEST/IMPORT/PARSE/LIFECYCLE.
+- **2026-06-08** — Pass 4 SVC granularity: **one SVC per requirement** (fold scenarios into one
+  GIVEN/WHEN/THEN); split only when a requirement's scenarios need different `verification` types.
+  Default verification: **automated-test**. MVRs not derived.
 
 ---
 

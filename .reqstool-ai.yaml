@@ -1,0 +1,8 @@
+# reqstool-ai configuration — see https://github.com/reqstool/reqstool-ai
+# Single-system project; capability prefixes (STATUS_, REPORT_, ...) are managed
+# manually in requirements.yml (req_prefix-style "" / domain-specific scheme).
+urn: reqstool-client
+revision: "0.11.0"
+
+system:
+  path: docs/reqstool

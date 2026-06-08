@@ -1,0 +1,452 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/software_verification_cases.schema.json
+
+cases:
+  # --- status ---
+  - id: SVC_STATUS_0001
+    requirement_ids: ["STATUS_0001"]
+    title: "Status computation classifies requirements"
+    description: "GIVEN a dataset with implemented, unimplemented, failing-test, and non-code requirements WHEN status is computed THEN each is classified complete or incomplete on implementation, automated test, and manual verification state"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_STATUS_0002
+    requirement_ids: ["STATUS_0002"]
+    title: "Verdict reflects incomplete count"
+    description: "GIVEN a computed status WHEN zero requirements are incomplete THEN the verdict is PASS, and WHEN one or more are incomplete THEN the verdict is FAIL"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_STATUS_0003
+    requirement_ids: ["STATUS_0003"]
+    title: "Verbosity levels render increasing detail"
+    description: "GIVEN a dataset WHEN status is rendered at compact, normal, verbose, and extra-verbose THEN each level emits the expected detail, defaulting to normal"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_STATUS_0004
+    requirement_ids: ["STATUS_0004"]
+    title: "Incomplete-only hides complete requirements"
+    description: "GIVEN complete and incomplete requirements WHEN incomplete-only output is requested THEN only incomplete requirements are listed"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_STATUS_0005
+    requirement_ids: ["STATUS_0005"]
+    title: "JSON output emitted and verbosity ignored"
+    description: "GIVEN a dataset WHEN JSON output is selected THEN a machine-readable status document is emitted, and WHEN combined with a non-default verbosity THEN a warning is issued and JSON is still produced"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_STATUS_0006
+    requirement_ids: ["STATUS_0006"]
+    title: "Filtering restricts status to selected IDs"
+    description: "GIVEN a dataset WHEN requirement or SVC IDs are supplied THEN status output is restricted to the requirements in scope of those IDs"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_STATUS_0007
+    requirement_ids: ["STATUS_0007"]
+    title: "Gating exit code reflects coverage"
+    description: "GIVEN enforcement is enabled WHEN at least one requirement is incomplete THEN the process exits with the all-requirements-not-implemented code, and WHEN enforcement is disabled THEN it exits zero regardless"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_STATUS_0008
+    requirement_ids: ["STATUS_0008"]
+    title: "Post-build results feed the computation"
+    description: "GIVEN post-build JUnit XML files WHEN supplied THEN their outcomes are injected and post-build gating is activated, and WHEN a supplied file is missing THEN it is reported and no status is produced"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_STATUS_0009
+    requirement_ids: ["STATUS_0009"]
+    title: "Status written to file or stdout"
+    description: "GIVEN a status run WHEN an output path is supplied THEN status is written to that file creating directories as needed, and WHEN no path is supplied THEN it is written to standard output"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- report ---
+  - id: SVC_REPORT_0001
+    requirement_ids: ["REPORT_0001"]
+    title: "Report lists all requirements with status"
+    description: "GIVEN a dataset WHEN the report command is run THEN a document listing all requirements with their status is produced"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_REPORT_0002
+    requirement_ids: ["REPORT_0002"]
+    title: "Report renders selected format"
+    description: "GIVEN a dataset WHEN no format is specified THEN AsciiDoc is rendered, and WHEN Markdown is selected THEN Markdown is rendered"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_REPORT_0003
+    requirement_ids: ["REPORT_0003"]
+    title: "Report groups by origin or category"
+    description: "GIVEN a dataset WHEN grouping by initial/imports THEN initial and imported requirements are separated, and WHEN grouping by category THEN requirements are grouped by their first category"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_REPORT_0004
+    requirement_ids: ["REPORT_0004"]
+    title: "Report sorts within groups"
+    description: "GIVEN an ordered list of sort keys WHEN the report is generated THEN requirements within each group are ordered by those keys in sequence"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_REPORT_0005
+    requirement_ids: ["REPORT_0005"]
+    title: "Report written to file or stdout"
+    description: "GIVEN a report run WHEN an output path is supplied THEN it is written to that file creating directories as needed, and WHEN no path is supplied THEN it is written to standard output"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_REPORT_0006
+    requirement_ids: ["REPORT_0006"]
+    title: "Deprecated AsciiDoc alias warns and renders"
+    description: "GIVEN the deprecated AsciiDoc report command WHEN invoked THEN a deprecation warning is emitted and the AsciiDoc report is produced"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- export ---
+  - id: SVC_EXPORT_0001
+    requirement_ids: ["EXPORT_0001"]
+    title: "JSON export emitted by default"
+    description: "GIVEN a dataset WHEN export is run without a format THEN a JSON document conforming to the export schema is emitted"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_EXPORT_0002
+    requirement_ids: ["EXPORT_0002"]
+    title: "Export restricted to selected IDs"
+    description: "GIVEN a dataset WHEN requirement or SVC IDs are supplied THEN the exported document is restricted to those requirements and their related entities"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_EXPORT_0003
+    requirement_ids: ["EXPORT_0003"]
+    title: "Unfiltered export includes all data"
+    description: "GIVEN a dataset WHEN an unfiltered export is requested THEN all data is included without applying filters"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_EXPORT_0004
+    requirement_ids: ["EXPORT_0004"]
+    title: "SQLite export written to file"
+    description: "GIVEN the SQLite format WHEN an output file path is supplied THEN a SQLite snapshot is written, and WHEN no output path is supplied THEN an error is reported and no output produced"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_EXPORT_0005
+    requirement_ids: ["EXPORT_0005"]
+    title: "JSON export written to file or stdout"
+    description: "GIVEN a JSON export WHEN no output path is supplied THEN the JSON is written to standard output"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- validate ---
+  - id: SVC_VALIDATE_0001
+    requirement_ids: ["VALIDATE_0001"]
+    title: "Requirements without SVCs reported"
+    description: "GIVEN a requirement with no SVC referencing it WHEN validate runs THEN that requirement is reported as a coverage gap"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_VALIDATE_0002
+    requirement_ids: ["VALIDATE_0002"]
+    title: "Manual SVCs without MVRs reported"
+    description: "GIVEN an SVC requiring manual verification with no MVR WHEN validate runs THEN that SVC is reported as a coverage gap"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_VALIDATE_0003
+    requirement_ids: ["VALIDATE_0003"]
+    title: "Broken references reported and fatal"
+    description: "GIVEN an SVC, MVR, or annotation referencing a non-existent entity WHEN validate runs THEN a referential error is reported and validation fails"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_VALIDATE_0004
+    requirement_ids: ["VALIDATE_0004"]
+    title: "Strict mode promotes gaps to errors"
+    description: "GIVEN only coverage gaps WHEN strict mode is disabled THEN warnings are reported and validation succeeds, and WHEN strict mode is enabled THEN errors are reported and validation fails"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_VALIDATE_0005
+    requirement_ids: ["VALIDATE_0005"]
+    title: "Summary and exit code reflect outcome"
+    description: "GIVEN no referential errors and no coverage gaps WHEN validate runs THEN it reports all checks passed and exits successfully"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- enrich ---
+  - id: SVC_ENRICH_0001
+    requirement_ids: ["ENRICH_0001"]
+    title: "Referenced IDs enriched with titles and descriptions"
+    description: "GIVEN an input document referencing requirement, SVC, or MVR IDs WHEN enriched THEN the corresponding titles and descriptions are injected"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_ENRICH_0002
+    requirement_ids: ["ENRICH_0002"]
+    title: "Preset governs enrichment"
+    description: "GIVEN a selected built-in preset WHEN enrichment runs THEN the document is enriched according to that preset's rules"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_ENRICH_0003
+    requirement_ids: ["ENRICH_0003"]
+    title: "Enrichment reads and writes file or standard streams"
+    description: "GIVEN no input file WHEN enrich runs THEN the document is read from standard input, and the result is written to the configured output or standard output"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_ENRICH_0004
+    requirement_ids: ["ENRICH_0004"]
+    title: "Dataset auto-detected or error reported"
+    description: "GIVEN no source WHEN a reqstool AI configuration file is found by walking up THEN that dataset is used, and WHEN none is found THEN an error explaining how to provide a source is reported"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- lsp ---
+  - id: SVC_LSP_0001
+    requirement_ids: ["LSP_0001"]
+    title: "Language server starts"
+    description: "GIVEN the lsp command WHEN run THEN an LSP server is started ready to accept client connections"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_LSP_0002
+    requirement_ids: ["LSP_0002"]
+    title: "Language server transport selectable"
+    description: "GIVEN no transport selected WHEN the server starts THEN it communicates over stdio, and WHEN TCP with a host and port is selected THEN it listens on that host and port"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_LSP_0003
+    requirement_ids: ["LSP_0003"]
+    title: "Language server writes log file"
+    description: "GIVEN a log file path WHEN the server runs THEN logs are written to that file in addition to standard error"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_LSP_0004
+    requirement_ids: ["LSP_0004"]
+    title: "Language server guards missing extra"
+    description: "GIVEN the language-server dependencies are not installed WHEN the command runs THEN it reports how to install them and does not start the server"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- mcp ---
+  - id: SVC_MCP_0001
+    requirement_ids: ["MCP_0001"]
+    title: "MCP server starts"
+    description: "GIVEN the mcp command WHEN run THEN an MCP server serving the resolved dataset is started"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_MCP_0002
+    requirement_ids: ["MCP_0002"]
+    title: "MCP server transport selectable"
+    description: "GIVEN no transport selected WHEN the server starts THEN it communicates over stdio, and WHEN an HTTP-based transport with host and port is selected THEN it serves on that host and port"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_MCP_0003
+    requirement_ids: ["MCP_0003"]
+    title: "MCP dataset resolved or error reported"
+    description: "GIVEN no source WHEN a reqstool AI configuration file is found by walking up THEN that dataset is served, and WHEN no source and no config THEN an error explaining how to provide a source is reported"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_MCP_0004
+    requirement_ids: ["MCP_0004"]
+    title: "MCP server guards missing extra"
+    description: "GIVEN the MCP dependencies are not installed WHEN the command runs THEN it reports how to install them and does not start the server"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- data-sources ---
+  - id: SVC_SOURCE_0001
+    requirement_ids: ["SOURCE_0001"]
+    title: "Source materialized before parsing"
+    description: "GIVEN any source WHEN a command runs THEN the source content is placed in a local working directory before it is read"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_SOURCE_0002
+    requirement_ids: ["SOURCE_0002"]
+    title: "Local directory used as source"
+    description: "GIVEN the local source with a directory path WHEN a command runs THEN the data at that directory is used"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_SOURCE_0003
+    requirement_ids: ["SOURCE_0003"]
+    title: "Local artifact extracted and used"
+    description: "GIVEN the local source pointing at a Maven ZIP, npm tarball, or PyPI sdist WHEN a command runs THEN the artifact is extracted and the data it contains is used"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_SOURCE_0004
+    requirement_ids: ["SOURCE_0004"]
+    title: "Git source fetched at ref"
+    description: "GIVEN the git source with a URL, path, and ref WHEN a command runs THEN the repository is fetched at that ref and the data at the given path is used"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_SOURCE_0005
+    requirement_ids: ["SOURCE_0005"]
+    title: "Maven artifact downloaded and used"
+    description: "GIVEN the Maven source with group ID, artifact ID, and version WHEN a command runs THEN the matching artifact is downloaded and the data it contains is used"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_SOURCE_0006
+    requirement_ids: ["SOURCE_0006"]
+    title: "npm package downloaded and used"
+    description: "GIVEN the npm source with a package name and version WHEN a command runs THEN the package is downloaded and the data it contains is used"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_SOURCE_0007
+    requirement_ids: ["SOURCE_0007"]
+    title: "PyPI package downloaded and used"
+    description: "GIVEN the PyPI source with a package name and version WHEN a command runs THEN the package is downloaded and the data it contains is used"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_SOURCE_0008
+    requirement_ids: ["SOURCE_0008"]
+    title: "Token authenticates remote fetch"
+    description: "GIVEN a token for a git, Maven, npm, or PyPI source WHEN a command runs THEN that token is used to authenticate the fetch"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- ingestion ---
+  - id: SVC_INGEST_0001
+    requirement_ids: ["INGEST_0001"]
+    title: "Requirements parsed into model"
+    description: "GIVEN a dataset containing requirements.yml WHEN parsed THEN each requirement and its metadata are loaded into the model"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_INGEST_0002
+    requirement_ids: ["INGEST_0002"]
+    title: "SVCs parsed into model"
+    description: "GIVEN a dataset containing software_verification_cases.yml WHEN parsed THEN each SVC and its requirement links are loaded into the model"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_INGEST_0003
+    requirement_ids: ["INGEST_0003"]
+    title: "MVRs parsed into model"
+    description: "GIVEN a dataset containing manual_verification_results.yml WHEN parsed THEN each manual verification result is loaded into the model"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_INGEST_0004
+    requirement_ids: ["INGEST_0004"]
+    title: "Annotations parsed into model"
+    description: "GIVEN a dataset containing a generated annotations.yml WHEN parsed THEN the implementation and test annotations are loaded into the model"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_INGEST_0005
+    requirement_ids: ["INGEST_0005"]
+    title: "JUnit results parsed"
+    description: "GIVEN JUnit XML report files WHEN parsed THEN the test outcomes are associated with the model"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_INGEST_0006
+    requirement_ids: ["INGEST_0006"]
+    title: "Karate reports parsed"
+    description: "GIVEN Karate test reports WHEN parsed THEN their outcomes are loaded into the model"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_INGEST_0007
+    requirement_ids: ["INGEST_0007"]
+    title: "Static files located at content root"
+    description: "GIVEN the static input files at the root of the content path WHEN a command runs THEN they are located and parsed without additional configuration"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_INGEST_0008
+    requirement_ids: ["INGEST_0008"]
+    title: "Configured paths override defaults"
+    description: "GIVEN a configuration file overriding default paths WHEN a command runs THEN generated files and test reports are read from the configured locations"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- imports-and-filtering ---
+  - id: SVC_IMPORT_0001
+    requirement_ids: ["IMPORT_0001"]
+    title: "Nested imports resolved"
+    description: "GIVEN a dataset importing another that imports a third WHEN resolved THEN requirements from all datasets in the import chain are included"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_IMPORT_0002
+    requirement_ids: ["IMPORT_0002"]
+    title: "Circular import rejected"
+    description: "GIVEN datasets importing each other in a cycle WHEN resolved THEN a circular-import error is reported and resolution stops"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_IMPORT_0003
+    requirement_ids: ["IMPORT_0003"]
+    title: "Nested implementations resolved"
+    description: "GIVEN a dataset declaring an implementation that itself declares a further implementation WHEN resolved THEN the implementation chain is followed to full depth"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_IMPORT_0004
+    requirement_ids: ["IMPORT_0004"]
+    title: "Circular implementation rejected"
+    description: "GIVEN datasets declaring each other as implementations in a cycle WHEN resolved THEN a circular-implementation error is reported and resolution stops"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_IMPORT_0005
+    requirement_ids: ["IMPORT_0005"]
+    title: "Implementation requirements excluded"
+    description: "GIVEN an implementation dataset defining its own requirements WHEN resolved THEN those requirements are not included in the system's own requirement set"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_IMPORT_0006
+    requirement_ids: ["IMPORT_0006"]
+    title: "Imported requirements filtered"
+    description: "GIVEN a filter excluding a requirement ID from a source WHEN composed THEN the composed dataset omits that requirement"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_IMPORT_0007
+    requirement_ids: ["IMPORT_0007"]
+    title: "Imported SVCs filtered"
+    description: "GIVEN a filter selecting specific SVC IDs from a source WHEN composed THEN the composed dataset includes only the selected SVCs from that source"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_IMPORT_0008
+    requirement_ids: ["IMPORT_0008"]
+    title: "Filter expression selects matches"
+    description: "GIVEN a filter expression combining logical operators with identifier or regex matching WHEN applied THEN exactly the requirements or SVCs matching the expression are selected"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- parse-validation ---
+  - id: SVC_PARSE_0001
+    requirement_ids: ["PARSE_0001"]
+    title: "Non-conforming file rejected"
+    description: "GIVEN an input file that does not conform to its JSON schema WHEN parsed THEN a schema validation error is reported and the file is not treated as valid"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_PARSE_0002
+    requirement_ids: ["PARSE_0002"]
+    title: "Missing requirements file fails"
+    description: "GIVEN a content root with no requirements.yml WHEN a command runs THEN the missing file is reported and the process exits with an error"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_PARSE_0003
+    requirement_ids: ["PARSE_0003"]
+    title: "Duplicate requirement IDs warned"
+    description: "GIVEN two requirements parsed with the same identifier WHEN parsed THEN a warning identifying the duplicate is logged"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_PARSE_0004
+    requirement_ids: ["PARSE_0004"]
+    title: "Duplicate SVC IDs warned"
+    description: "GIVEN two SVCs parsed with the same identifier WHEN parsed THEN a warning identifying the duplicate is logged"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_PARSE_0005
+    requirement_ids: ["PARSE_0005"]
+    title: "Dangling requirement reference warned"
+    description: "GIVEN an SVC or annotation referencing a non-existent requirement identifier WHEN parsed THEN a warning identifying the unresolved reference is logged"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_PARSE_0006
+    requirement_ids: ["PARSE_0006"]
+    title: "Dangling SVC reference warned"
+    description: "GIVEN an MVR or annotation referencing a non-existent SVC identifier WHEN parsed THEN a warning identifying the unresolved reference is logged"
+    verification: automated-test
+    revision: "0.11.0"
+
+  # --- lifecycle ---
+  - id: SVC_LIFECYCLE_0001
+    requirement_ids: ["LIFECYCLE_0001"]
+    title: "Non-code requirement not flagged unimplemented"
+    description: "GIVEN a requirement declaring a non-code implementation type WHEN status is computed THEN the declared type is shown instead of an implementation count and it is not flagged as missing an implementation"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_LIFECYCLE_0002
+    requirement_ids: ["LIFECYCLE_0002"]
+    title: "Requirement lifecycle state recorded"
+    description: "GIVEN a requirement declaring a deprecated lifecycle state WHEN parsed THEN that state and its reason are recorded for the requirement"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_LIFECYCLE_0003
+    requirement_ids: ["LIFECYCLE_0003"]
+    title: "SVC lifecycle state recorded"
+    description: "GIVEN an SVC declaring an obsolete lifecycle state WHEN parsed THEN that state and its reason are recorded for the SVC"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_LIFECYCLE_0004
+    requirement_ids: ["LIFECYCLE_0004"]
+    title: "Superseded reference warned"
+    description: "GIVEN an active item referencing a deprecated or obsolete requirement or SVC WHEN parsed THEN a warning identifying the superseded reference is logged"
+    verification: automated-test
+    revision: "0.11.0"

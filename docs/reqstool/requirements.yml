@@ -1,0 +1,458 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reqstool/reqstool-client/main/src/reqstool/resources/schemas/v1/requirements.schema.json
+
+metadata:
+  urn: reqstool-client
+  variant: microservice
+  title: Reqstool client
+  url: https://github.com/reqstool/reqstool-client
+
+requirements:
+  # --- status capability (derived from openspec/specs/status) ---
+  - id: STATUS_0001
+    title: Requirement status computation
+    significance: shall
+    description: The system shall compute, for every requirement, its implementation state, automated test outcome, and manual verification outcome, and classify each requirement as complete or incomplete.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: STATUS_0002
+    title: Completion verdict
+    significance: shall
+    description: The system shall derive an overall verdict from the number of incomplete requirements, reporting PASS when none are incomplete and FAIL otherwise.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: STATUS_0003
+    title: Console verbosity levels
+    significance: shall
+    description: The system shall provide four console verbosity levels (compact, normal, verbose, extra-verbose) presenting increasing detail, defaulting to normal.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: STATUS_0004
+    title: Incomplete-only filtering
+    significance: shall
+    description: The system shall support restricting console output to only incomplete requirements.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: STATUS_0005
+    title: JSON output format
+    significance: shall
+    description: The system shall be able to emit status as a structured JSON document as an alternative to console output, ignoring console verbosity when JSON is selected.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: STATUS_0006
+    title: Requirement and SVC filtering
+    significance: shall
+    description: The system shall allow status output to be filtered to a specified set of requirement IDs or SVC IDs.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: STATUS_0007
+    title: CI gating exit code
+    significance: shall
+    description: The system shall, when explicitly asked to enforce coverage, exit with a dedicated non-zero code if any requirement is unmet, and otherwise exit zero.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: STATUS_0008
+    title: Post-build test gating
+    significance: shall
+    description: The system shall accept one or more post-build JUnit XML result files and incorporate their outcomes into the status computation.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: STATUS_0009
+    title: Status output destination
+    significance: shall
+    description: The system shall write status output to a file when a path is given and to standard output otherwise.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+
+  # --- report capability (derived from openspec/specs/report) ---
+  - id: REPORT_0001
+    title: Report generation
+    significance: shall
+    description: The system shall generate a report from the collected statistics that lists every requirement together with its implementation and verification status.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: REPORT_0002
+    title: Output format selection
+    significance: shall
+    description: The system shall render the report in a selectable markup format, defaulting to AsciiDoc and also supporting Markdown.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: REPORT_0003
+    title: Grouping
+    significance: shall
+    description: The system shall group requirements in the report either by their initial-versus-imported origin or by requirement category.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: REPORT_0004
+    title: Sorting
+    significance: shall
+    description: The system shall sort the requirements within each group by one or more of identifier, significance, or revision.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: REPORT_0005
+    title: Report output destination
+    significance: shall
+    description: The system shall write the report to a file when a path is given and to standard output otherwise.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: REPORT_0006
+    title: Deprecated AsciiDoc alias
+    significance: shall
+    description: The system shall retain a deprecated dedicated AsciiDoc report command that behaves like the report command in AsciiDoc format while warning the user to migrate.
+    categories: ["maintainability"]
+    revision: "0.11.0"
+
+  # --- export capability (derived from openspec/specs/export) ---
+  - id: EXPORT_0001
+    title: JSON export
+    significance: shall
+    description: The system shall export the dataset as a JSON document conforming to the export schema, as the default format.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: EXPORT_0002
+    title: Export filtering
+    significance: shall
+    description: The system shall allow the JSON export to be restricted to a specified set of requirement IDs or SVC IDs.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: EXPORT_0003
+    title: Unfiltered export
+    significance: shall
+    description: The system shall provide an option to export the dataset without applying the dataset's own import and scope filters.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: EXPORT_0004
+    title: SQLite export
+    significance: shall
+    description: The system shall be able to export the dataset as a SQLite database snapshot written to a file, requiring an output file path.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: EXPORT_0005
+    title: Export output destination
+    significance: shall
+    description: The system shall write the JSON export to a file when a path is given and to standard output otherwise.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+
+  # --- validate capability (derived from openspec/specs/validate) ---
+  - id: VALIDATE_0001
+    title: SVC coverage check
+    significance: shall
+    description: The system shall report every requirement that has no software verification case defined.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: VALIDATE_0002
+    title: Manual verification coverage check
+    significance: shall
+    description: The system shall report every SVC that expects a manual verification result but has none recorded.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: VALIDATE_0003
+    title: Referential integrity check
+    significance: shall
+    description: The system shall report referential-integrity errors where an SVC, MVR, or annotation references a non-existent entity, and treat such errors as fatal.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: VALIDATE_0004
+    title: Strict mode
+    significance: shall
+    description: The system shall treat coverage gaps as warnings by default and as errors when strict mode is enabled.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: VALIDATE_0005
+    title: Validation summary
+    significance: shall
+    description: The system shall summarize the outcome with counts of errors and warnings and an overall pass/fail result, signalling failure through its exit code.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+
+  # --- enrich capability (derived from openspec/specs/enrich) ---
+  - id: ENRICH_0001
+    title: Document enrichment
+    significance: shall
+    description: The system shall enrich an input document by injecting the titles and descriptions of the requirement, SVC, and MVR identifiers it references.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: ENRICH_0002
+    title: Enrichment preset selection
+    significance: shall
+    description: The system shall apply a named enrichment preset that determines how references are detected and rendered.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: ENRICH_0003
+    title: Enrichment input and output
+    significance: shall
+    description: The system shall read the document to enrich from a file or standard input and write the result to a file or standard output.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: ENRICH_0004
+    title: Dataset auto-detection
+    significance: shall
+    description: The system shall auto-detect the dataset from the reqstool AI configuration file in the current or an ancestor directory when no source is provided, and report an error when none is found.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+
+  # --- lsp capability (derived from openspec/specs/lsp) ---
+  - id: LSP_0001
+    title: Language server startup
+    significance: shall
+    description: The system shall start a Language Server Protocol server that serves reqstool data to a connected editor client.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: LSP_0002
+    title: Language server transport selection
+    significance: shall
+    description: The system shall serve over stdio by default and support a TCP transport with a configurable host and port.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: LSP_0003
+    title: Language server log file
+    significance: shall
+    description: The system shall support writing server logs to a file in addition to standard error.
+    categories: ["maintainability"]
+    revision: "0.11.0"
+  - id: LSP_0004
+    title: Language server dependency guard
+    significance: shall
+    description: The system shall report a clear, actionable error when the optional dependencies required for the language server are not installed.
+    categories: ["reliability"]
+    revision: "0.11.0"
+
+  # --- mcp capability (derived from openspec/specs/mcp) ---
+  - id: MCP_0001
+    title: MCP server startup
+    significance: shall
+    description: The system shall start a Model Context Protocol server that exposes the reqstool dataset to connected clients through structured tools.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: MCP_0002
+    title: MCP server transport selection
+    significance: shall
+    description: The system shall support stdio, SSE, and streamable-HTTP transports, defaulting to stdio, with a configurable host and port for the HTTP transports.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: MCP_0003
+    title: MCP dataset resolution
+    significance: shall
+    description: The system shall serve an explicitly provided source, or auto-detect the dataset from the reqstool AI configuration file when no source is given, and report an error when neither is available.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: MCP_0004
+    title: MCP server dependency guard
+    significance: shall
+    description: The system shall report a clear, actionable error when the optional dependencies required for the MCP server are not installed.
+    categories: ["reliability"]
+    revision: "0.11.0"
+
+  # --- data-sources capability (derived from openspec/specs/data-sources) ---
+  - id: SOURCE_0001
+    title: Local materialization contract
+    significance: shall
+    description: The system shall make every selected source available on local disk before parsing, regardless of source type.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0002
+    title: Local directory source
+    significance: shall
+    description: The system shall accept a path to a local directory as a data source.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0003
+    title: Local packaged-artifact source
+    significance: shall
+    description: The system shall accept a local packaged artifact (Maven ZIP, npm tarball, or PyPI source distribution) as a data source and extract it before parsing.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: SOURCE_0004
+    title: Git repository source
+    significance: shall
+    description: The system shall fetch data from a git repository identified by URL, a path within the repository, and a ref (branch, tag, or commit).
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0005
+    title: Maven artifact source
+    significance: shall
+    description: The system shall fetch a Maven artifact identified by group ID, artifact ID, and version, with an optional repository URL and classifier.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0006
+    title: npm package source
+    significance: shall
+    description: The system shall fetch an npm package identified by package name and version, defaulting to the public npm registry when no registry URL is given.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0007
+    title: PyPI package source
+    significance: shall
+    description: The system shall fetch a PyPI package identified by package name and version, with an optional index URL.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0008
+    title: Authenticated access
+    significance: shall
+    description: The system shall accept an authentication token for remote sources, supplied as a direct value with support for variable references in data files.
+    categories: ["security"]
+    revision: "0.11.0"
+
+  # --- ingestion capability (derived from openspec/specs/ingestion) ---
+  - id: INGEST_0001
+    title: Parse requirements
+    significance: shall
+    description: The system shall parse requirements from a requirements.yml file, producing requirement entities with their identifier, title, significance, description, categories, and revision.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0002
+    title: Parse software verification cases
+    significance: shall
+    description: The system shall parse software verification cases from a software_verification_cases.yml file, each linked to the requirements it verifies.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0003
+    title: Parse manual verification results
+    significance: shall
+    description: The system shall parse manual verification results from a manual_verification_results.yml file, each linked to the SVC it verifies.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0004
+    title: Parse code annotations
+    significance: shall
+    description: The system shall parse code annotations from a generated annotations.yml file, capturing which code elements implement requirements and which tests verify SVCs.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0005
+    title: Parse automated test results
+    significance: shall
+    description: The system shall parse automated test results from JUnit XML report files.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0006
+    title: Parse Karate test reports
+    significance: shall
+    description: The system shall parse test results from Karate test reports.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0007
+    title: Static files at the content root
+    significance: shall
+    description: The system shall expect the static input files (requirements.yml, software_verification_cases.yml, manual_verification_results.yml) at the root of the provided content path.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: INGEST_0008
+    title: Configurable file locations
+    significance: shall
+    description: The system shall support an optional configuration file that overrides the default locations for generated files and test reports.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+
+  # --- imports-and-filtering capability (derived from openspec/specs/imports-and-filtering) ---
+  - id: IMPORT_0001
+    title: Recursive import resolution
+    significance: shall
+    description: The system shall resolve a dataset's imports recursively, including the requirements of each imported dataset and the imports they declare in turn.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: IMPORT_0002
+    title: Import cycle detection
+    significance: shall
+    description: The system shall detect a cycle in the import chain and reject it rather than recursing indefinitely.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: IMPORT_0003
+    title: Recursive implementation resolution
+    significance: shall
+    description: The system shall resolve a dataset's declared implementations recursively, treating each implementing dataset as one that may declare its own implementations.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: IMPORT_0004
+    title: Implementation cycle detection
+    significance: shall
+    description: The system shall detect a cycle in the implementation chain and reject it.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: IMPORT_0005
+    title: Implementation requirements excluded from scope
+    significance: shall
+    description: The system shall exclude the requirements contributed by implementation datasets from the system's own requirement set, retaining only their verification evidence.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: IMPORT_0006
+    title: Filter imported requirements
+    significance: shall
+    description: The system shall allow a dataset to include or exclude specific requirement IDs from a composed source.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: IMPORT_0007
+    title: Filter imported SVCs
+    significance: shall
+    description: The system shall allow a dataset to include or exclude specific SVC IDs from a composed source.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: IMPORT_0008
+    title: Filter expression language
+    significance: shall
+    description: The system shall support a filter expression language combining logical operators, identifier equality and inequality, and regular-expression matching.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+
+  # --- parse-validation capability (derived from openspec/specs/parse-validation) ---
+  - id: PARSE_0001
+    title: Schema validation
+    significance: shall
+    description: The system shall validate each input file against its JSON schema before parsing and report a validation error when a file does not conform.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: PARSE_0002
+    title: Missing requirements file
+    significance: shall
+    description: The system shall fail with a clear error when no requirements.yml file is found at the provided content root.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: PARSE_0003
+    title: Duplicate requirement identifiers
+    significance: shall
+    description: The system shall warn when duplicate requirement identifiers are detected during parsing.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: PARSE_0004
+    title: Duplicate SVC identifiers
+    significance: shall
+    description: The system shall warn when duplicate SVC identifiers are detected during parsing.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: PARSE_0005
+    title: Dangling requirement references
+    significance: shall
+    description: The system shall warn when a reference to a non-existent requirement identifier is detected during parsing.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: PARSE_0006
+    title: Dangling SVC references
+    significance: shall
+    description: The system shall warn when a reference to a non-existent SVC identifier is detected during parsing.
+    categories: ["reliability"]
+    revision: "0.11.0"
+
+  # --- lifecycle capability (derived from openspec/specs/lifecycle) ---
+  - id: LIFECYCLE_0001
+    title: Non-code implementation types
+    significance: shall
+    description: The system shall allow a requirement to declare that it is satisfied by something other than source code (not-applicable, configuration, platform, or framework) and not treat such a requirement as unimplemented for lacking a code annotation.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: LIFECYCLE_0002
+    title: Requirement lifecycle state
+    significance: shall
+    description: The system shall allow a requirement to declare a lifecycle state (draft, effective, deprecated, or obsolete) with an optional reason, defaulting to effective.
+    categories: ["maintainability"]
+    revision: "0.11.0"
+  - id: LIFECYCLE_0003
+    title: SVC lifecycle state
+    significance: shall
+    description: The system shall allow an SVC to declare a lifecycle state (draft, effective, deprecated, or obsolete) with an optional reason, defaulting to effective.
+    categories: ["maintainability"]
+    revision: "0.11.0"
+  - id: LIFECYCLE_0004
+    title: Superseded-reference warning
+    significance: shall
+    description: The system shall warn when a deprecated or obsolete requirement or SVC is still referenced by active items.
+    categories: ["maintainability"]
+    revision: "0.11.0"
