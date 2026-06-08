@@ -1,11 +1,15 @@
 # Copyright © LFV
 
+import argparse
+import io
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from reqstool_python_decorators.decorators.decorators import SVCs
 
+from reqstool.command import Command
 from reqstool.commands.enrich.enrich import EnrichCommand
 from reqstool.common.enrichment.enricher import BUILT_IN_PRESETS
 from reqstool.locations.local_location import LocalLocation
@@ -51,11 +55,36 @@ def test_inline_code_spans_skipped(ms101):
     assert result.result == expected
 
 
-@SVCs("SVC_ENRICH_0003")
+@SVCs("SVC_ENRICH_0001")
 def test_no_ids_passthrough(ms101):
     input_content, expected = _load("no_ids")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])
     assert result.result == expected
+
+
+@SVCs("SVC_ENRICH_0003")
+def test_command_enrich_reads_stdin_writes_output(monkeypatch):
+    """ENRICH_0003: with no input file, the document is read from stdin and the result written to output."""
+    out = io.StringIO()
+    args = argparse.Namespace(
+        source="local",
+        path="/x",
+        maven=None,
+        npm=None,
+        pypi=None,
+        preset="openspec:spec",
+        input=None,
+        output=out,
+    )
+    monkeypatch.setattr("sys.stdin", io.StringIO("document referencing REQ_X"))
+    with (
+        patch.object(Command, "_get_initial_source", return_value=MagicMock()),
+        patch("reqstool.command.EnrichCommand") as mock_enrich,
+    ):
+        mock_enrich.return_value.result = "ENRICHED-OUTPUT"
+        Command().command_enrich(args)
+    assert out.getvalue() == "ENRICHED-OUTPUT"
+    assert mock_enrich.call_args.kwargs["input_content"] == "document referencing REQ_X"
 
 
 @SVCs("SVC_ENRICH_0001")

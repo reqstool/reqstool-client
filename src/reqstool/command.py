@@ -499,7 +499,7 @@ class Command:
 
         output.write(result.result)
 
-    @Requirements("EXPORT_0002", "EXPORT_0003", "EXPORT_0004", "EXPORT_0005")
+    @Requirements("EXPORT_0004", "EXPORT_0005")
     def command_export(self, export_args: argparse.Namespace):
         initial_source = self._get_initial_source(export_args)
         fmt = getattr(export_args, "format", "json")
@@ -540,7 +540,7 @@ class Command:
         output.write(result.result)
         return result.exit_code
 
-    @Requirements("STATUS_0009")
+    @Requirements("STATUS_0007", "STATUS_0009")
     def command_status(self, status_args: argparse.Namespace) -> int:
         initial_source = self._get_initial_source(status_args)
         output = status_args.output
@@ -631,7 +631,7 @@ class Command:
             logging.fatal("reqstool MCP server crashed: %s", exc)
             sys.exit(1)
 
-    @Requirements("ENRICH_0001")
+    @Requirements("ENRICH_0003", "ENRICH_0004")
     def command_enrich(self, enrich_args: argparse.Namespace):
         if getattr(enrich_args, "source", None) is None:
             from pathlib import Path

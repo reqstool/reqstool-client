@@ -16,7 +16,7 @@ from reqstool.storage.requirements_repository import RequirementsRepository
 logger = logging.getLogger(__name__)
 
 
-@Requirements("EXPORT_0001")
+@Requirements("EXPORT_0001", "EXPORT_0002", "EXPORT_0003")
 class GenerateJsonCommand:
     def __init__(
         self,

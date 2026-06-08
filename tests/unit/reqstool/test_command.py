@@ -375,13 +375,14 @@ def test_lsp_log_file_arg_parsed():
 
 
 @SVCs("SVC_LSP_0004")
-def test_lsp_missing_extra_reports_and_exits():
+def test_lsp_missing_extra_reports_and_exits(capsys):
     cmd = Command()
     lsp_args = argparse.Namespace(tcp=False, host="127.0.0.1", port=2087, log_file=None)
     with patch.dict(sys.modules, {"reqstool.lsp.server": None}):
         with pytest.raises(SystemExit) as exc:
             cmd.command_lsp(lsp_args)
     assert exc.value.code == 1
+    assert "pip install reqstool[lsp]" in capsys.readouterr().err
 
 
 @SVCs("SVC_MCP_0002")
@@ -393,7 +394,7 @@ def test_mcp_transport_args_parsed():
 
 
 @SVCs("SVC_MCP_0004")
-def test_mcp_missing_extra_reports_and_exits():
+def test_mcp_missing_extra_reports_and_exits(capsys):
     cmd = Command()
     mcp_args = argparse.Namespace(
         source="local", path="/tmp", transport="stdio", host="127.0.0.1", port=8000, maven=None, npm=None, pypi=None
@@ -402,3 +403,4 @@ def test_mcp_missing_extra_reports_and_exits():
         with pytest.raises(SystemExit) as exc:
             cmd.command_mcp(mcp_args)
     assert exc.value.code == 1
+    assert "pip install 'mcp>=1.0'" in capsys.readouterr().err

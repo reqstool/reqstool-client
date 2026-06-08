@@ -346,7 +346,7 @@ class CombinedRawDatasetsGenerator:
             source_paths["annotations"] = paths.annotations_yml.path
         return source_paths
 
-    @Requirements("INGEST_0002", "INGEST_0003", "INGEST_0004", "INGEST_0007")
+    @Requirements("INGEST_0002", "INGEST_0003", "INGEST_0004")
     def __parse_source_other(
         self, actual_tmp_path: str, requirements_indata: RequirementsIndata, rmg: RequirementsModelGenerator
     ):

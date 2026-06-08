@@ -4,9 +4,9 @@ import os
 
 import pytest
 
-# Note: SVC_SOURCE_0004 (git) and SVC_SOURCE_0005 (maven) are exercised by this integration test,
-# but linked via tests/unit/.../traceability instead — this test is skipped without GITHUB/GITLAB
-# tokens, so its (skipped) result cannot satisfy those SVCs in credential-less CI.
+# Note: SVC_SOURCE_0004 (git) and SVC_SOURCE_0005 (maven) are exercised here, but are linked to the
+# unit tests (test_git_location.py / test_maven_location.py) instead — this integration test is
+# skipped without GITHUB/GITLAB tokens, so its result cannot satisfy those SVCs in credential-less CI.
 
 from reqstool.common.validator_error_holder import ValidationErrorHolder
 from reqstool.common.validators.semantic_validator import SemanticValidator

@@ -10,7 +10,7 @@ from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
-@Requirements("VALIDATE_0001", "VALIDATE_0002", "VALIDATE_0003", "VALIDATE_0004", "VALIDATE_0005")
+@Requirements("VALIDATE_0003", "VALIDATE_0004", "VALIDATE_0005")
 class ValidateCommand:
     """Validate spec completeness: every requirement has ≥1 SVC; every manual SVC has an MVR.
 
@@ -69,6 +69,7 @@ class ValidateCommand:
 
         return "\n".join(lines), exit_code
 
+    @Requirements("VALIDATE_0001", "VALIDATE_0002")
     def _check_coverage(self, repo: RequirementsRepository) -> list[str]:
         warnings = []
         all_reqs = repo.get_all_requirements()

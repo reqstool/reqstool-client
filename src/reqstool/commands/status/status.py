@@ -137,6 +137,7 @@ class StatusCommand:
                 ts.total_requirements - ts.completed_requirements,
             )
 
+    @Requirements("STATUS_0008")
     @staticmethod
     def __inject_post_tests(db: RequirementsDatabase, initial_urn: str, paths: list[str]) -> None:
         resolved = [Path(p).resolve() for p in paths]
@@ -156,6 +157,7 @@ def _filtered_status_dict(stats_service: StatisticsService, kept_req_ids: set | 
     return full
 
 
+@Requirements("STATUS_0002")
 def _status_verdict(incomplete_count: int) -> str:
     return "PASS" if incomplete_count == 0 else "FAIL"
 

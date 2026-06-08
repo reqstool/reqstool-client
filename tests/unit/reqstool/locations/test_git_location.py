@@ -10,7 +10,6 @@ from reqstool.locations.git_location import GitLocation
 from reqstool_python_decorators.decorators.decorators import SVCs
 
 
-@SVCs("SVC_SOURCE_0004", "SVC_SOURCE_0008")
 def test_git_location():
     PATH = "/tmp/somepath"
 
@@ -105,6 +104,7 @@ def _mock_repo(tmp_path):
     return mock_repo
 
 
+@SVCs("SVC_SOURCE_0004")
 @pytest.mark.parametrize("ref", ["v1.2.0", "main", "abc1234def5678"])
 def test_git_location_make_available_resolves_ref(tmp_path, ref):
     """A tag, default branch, or SHA resolves directly via revparse_single and is checked out."""
@@ -165,6 +165,7 @@ def test_git_location_make_available_git_error_treated_as_not_found(tmp_path):
             git_location._make_available_on_localdisk(str(tmp_path))
 
 
+@SVCs("SVC_SOURCE_0008")
 def test_git_location_make_available_with_token(tmp_path):
     git_location = GitLocation(url="https://git.example.com/repo.git", ref="main", path="", token="secret-token")
     mock_repo = _mock_repo(tmp_path)

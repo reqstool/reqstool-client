@@ -74,24 +74,19 @@ Out of scope for automated derivation: **MVRs** (human attestations).
 | 2 | Author content-rich OpenSpec specs — `commands/` capabilities | Opus | ✅ done | 7 specs / 37 reqs (status 9, report 6, export 5, validate 5, enrich 4, lsp 4, mcp 4); all validate strict |
 | 3 | Extend OpenSpec to remaining domains (domain-by-domain, commit each) | Opus | ✅ done | 5 domains: `data-sources` (8), `ingestion` (8), `imports-and-filtering` (8), `parse-validation` (6), `lifecycle` (4) — all validate strict |
 | 4 | **Flip:** derive SSOT ✅; re-annotate ✅ (815 tests); thin specs ✅ (12 specs → ID refs, validate strict; enrich round-trip verified); CI: pyproject already points at docs/reqstool | Opus | ✅ done | `docs/reqstool/*`, thin `openspec/specs/*`, re-annotated `src/` |
-| 5 | Coverage → **71/71 complete**: restored `reqstool_config.yml`; expanded `@Requirements` to cover all 71 reqs on real impl sites; re-pointed test `@SVCs`; added a traceability test module for SVCs without a behavioural test; narrowed hatch-plugin `sources` to exclude fixtures. 922 tests pass; `validate --strict` ✓. | Sonnet | ✅ done | src/test annotations, `test_traceability.py`, pyproject |
+| 5 | Coverage → **71/71 complete**: restored `reqstool_config.yml`; expanded `@Requirements` to cover all 71 reqs (later redistributed onto narrow implementing functions); linked every SVC to a **real** behavioural test (no placeholders); narrowed hatch-plugin `sources` to exclude fixtures. `validate --strict` ✓. | Sonnet | ✅ done | src/test annotations, pyproject |
 
 ### Pass 5 notes (2026-06-08)
 
-- **CI is NOT red:** `build.yml:44` runs `reqstool status local -p docs/reqstool` *without*
-  `--check-all-reqs-met`, so it exits 0 regardless of incomplete requirements. The earlier
-  "CI red" framing was wrong — the build step passes. Green coverage is a quality goal, not a gate.
+- **CI is NOT a gate:** `build.yml:44` runs `reqstool status local -p docs/reqstool` *without*
+  `--check-all-reqs-met`, so it exits 0 regardless. Green coverage is a quality goal, not a gate.
 - **Pipeline:** `hatch run dev:pytest --junitxml=build/junit.xml` → `hatch build` (reqstool hatch
-  hook scans `src`+`tests` for `@Requirements`/`@SVCs`, writes `build/reqstool/annotations.yml`) →
-  `reqstool status local -p docs/reqstool` reads annotations + junit via `reqstool_config.yml`.
-- **15/71 complete** = requirements with BOTH an `@Requirements` impl site AND a passing `@SVCs`
-  test. 27 reqs have impl annotations; intersection with tested SVCs = 15.
-- **To reach 71** would need adding `@Requirements` to ~44 more code sites + `@SVCs` to more tests;
-  some reqs (lsp/mcp server interaction, several flags) have no clean single impl/test site. Large
-  campaign, not all cleanly achievable.
-- **Fixture noise:** the hatch hook also scans `tests/fixtures/` (regression fixture `test_svcs.py`),
-  emitting harmless "non-existent SVC" warnings for fixture IDs (SVC_020/030/040/050). Could be
-  silenced by narrowing the plugin `sources` — deferred (a pyproject build-config change).
+  hook scans `src` + `tests/{unit,integration,e2e}` for `@Requirements`/`@SVCs`, writes
+  `build/reqstool/annotations.yml`) → `reqstool status local -p docs/reqstool` reads annotations +
+  junit via `reqstool_config.yml`.
+- **Final: 71/71 complete** — every requirement has an `@Requirements` impl site and every SVC a
+  passing `@SVCs` test. The interim placeholder module was replaced with genuine tests (PR review
+  follow-up); `tests/fixtures` is excluded from the scan so its annotations don't leak.
 
 Legend: ⬜ todo · 🟡 in progress · ✅ done · ⏸ blocked
 
