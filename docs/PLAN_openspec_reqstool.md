@@ -61,7 +61,7 @@ Out of scope for automated derivation: **MVRs** (human attestations).
 | 1 | Discovery map: `commands/` domain behaviors | Opus | ✅ done | `PASS1_commands_discovery.md` |
 | — | Clean slate: delete reqstool SSOT + `openspec init` | — | ✅ done | `openspec/` |
 | 2 | Author content-rich OpenSpec specs — `commands/` capabilities | Opus | ✅ done | 7 specs / 37 reqs (status 9, report 6, export 5, validate 5, enrich 4, lsp 4, mcp 4); all validate strict |
-| 3 | Extend OpenSpec to remaining domains (domain-by-domain, commit each) | Opus | 🟡 in progress | `data-sources` ✅ (8), `ingestion` ✅ (8), `imports-and-filtering` ✅ (8); todo: parse-time validation, lifecycle |
+| 3 | Extend OpenSpec to remaining domains (domain-by-domain, commit each) | Opus | 🟡 in progress | `data-sources` ✅ (8), `ingestion` ✅ (8), `imports-and-filtering` ✅ (8), `parse-validation` ✅ (6); todo: lifecycle |
 | 4 | **Flip:** derive reqstool reqs/svcs/mvrs from specs; re-annotate 21 files; thin specs; re-point CI | Opus | ⬜ todo | `docs/reqstool/*` |
 | 5 | Validate: `reqstool status` green, `openspec validate --all --strict` | Sonnet | ⬜ todo | green checks |
 
