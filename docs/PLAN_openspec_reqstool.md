@@ -4,7 +4,7 @@ Tracking doc for building an OpenSpec specification of the `reqstool-client` cod
 deriving reqstool data (requirements, SVCs, MVRs) from it in a later pass.
 
 **Branch:** `worktree-feat+openspec-reqstool-bootstrap` (worktree)
-**Status:** 🟡 In progress — clean slate done, OpenSpec scaffolded; awaiting Pass 2 authoring approach
+**Status:** 🟡 In progress — Passes 2 & 3 done (12 specs / 71 reqs, all validate strict); next is Pass 4 (the flip)
 **Owner:** Jimisola Laursen
 
 ---
@@ -61,7 +61,7 @@ Out of scope for automated derivation: **MVRs** (human attestations).
 | 1 | Discovery map: `commands/` domain behaviors | Opus | ✅ done | `PASS1_commands_discovery.md` |
 | — | Clean slate: delete reqstool SSOT + `openspec init` | — | ✅ done | `openspec/` |
 | 2 | Author content-rich OpenSpec specs — `commands/` capabilities | Opus | ✅ done | 7 specs / 37 reqs (status 9, report 6, export 5, validate 5, enrich 4, lsp 4, mcp 4); all validate strict |
-| 3 | Extend OpenSpec to remaining domains (domain-by-domain, commit each) | Opus | 🟡 in progress | `data-sources` ✅ (8), `ingestion` ✅ (8), `imports-and-filtering` ✅ (8), `parse-validation` ✅ (6); todo: lifecycle |
+| 3 | Extend OpenSpec to remaining domains (domain-by-domain, commit each) | Opus | ✅ done | 5 domains: `data-sources` (8), `ingestion` (8), `imports-and-filtering` (8), `parse-validation` (6), `lifecycle` (4) — all validate strict |
 | 4 | **Flip:** derive reqstool reqs/svcs/mvrs from specs; re-annotate 21 files; thin specs; re-point CI | Opus | ⬜ todo | `docs/reqstool/*` |
 | 5 | Validate: `reqstool status` green, `openspec validate --all --strict` | Sonnet | ⬜ todo | green checks |
 
