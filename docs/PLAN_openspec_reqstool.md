@@ -4,7 +4,18 @@ Tracking doc for building an OpenSpec specification of the `reqstool-client` cod
 deriving reqstool data (requirements, SVCs, MVRs) from it in a later pass.
 
 **Branch:** `worktree-feat+openspec-reqstool-bootstrap` (worktree)
-**Status:** ✅ Complete — all 5 passes done. **71/71 requirements complete** (`reqstool status` PASS, `validate --strict` ✓, `openspec validate --strict` 12/12, 922 tests pass).
+**Status:** ✅ Complete — all 5 passes + both follow-ups done. **71/71 complete**, every SVC backed
+by a **real** test (no placeholders), significance reviewed. `reqstool status` PASS, `validate
+--strict` ✓, `openspec validate --strict` 12/12, 916 tests pass.
+
+### Follow-ups (done 2026-06-08)
+
+- **#1 Real tests:** distributed all 71 SVC links onto genuine behavioural tests (re-tagged existing
+  tests, fixed mis-tags, added 5 LSP/MCP transport/log-file/guard tests); deleted the placeholder
+  traceability module.
+- **#2 Content review:** restored significance variety lost in the mechanical derivation —
+  INGEST_0004 (annotations) & INGEST_0008 (config) → `should`, LSP_0003 (log file) → `may`,
+  REPORT_0006 (deprecated alias) → `should`; category fixes for INGEST_0007 and LIFECYCLE_0001.
 **Owner:** Jimisola Laursen
 
 ---

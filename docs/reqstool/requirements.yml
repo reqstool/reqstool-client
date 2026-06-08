@@ -96,8 +96,8 @@ requirements:
     revision: "0.11.0"
   - id: REPORT_0006
     title: Deprecated AsciiDoc alias
-    significance: shall
-    description: The system shall retain a deprecated dedicated AsciiDoc report command that behaves like the report command in AsciiDoc format while warning the user to migrate.
+    significance: should
+    description: The system should retain a deprecated dedicated AsciiDoc report command that behaves like the report command in AsciiDoc format while warning the user to migrate.
     categories: ["maintainability"]
     revision: "0.11.0"
 
@@ -206,8 +206,8 @@ requirements:
     revision: "0.11.0"
   - id: LSP_0003
     title: Language server log file
-    significance: shall
-    description: The system shall support writing server logs to a file in addition to standard error.
+    significance: may
+    description: The system may write server logs to a file in addition to standard error.
     categories: ["maintainability"]
     revision: "0.11.0"
   - id: LSP_0004
@@ -314,8 +314,8 @@ requirements:
     revision: "0.11.0"
   - id: INGEST_0004
     title: Parse code annotations
-    significance: shall
-    description: The system shall parse code annotations from a generated annotations.yml file, capturing which code elements implement requirements and which tests verify SVCs.
+    significance: should
+    description: The system should parse code annotations from a generated annotations.yml file, capturing which code elements implement requirements and which tests verify SVCs.
     categories: ["functional-suitability"]
     revision: "0.11.0"
   - id: INGEST_0005
@@ -334,12 +334,12 @@ requirements:
     title: Static files at the content root
     significance: shall
     description: The system shall expect the static input files (requirements.yml, software_verification_cases.yml, manual_verification_results.yml) at the root of the provided content path.
-    categories: ["compatibility"]
+    categories: ["functional-suitability"]
     revision: "0.11.0"
   - id: INGEST_0008
     title: Configurable file locations
-    significance: shall
-    description: The system shall support an optional configuration file that overrides the default locations for generated files and test reports.
+    significance: should
+    description: The system should support an optional configuration file that overrides the default locations for generated files and test reports.
     categories: ["flexibility"]
     revision: "0.11.0"
 
@@ -436,7 +436,7 @@ requirements:
     title: Non-code implementation types
     significance: shall
     description: The system shall allow a requirement to declare that it is satisfied by something other than source code (not-applicable, configuration, platform, or framework) and not treat such a requirement as unimplemented for lacking a code annotation.
-    categories: ["flexibility"]
+    categories: ["functional-suitability", "flexibility"]
     revision: "0.11.0"
   - id: LIFECYCLE_0002
     title: Requirement lifecycle state
