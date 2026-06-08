@@ -16,7 +16,7 @@ def choose_token():
     return os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")
 
 
-@SVCs("SVC_002")
+@SVCs("SVC_SOURCE_0004")
 @pytest.mark.integration
 @pytest.mark.skipif(
     not (os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")),
@@ -36,7 +36,7 @@ def test_basic_git():
     )
 
 
-@SVCs("SVC_003", "SVC_008")
+@SVCs("SVC_SOURCE_0005")
 @pytest.mark.integration
 @pytest.mark.skipif(
     not (os.getenv("GITHUB_TOKEN") or os.getenv("GITLAB_TOKEN")),

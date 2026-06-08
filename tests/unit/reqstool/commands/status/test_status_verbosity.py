@@ -96,7 +96,7 @@ def test_incomplete_reasons_not_applicable_stats_ignored():
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_compact_format(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -110,7 +110,7 @@ def test_status_compact_format(local_testdata_resources_rootdir_w_path):
     assert len(status.strip().splitlines()) == 1
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_compact_single_line(local_testdata_resources_rootdir_w_path):
     """Compact output is exactly one non-empty line regardless of fixture state."""
     result = StatusCommand(
@@ -128,7 +128,7 @@ def test_status_compact_single_line(local_testdata_resources_rootdir_w_path):
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_normal_has_complete_and_incomplete(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -140,7 +140,7 @@ def test_status_normal_has_complete_and_incomplete(local_testdata_resources_root
     assert "FAIL" in status
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_normal_complete_before_incomplete(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -152,7 +152,7 @@ def test_status_normal_complete_before_incomplete(local_testdata_resources_rootd
     assert complete_pos < incomplete_pos, "COMPLETE section must appear before INCOMPLETE"
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_normal_verdict_at_bottom(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -163,7 +163,7 @@ def test_status_normal_verdict_at_bottom(local_testdata_resources_rootdir_w_path
     assert "FAIL" in lines[-1]
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_normal_has_reason_text(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -178,7 +178,7 @@ def test_status_normal_has_reason_text(local_testdata_resources_rootdir_w_path):
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_incomplete_flag_hides_complete_section(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -193,7 +193,7 @@ def test_status_incomplete_flag_hides_complete_section(local_testdata_resources_
     assert not re.search(r"(?<![A-Z])COMPLETE \(", status)
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_incomplete_flag_verbose(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -209,7 +209,7 @@ def test_status_incomplete_flag_verbose(local_testdata_resources_rootdir_w_path)
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_verbose_has_table(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -228,7 +228,7 @@ def test_status_verbose_has_table(local_testdata_resources_rootdir_w_path):
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_extra_verbose_has_drill_down(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -241,7 +241,7 @@ def test_status_extra_verbose_has_drill_down(local_testdata_resources_rootdir_w_
     assert "SVC_" in status
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_extra_verbose_shows_mvr_result(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -251,7 +251,7 @@ def test_status_extra_verbose_shows_mvr_result(local_testdata_resources_rootdir_
     assert "MVR_" in status
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_extra_verbose_verdict_at_bottom(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -267,7 +267,7 @@ def test_status_extra_verbose_verdict_at_bottom(local_testdata_resources_rootdir
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_json_default_has_all_requirements(local_testdata_resources_rootdir_w_path):
     import json
 
@@ -280,7 +280,7 @@ def test_status_json_default_has_all_requirements(local_testdata_resources_rootd
     assert len(data["requirements"]) == 6
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_json_req_ids_filter(local_testdata_resources_rootdir_w_path):
     import json
 
@@ -300,7 +300,7 @@ def test_status_json_req_ids_filter(local_testdata_resources_rootdir_w_path):
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_export_sqlite_produces_valid_db(local_testdata_resources_rootdir_w_path, tmp_path):
     from reqstool.common.validator_error_holder import ValidationErrorHolder
     from reqstool.common.validators.semantic_validator import SemanticValidator
@@ -354,7 +354,7 @@ def test_incomplete_reasons_non_code_with_manual_failure():
     assert "not implemented" not in r
 
 
-@SVCs("SVC_021")
+@SVCs("SVC_STATUS_0003")
 def test_status_json_verbosity_warning_is_emitted(local_testdata_resources_rootdir_w_path, caplog):
     """--verbosity is ignored for --format json; a warning must be logged."""
     import logging

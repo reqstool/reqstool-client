@@ -4,7 +4,7 @@ Tracking doc for building an OpenSpec specification of the `reqstool-client` cod
 deriving reqstool data (requirements, SVCs, MVRs) from it in a later pass.
 
 **Branch:** `worktree-feat+openspec-reqstool-bootstrap` (worktree)
-**Status:** 🟡 In progress — Passes 2 & 3 done (12 specs / 71 reqs, all validate strict); next is Pass 4 (the flip)
+**Status:** 🟡 In progress — Passes 2–4 done; Pass 5 underway (real coverage **15/71 complete** via build pipeline)
 **Owner:** Jimisola Laursen
 
 ---
@@ -63,7 +63,24 @@ Out of scope for automated derivation: **MVRs** (human attestations).
 | 2 | Author content-rich OpenSpec specs — `commands/` capabilities | Opus | ✅ done | 7 specs / 37 reqs (status 9, report 6, export 5, validate 5, enrich 4, lsp 4, mcp 4); all validate strict |
 | 3 | Extend OpenSpec to remaining domains (domain-by-domain, commit each) | Opus | ✅ done | 5 domains: `data-sources` (8), `ingestion` (8), `imports-and-filtering` (8), `parse-validation` (6), `lifecycle` (4) — all validate strict |
 | 4 | **Flip:** derive SSOT ✅; re-annotate ✅ (815 tests); thin specs ✅ (12 specs → ID refs, validate strict; enrich round-trip verified); CI: pyproject already points at docs/reqstool | Opus | ✅ done | `docs/reqstool/*`, thin `openspec/specs/*`, re-annotated `src/` |
-| 5 | Validate: `reqstool status` green (needs annotations.yml regen), `openspec validate --all --strict` | Sonnet | ⬜ todo | green checks |
+| 5 | Coverage: restore `reqstool_config.yml` ✅; re-point test `@SVCs` to new IDs ✅ (911 tests pass); pipeline regenerates `annotations.yml` → **15/71 complete**. Remaining 56 need more `@Requirements`/`@SVCs` sites. | Sonnet | 🟡 in progress | `reqstool_config.yml`, test re-annotations |
+
+### Pass 5 notes (2026-06-08)
+
+- **CI is NOT red:** `build.yml:44` runs `reqstool status local -p docs/reqstool` *without*
+  `--check-all-reqs-met`, so it exits 0 regardless of incomplete requirements. The earlier
+  "CI red" framing was wrong — the build step passes. Green coverage is a quality goal, not a gate.
+- **Pipeline:** `hatch run dev:pytest --junitxml=build/junit.xml` → `hatch build` (reqstool hatch
+  hook scans `src`+`tests` for `@Requirements`/`@SVCs`, writes `build/reqstool/annotations.yml`) →
+  `reqstool status local -p docs/reqstool` reads annotations + junit via `reqstool_config.yml`.
+- **15/71 complete** = requirements with BOTH an `@Requirements` impl site AND a passing `@SVCs`
+  test. 27 reqs have impl annotations; intersection with tested SVCs = 15.
+- **To reach 71** would need adding `@Requirements` to ~44 more code sites + `@SVCs` to more tests;
+  some reqs (lsp/mcp server interaction, several flags) have no clean single impl/test site. Large
+  campaign, not all cleanly achievable.
+- **Fixture noise:** the hatch hook also scans `tests/fixtures/` (regression fixture `test_svcs.py`),
+  emitting harmless "non-existent SVC" warnings for fixture IDs (SVC_020/030/040/050). Could be
+  silenced by narrowing the plugin `sources` — deferred (a pyproject build-config change).
 
 Legend: ⬜ todo · 🟡 in progress · ✅ done · ⏸ blocked
 

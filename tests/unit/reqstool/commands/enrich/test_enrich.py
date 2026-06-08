@@ -23,49 +23,49 @@ def ms101(local_testdata_resources_rootdir_w_path):
     return LocalLocation(path=local_testdata_resources_rootdir_w_path("test_basic/baseline/ms-101"))
 
 
-@SVCs("SVC_039")
+@SVCs("SVC_ENRICH_0001")
 def test_spec_all_fields(ms101):
     input_content, expected = _load("spec_all_fields")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])
     assert result.result == expected
 
 
-@SVCs("SVC_039")
+@SVCs("SVC_ENRICH_0001")
 def test_spec_no_description(ms101):
     input_content, expected = _load("spec_no_description")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])
     assert result.result == expected
 
 
-@SVCs("SVC_039")
+@SVCs("SVC_ENRICH_0001")
 def test_inline_title_only(ms101):
     input_content, expected = _load("inline_title_only")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:design"])
     assert result.result == expected
 
 
-@SVCs("SVC_039")
+@SVCs("SVC_ENRICH_0001")
 def test_inline_code_spans_skipped(ms101):
     input_content, expected = _load("inline_code_spans")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:design"])
     assert result.result == expected
 
 
-@SVCs("SVC_039")
+@SVCs("SVC_ENRICH_0001")
 def test_no_ids_passthrough(ms101):
     input_content, expected = _load("no_ids")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])
     assert result.result == expected
 
 
-@SVCs("SVC_039")
+@SVCs("SVC_ENRICH_0001")
 def test_mvr_enrichment(ms101):
     input_content, expected = _load("mvr")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])
     assert result.result == expected
 
 
-@SVCs("SVC_039")
+@SVCs("SVC_ENRICH_0001")
 def test_spec_multiline_description(ms101):
     input_content, expected = _load("spec_multiline_description")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])

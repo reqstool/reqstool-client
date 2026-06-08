@@ -25,7 +25,7 @@ def lifecycle_repo(local_testdata_resources_rootdir_w_path):
     db.close()
 
 
-@SVCs("SVC_038")
+@SVCs("SVC_LIFECYCLE_0003")
 def test_defunct_states(lifecycle_repo, caplog):
 
     LifecycleValidator(lifecycle_repo)
@@ -39,7 +39,7 @@ def test_defunct_states(lifecycle_repo, caplog):
     assert "Urn ms-101:SVC_101 is used in an annotation despite being deprecated." in caplog.text
 
 
-@SVCs("SVC_038")
+@SVCs("SVC_LIFECYCLE_0003")
 def test_active_states(lifecycle_repo, caplog):
 
     LifecycleValidator(lifecycle_repo)
@@ -49,7 +49,7 @@ def test_active_states(lifecycle_repo, caplog):
     assert "The SVC ms-101:SVC_201 is marked as draft but the MVR ms-101:MVR_201 references it." not in caplog.text
 
 
-@SVCs("SVC_038")
+@SVCs("SVC_LIFECYCLE_0003")
 def test_invalid_schema(local_testdata_resources_rootdir_w_path, caplog):
     with pytest.raises(SystemExit) as excinfo:
         semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
