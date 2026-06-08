@@ -1,4 +1,4 @@
-# ingestion Specification
+# Ingestion Specification
 
 ## Purpose
 

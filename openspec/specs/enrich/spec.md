@@ -1,4 +1,4 @@
-# enrich Specification
+# Enrich Specification
 
 ## Purpose
 

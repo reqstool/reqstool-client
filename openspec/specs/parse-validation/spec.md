@@ -1,4 +1,4 @@
-# parse-validation Specification
+# Parse Validation Specification
 
 ## Purpose
 

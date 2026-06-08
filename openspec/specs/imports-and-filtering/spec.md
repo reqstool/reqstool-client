@@ -1,4 +1,4 @@
-# imports-and-filtering Specification
+# Imports and Filtering Specification
 
 ## Purpose
 

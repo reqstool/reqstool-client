@@ -1,4 +1,4 @@
-# data-sources Specification
+# Data Sources Specification
 
 ## Purpose
 

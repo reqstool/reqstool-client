@@ -1,4 +1,4 @@
-# lsp Specification
+# LSP Specification
 
 ## Purpose
 

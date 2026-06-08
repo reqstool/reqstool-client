@@ -1,4 +1,4 @@
-# export Specification
+# Export Specification
 
 ## Purpose
 

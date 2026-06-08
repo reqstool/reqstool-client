@@ -1,4 +1,4 @@
-# lifecycle Specification
+# Lifecycle Specification
 
 ## Purpose
 

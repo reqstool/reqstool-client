@@ -1,4 +1,4 @@
-# mcp Specification
+# MCP Specification
 
 ## Purpose
 

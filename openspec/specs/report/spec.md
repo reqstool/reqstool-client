@@ -1,4 +1,4 @@
-# report Specification
+# Report Specification
 
 ## Purpose
 

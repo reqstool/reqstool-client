@@ -1,4 +1,4 @@
-# status Specification
+# Status Specification
 
 ## Purpose
 

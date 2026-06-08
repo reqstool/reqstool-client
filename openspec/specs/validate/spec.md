@@ -1,4 +1,4 @@
-# validate Specification
+# Validate Specification
 
 ## Purpose
 
