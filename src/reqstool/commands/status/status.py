@@ -68,7 +68,7 @@ def _render(*renderables) -> str:
     return cap.get()
 
 
-@Requirements("REQ_027")
+@Requirements("STATUS_0001")
 class StatusCommand:
     def __init__(
         self,

@@ -10,7 +10,7 @@ class RequirementsIndataPathItem(BaseModel):
     exists: bool = False
 
 
-@Requirements("REQ_016")
+@Requirements("INGEST_0008")
 class RequirementsIndataPaths(BaseModel):
     # static
     requirements_yml: RequirementsIndataPathItem = Field(

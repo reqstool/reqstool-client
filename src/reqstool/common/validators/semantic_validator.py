@@ -82,7 +82,7 @@ class SemanticValidator:
 
         logging.info(cap.get())
 
-    @Requirements("REQ_022")
+    @Requirements("PARSE_0003")
     def _validate_no_duplicate_requirement_ids(self, data: RequirementData) -> bool:
         # if there are no requirements or systems defined, add a validation error
         if "requirements" not in data and "systems" not in data:
@@ -105,7 +105,7 @@ class SemanticValidator:
 
         return self._validation_error_holder.get_no_of_errors() > 0
 
-    @Requirements("REQ_023")
+    @Requirements("PARSE_0004")
     def _validate_no_duplicate_svc_ids(self, data: SVCData) -> bool:
         if "cases" not in data:
             self._validation_error_holder.add_error(ValidationError(msg="No svc cases found!"))
@@ -126,7 +126,7 @@ class SemanticValidator:
 
         return self._validation_error_holder.get_no_of_errors() > 0
 
-    @Requirements("REQ_024")
+    @Requirements("PARSE_0005")
     def _validate_svc_refers_to_existing_requirement_ids(
         self,  # NOSONAR
         combined_raw_dataset: CombinedRawDataset,
@@ -155,7 +155,7 @@ class SemanticValidator:
 
         return errors
 
-    @Requirements("REQ_024")
+    @Requirements("PARSE_0005")
     def _validate_annotation_impls_refers_to_existing_requirement_ids(
         self,
         combined_raw_dataset: CombinedRawDataset,
@@ -183,7 +183,7 @@ class SemanticValidator:
 
         return errors
 
-    @Requirements("REQ_025")
+    @Requirements("PARSE_0006")
     def _validate_annotation_tests_refers_to_existing_svc_ids(
         self,
         combined_raw_dataset: CombinedRawDataset,
@@ -201,7 +201,7 @@ class SemanticValidator:
 
         return errors
 
-    @Requirements("REQ_025")
+    @Requirements("PARSE_0006")
     def _validate_mvr_refers_to_existing_svc_ids(
         self, combined_raw_dataset: CombinedRawDataset
     ) -> List[ValidationError]:

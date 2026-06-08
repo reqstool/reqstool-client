@@ -95,7 +95,7 @@ class TotalStats:
         return self.completed_requirements - self.non_code_completed
 
 
-@Requirements("REQ_028")
+@Requirements("STATUS_0001")
 class StatisticsService:
     def __init__(self, repository: RequirementsRepository, include_post_build: bool = False):
         self._repo = repository

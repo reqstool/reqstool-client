@@ -41,7 +41,7 @@ class SyntaxValidator:
     registry = resource @ registry
     registry = registry.with_resource(uri="common.schema.json", resource=resource)
 
-    @Requirements("REQ_012", "REQ_021")
+    @Requirements("PARSE_0001")
     @staticmethod
     def is_valid_data(json_schema_type: JsonSchemaTypes, data: dict, urn: str) -> bool:
         jsonvalidator_draft202012 = Draft202012Validator(
