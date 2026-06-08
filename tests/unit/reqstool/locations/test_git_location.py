@@ -7,8 +7,10 @@ from pydantic import ValidationError
 
 from reqstool.common.exceptions import GitRefNotFoundError
 from reqstool.locations.git_location import GitLocation
+from reqstool_python_decorators.decorators.decorators import SVCs
 
 
+@SVCs("SVC_SOURCE_0004", "SVC_SOURCE_0008")
 def test_git_location():
     PATH = "/tmp/somepath"
 

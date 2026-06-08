@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 import argparse
+import sys
 
 import pytest
 
@@ -18,6 +19,7 @@ from reqstool.locations.maven_location import MavenLocation
 from reqstool.locations.pypi_location import PypiLocation
 from reqstool.locations.local_npm_location import LocalNpmLocation
 from reqstool.locations.npm_location import NpmLocation
+from reqstool_python_decorators.decorators.decorators import SVCs
 
 
 # ---------------------------------------------------------------------------
@@ -25,6 +27,7 @@ from reqstool.locations.npm_location import NpmLocation
 # ---------------------------------------------------------------------------
 
 
+@SVCs("SVC_REPORT_0005")
 def test_report_subcommand_routes_to_command_report():
     with (
         patch.object(Command, "command_report") as mock_report,
@@ -35,6 +38,7 @@ def test_report_subcommand_routes_to_command_report():
         mock_report.assert_called_once()
 
 
+@SVCs("SVC_REPORT_0006")
 def test_report_asciidoc_deprecated_warning_printed_to_stderr(capsys):
     with (
         patch.object(Command, "command_report"),
@@ -57,6 +61,7 @@ def test_report_asciidoc_still_calls_command_report():
         mock_report.assert_called_once()
 
 
+@SVCs("SVC_EXPORT_0005")
 def test_export_subcommand_routes_to_command_export():
     with (
         patch.object(Command, "command_export") as mock_export,
@@ -102,6 +107,7 @@ def test_missing_requirements_error_exits_with_correct_code():
         mock_exit.assert_any_call(EXIT_CODE_MISSING_REQUIREMENTS_FILE)
 
 
+@SVCs("SVC_STATUS_0007")
 def test_status_nonzero_exit_code_is_propagated():
     with (
         patch.object(Command, "command_status", return_value=EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED),
@@ -305,12 +311,14 @@ def test_artifact_download_error_exits_with_correct_code():
         mock_exit.assert_any_call(EXIT_CODE_ARTIFACT_ERROR)
 
 
+@SVCs("SVC_MCP_0003")
 def test_mcp_parses_without_source():
     args = _make_command_and_parse(["reqstool", "mcp"])
     assert args.command == "mcp"
     assert args.source is None
 
 
+@SVCs("SVC_MCP_0001")
 def test_mcp_still_accepts_local_source():
     args = _make_command_and_parse(["reqstool", "mcp", "local", "-p", "/some/path"])
     assert args.command == "mcp"
@@ -318,6 +326,7 @@ def test_mcp_still_accepts_local_source():
     assert args.path == "/some/path"
 
 
+@SVCs("SVC_STATUS_0008")
 def test_status_with_post_tests_single_path():
     args = _make_command_and_parse(["reqstool", "status", "--with-post-tests", "/tmp/e2e.xml", "local", "-p", "/tmp"])
     assert args.command == "status"
@@ -344,3 +353,52 @@ def test_status_with_post_tests_multiple_paths():
 def test_status_without_post_tests_defaults_to_none():
     args = _make_command_and_parse(["reqstool", "status", "local", "-p", "/tmp"])
     assert args.with_post_tests is None
+
+
+# ---------------------------------------------------------------------------
+# LSP / MCP server option + dependency-guard tests
+# ---------------------------------------------------------------------------
+
+
+@SVCs("SVC_LSP_0002")
+def test_lsp_tcp_transport_args_parsed():
+    args = _make_command_and_parse(["reqstool", "lsp", "--tcp", "--host", "0.0.0.0", "--port", "9999"])
+    assert args.tcp is True
+    assert args.host == "0.0.0.0"
+    assert args.port == 9999
+
+
+@SVCs("SVC_LSP_0003")
+def test_lsp_log_file_arg_parsed():
+    args = _make_command_and_parse(["reqstool", "lsp", "--log-file", "/tmp/lsp.log"])
+    assert args.log_file == "/tmp/lsp.log"
+
+
+@SVCs("SVC_LSP_0004")
+def test_lsp_missing_extra_reports_and_exits():
+    cmd = Command()
+    lsp_args = argparse.Namespace(tcp=False, host="127.0.0.1", port=2087, log_file=None)
+    with patch.dict(sys.modules, {"reqstool.lsp.server": None}):
+        with pytest.raises(SystemExit) as exc:
+            cmd.command_lsp(lsp_args)
+    assert exc.value.code == 1
+
+
+@SVCs("SVC_MCP_0002")
+def test_mcp_transport_args_parsed():
+    args = _make_command_and_parse(["reqstool", "mcp", "--transport", "sse", "--host", "h", "--port", "1234"])
+    assert args.transport == "sse"
+    assert args.host == "h"
+    assert args.port == 1234
+
+
+@SVCs("SVC_MCP_0004")
+def test_mcp_missing_extra_reports_and_exits():
+    cmd = Command()
+    mcp_args = argparse.Namespace(
+        source="local", path="/tmp", transport="stdio", host="127.0.0.1", port=8000, maven=None, npm=None, pypi=None
+    )
+    with patch.dict(sys.modules, {"reqstool.mcp.server": None}):
+        with pytest.raises(SystemExit) as exc:
+            cmd.command_mcp(mcp_args)
+    assert exc.value.code == 1

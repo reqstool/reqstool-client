@@ -152,7 +152,7 @@ def test_status_normal_complete_before_incomplete(local_testdata_resources_rootd
     assert complete_pos < incomplete_pos, "COMPLETE section must appear before INCOMPLETE"
 
 
-@SVCs("SVC_STATUS_0003")
+@SVCs("SVC_STATUS_0002")
 def test_status_normal_verdict_at_bottom(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -178,7 +178,7 @@ def test_status_normal_has_reason_text(local_testdata_resources_rootdir_w_path):
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_STATUS_0003")
+@SVCs("SVC_STATUS_0004")
 def test_status_incomplete_flag_hides_complete_section(local_testdata_resources_rootdir_w_path):
     result = StatusCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -267,7 +267,7 @@ def test_status_extra_verbose_verdict_at_bottom(local_testdata_resources_rootdir
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_STATUS_0003")
+@SVCs("SVC_STATUS_0005")
 def test_status_json_default_has_all_requirements(local_testdata_resources_rootdir_w_path):
     import json
 
@@ -280,7 +280,7 @@ def test_status_json_default_has_all_requirements(local_testdata_resources_rootd
     assert len(data["requirements"]) == 6
 
 
-@SVCs("SVC_STATUS_0003")
+@SVCs("SVC_STATUS_0006")
 def test_status_json_req_ids_filter(local_testdata_resources_rootdir_w_path):
     import json
 
@@ -300,7 +300,7 @@ def test_status_json_req_ids_filter(local_testdata_resources_rootdir_w_path):
 # ---------------------------------------------------------------------------
 
 
-@SVCs("SVC_STATUS_0003")
+@SVCs("SVC_EXPORT_0004")
 def test_export_sqlite_produces_valid_db(local_testdata_resources_rootdir_w_path, tmp_path):
     from reqstool.common.validator_error_holder import ValidationErrorHolder
     from reqstool.common.validators.semantic_validator import SemanticValidator
@@ -328,6 +328,7 @@ def test_export_sqlite_produces_valid_db(local_testdata_resources_rootdir_w_path
 # ---------------------------------------------------------------------------
 
 
+@SVCs("SVC_LIFECYCLE_0001")
 def test_incomplete_reasons_non_code_type_no_not_implemented():
     """'not implemented' must not appear for non-IN_CODE requirement types."""
     for impl_type in [

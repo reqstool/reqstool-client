@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 from reqstool.locations.pypi_location import PypiLocation
+from reqstool_python_decorators.decorators.decorators import SVCs
 
 
 def test_pypi_location_token_defaults_to_none():
@@ -10,6 +11,7 @@ def test_pypi_location_token_defaults_to_none():
     assert loc.token is None
 
 
+@SVCs("SVC_SOURCE_0007")
 def test_pypi_location_make_available_no_token(tmp_path):
     loc = PypiLocation(package="my-package", version="1.0.0")
     extracted = str(tmp_path / "extracted")

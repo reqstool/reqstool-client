@@ -17,6 +17,7 @@ def test_generate_json(local_testdata_resources_rootdir_w_path):
     assert gjc.result
 
 
+@SVCs("SVC_EXPORT_0003")
 def test_generate_json_no_filter_unchanged(local_testdata_resources_rootdir_w_path):
     gjc = GenerateJsonCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -28,6 +29,7 @@ def test_generate_json_no_filter_unchanged(local_testdata_resources_rootdir_w_pa
     assert "ms-001:SVC_010" in result["svcs"]
 
 
+@SVCs("SVC_EXPORT_0002")
 def test_generate_json_filter_req_ids(local_testdata_resources_rootdir_w_path):
     gjc = GenerateJsonCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),

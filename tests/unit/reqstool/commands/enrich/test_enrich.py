@@ -37,7 +37,7 @@ def test_spec_no_description(ms101):
     assert result.result == expected
 
 
-@SVCs("SVC_ENRICH_0001")
+@SVCs("SVC_ENRICH_0002")
 def test_inline_title_only(ms101):
     input_content, expected = _load("inline_title_only")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:design"])
@@ -51,7 +51,7 @@ def test_inline_code_spans_skipped(ms101):
     assert result.result == expected
 
 
-@SVCs("SVC_ENRICH_0001")
+@SVCs("SVC_ENRICH_0003")
 def test_no_ids_passthrough(ms101):
     input_content, expected = _load("no_ids")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])

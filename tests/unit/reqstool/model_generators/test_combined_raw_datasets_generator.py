@@ -21,7 +21,7 @@ from reqstool.model_generators.combined_raw_datasets_generator import CombinedRa
 from reqstool.models.raw_datasets import CombinedRawDataset
 
 
-@SVCs("SVC_INGEST_0001")
+@SVCs("SVC_INGEST_0001", "SVC_INGEST_0004", "SVC_INGEST_0007")
 def test_basic_local(resource_funcname_rootdir, local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
@@ -30,7 +30,7 @@ def test_basic_local(resource_funcname_rootdir, local_testdata_resources_rootdir
     )
 
 
-@SVCs("SVC_INGEST_0001")
+@SVCs("SVC_INGEST_0008")
 def test_basic_requirements_config(resource_funcname_rootdir, local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
@@ -41,7 +41,7 @@ def test_basic_requirements_config(resource_funcname_rootdir, local_testdata_res
     )
 
 
-@SVCs("SVC_INGEST_0001")
+@SVCs("SVC_INGEST_0002", "SVC_INGEST_0003", "SVC_IMPORT_0001")
 def test_standard_ms001_initial(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
 
@@ -96,7 +96,7 @@ def test_missing_requirements_file(local_testdata_resources_rootdir_w_path):
     assert "this/path/does/not/have/a/requirements/file" in str(excinfo.value)
 
 
-@SVCs("SVC_PARSE_0002")
+@SVCs("SVC_IMPORT_0002")
 def test_circular_import_raises(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     with pytest.raises(CircularImportError) as excinfo:
@@ -108,7 +108,7 @@ def test_circular_import_raises(local_testdata_resources_rootdir_w_path):
     assert "Circular import detected" in str(excinfo.value)
 
 
-@SVCs("SVC_PARSE_0002")
+@SVCs("SVC_IMPORT_0004")
 def test_circular_implementation_raises(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     with pytest.raises(CircularImplementationError) as excinfo:
@@ -120,7 +120,7 @@ def test_circular_implementation_raises(local_testdata_resources_rootdir_w_path)
     assert "Circular implementation detected" in str(excinfo.value)
 
 
-@SVCs("SVC_INGEST_0001")
+@SVCs("SVC_IMPORT_0003", "SVC_IMPORT_0005")
 def test_implementation_traversal_recursive(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
 

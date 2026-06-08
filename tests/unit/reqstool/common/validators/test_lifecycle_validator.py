@@ -25,7 +25,7 @@ def lifecycle_repo(local_testdata_resources_rootdir_w_path):
     db.close()
 
 
-@SVCs("SVC_LIFECYCLE_0003")
+@SVCs("SVC_LIFECYCLE_0004")
 def test_defunct_states(lifecycle_repo, caplog):
 
     LifecycleValidator(lifecycle_repo)
@@ -39,7 +39,7 @@ def test_defunct_states(lifecycle_repo, caplog):
     assert "Urn ms-101:SVC_101 is used in an annotation despite being deprecated." in caplog.text
 
 
-@SVCs("SVC_LIFECYCLE_0003")
+@SVCs("SVC_LIFECYCLE_0002")
 def test_active_states(lifecycle_repo, caplog):
 
     LifecycleValidator(lifecycle_repo)

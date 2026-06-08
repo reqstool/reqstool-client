@@ -12,7 +12,7 @@ from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
-@SVCs("SVC_REPORT_0003")
+@SVCs("SVC_REPORT_0003", "SVC_REPORT_0004")
 def test_basic_baseline(resource_funcname_rootdir, local_testdata_resources_rootdir_w_path):
     db = RequirementsDatabase()
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())

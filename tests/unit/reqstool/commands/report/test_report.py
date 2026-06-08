@@ -30,6 +30,7 @@ def test_get_template_standard_sys001(local_testdata_resources_rootdir_w_path):
     assert rc.result
 
 
+@SVCs("SVC_REPORT_0002")
 def test_get_template_markdown_ms001(local_testdata_resources_rootdir_w_path):
     rc = report.ReportCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
