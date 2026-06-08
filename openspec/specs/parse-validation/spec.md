@@ -2,67 +2,44 @@
 
 ## Purpose
 
-While building the dataset, reqstool checks the input for structural and referential problems and
-surfaces them to the user. These checks run on every command (they are part of building the model),
-and are distinct from the `validate` command, which performs an explicit spec-completeness review.
-Structural problems and a missing required file are errors; duplicate identifiers and references to
-unknown identifiers are warnings.
+Requirement and SVC content is owned by reqstool (single source of truth). This spec references
+reqstool requirement and SVC IDs only; titles and descriptions are injected at read time via
+`reqstool enrich` (or the openspecui hook). See `docs/reqstool/`.
 
 ## Requirements
 
-### Requirement: Schema validation
+### Requirement: PARSE_0001
+The system SHALL implement PARSE_0001.
 
-The system SHALL validate each input file against its JSON schema before parsing and report a
-validation error when a file does not conform.
+#### Scenario: SVC_PARSE_0001
+The system SHALL pass SVC_PARSE_0001.
 
-#### Scenario: Non-conforming file
+### Requirement: PARSE_0002
+The system SHALL implement PARSE_0002.
 
-- **WHEN** an input file does not conform to its JSON schema
-- **THEN** the system reports a schema validation error and does not parse the file as valid
+#### Scenario: SVC_PARSE_0002
+The system SHALL pass SVC_PARSE_0002.
 
-### Requirement: Missing requirements file
+### Requirement: PARSE_0003
+The system SHALL implement PARSE_0003.
 
-The system SHALL fail with a clear error when no `requirements.yml` file is found at the provided
-content root.
+#### Scenario: SVC_PARSE_0003
+The system SHALL pass SVC_PARSE_0003.
 
-#### Scenario: Requirements file absent
+### Requirement: PARSE_0004
+The system SHALL implement PARSE_0004.
 
-- **WHEN** the provided content root contains no `requirements.yml`
-- **THEN** the system reports that the required file is missing and exits with an error
+#### Scenario: SVC_PARSE_0004
+The system SHALL pass SVC_PARSE_0004.
 
-### Requirement: Duplicate requirement identifiers
+### Requirement: PARSE_0005
+The system SHALL implement PARSE_0005.
 
-The system SHALL warn when duplicate requirement identifiers are detected during parsing.
+#### Scenario: SVC_PARSE_0005
+The system SHALL pass SVC_PARSE_0005.
 
-#### Scenario: Two requirements share an ID
+### Requirement: PARSE_0006
+The system SHALL implement PARSE_0006.
 
-- **WHEN** two requirements are parsed with the same identifier
-- **THEN** the system logs a warning identifying the duplicate
-
-### Requirement: Duplicate SVC identifiers
-
-The system SHALL warn when duplicate SVC identifiers are detected during parsing.
-
-#### Scenario: Two SVCs share an ID
-
-- **WHEN** two SVCs are parsed with the same identifier
-- **THEN** the system logs a warning identifying the duplicate
-
-### Requirement: Dangling requirement references
-
-The system SHALL warn when a reference to a non-existent requirement identifier is detected during
-parsing.
-
-#### Scenario: Reference to unknown requirement
-
-- **WHEN** an SVC or annotation references a requirement identifier that does not exist
-- **THEN** the system logs a warning identifying the unresolved reference
-
-### Requirement: Dangling SVC references
-
-The system SHALL warn when a reference to a non-existent SVC identifier is detected during parsing.
-
-#### Scenario: Reference to unknown SVC
-
-- **WHEN** a manual verification result or annotation references an SVC identifier that does not exist
-- **THEN** the system logs a warning identifying the unresolved reference
+#### Scenario: SVC_PARSE_0006
+The system SHALL pass SVC_PARSE_0006.

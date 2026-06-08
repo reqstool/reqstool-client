@@ -2,88 +2,56 @@
 
 ## Purpose
 
-A reqstool dataset can compose other datasets in two distinct ways: by **importing** them (pulling
-their requirements in as the system's own) and by declaring **implementations** (pulling in evidence
-that a used library satisfies requirements, without adopting the library's requirements as the
-system's). Both are resolved recursively. Filters let a dataset include or exclude specific
-requirements and SVCs from a composed source. This capability defines that composition and filtering
-behavior.
+Requirement and SVC content is owned by reqstool (single source of truth). This spec references
+reqstool requirement and SVC IDs only; titles and descriptions are injected at read time via
+`reqstool enrich` (or the openspecui hook). See `docs/reqstool/`.
 
 ## Requirements
 
-### Requirement: Recursive import resolution
+### Requirement: IMPORT_0001
+The system SHALL implement IMPORT_0001.
 
-The system SHALL resolve a dataset's imports recursively, including the requirements of each imported
-dataset and the imports they declare in turn.
+#### Scenario: SVC_IMPORT_0001
+The system SHALL pass SVC_IMPORT_0001.
 
-#### Scenario: Nested imports
+### Requirement: IMPORT_0002
+The system SHALL implement IMPORT_0002.
 
-- **WHEN** a dataset imports another dataset that itself imports a third
-- **THEN** the system includes requirements from all datasets in the import chain
+#### Scenario: SVC_IMPORT_0002
+The system SHALL pass SVC_IMPORT_0002.
 
-### Requirement: Import cycle detection
+### Requirement: IMPORT_0003
+The system SHALL implement IMPORT_0003.
 
-The system SHALL detect a cycle in the import chain and reject it rather than recursing indefinitely.
+#### Scenario: SVC_IMPORT_0003
+The system SHALL pass SVC_IMPORT_0003.
 
-#### Scenario: Circular import
+### Requirement: IMPORT_0004
+The system SHALL implement IMPORT_0004.
 
-- **WHEN** datasets import each other directly or transitively in a cycle
-- **THEN** the system reports a circular-import error and stops
+#### Scenario: SVC_IMPORT_0004
+The system SHALL pass SVC_IMPORT_0004.
 
-### Requirement: Recursive implementation resolution
+### Requirement: IMPORT_0005
+The system SHALL implement IMPORT_0005.
 
-The system SHALL resolve a dataset's declared implementations recursively, treating each implementing
-dataset as one that may declare its own implementations.
+#### Scenario: SVC_IMPORT_0005
+The system SHALL pass SVC_IMPORT_0005.
 
-#### Scenario: Nested implementations
+### Requirement: IMPORT_0006
+The system SHALL implement IMPORT_0006.
 
-- **WHEN** a dataset declares an implementation that itself declares a further implementation
-- **THEN** the system follows the implementation chain to its full depth
+#### Scenario: SVC_IMPORT_0006
+The system SHALL pass SVC_IMPORT_0006.
 
-### Requirement: Implementation cycle detection
+### Requirement: IMPORT_0007
+The system SHALL implement IMPORT_0007.
 
-The system SHALL detect a cycle in the implementation chain and reject it.
+#### Scenario: SVC_IMPORT_0007
+The system SHALL pass SVC_IMPORT_0007.
 
-#### Scenario: Circular implementation
+### Requirement: IMPORT_0008
+The system SHALL implement IMPORT_0008.
 
-- **WHEN** datasets declare each other as implementations in a cycle
-- **THEN** the system reports a circular-implementation error and stops
-
-### Requirement: Implementation requirements excluded from scope
-
-The system SHALL exclude the requirements contributed by implementation datasets from the system's
-own requirement set, retaining only their verification evidence.
-
-#### Scenario: Library requirements not counted as the system's
-
-- **WHEN** an implementation dataset defines its own requirements
-- **THEN** the system does not include those requirements in its own requirement set
-
-### Requirement: Filter imported requirements
-
-The system SHALL allow a dataset to include or exclude specific requirement IDs from a composed
-source.
-
-#### Scenario: Excluding a requirement
-
-- **WHEN** a dataset applies a filter that excludes a requirement ID from a source
-- **THEN** the composed dataset omits that requirement
-
-### Requirement: Filter imported SVCs
-
-The system SHALL allow a dataset to include or exclude specific SVC IDs from a composed source.
-
-#### Scenario: Including specific SVCs
-
-- **WHEN** a dataset applies a filter selecting specific SVC IDs from a source
-- **THEN** the composed dataset includes only the selected SVCs from that source
-
-### Requirement: Filter expression language
-
-The system SHALL support a filter expression language combining logical operators, identifier
-equality and inequality, and regular-expression matching.
-
-#### Scenario: Compound filter expression
-
-- **WHEN** a filter expression combines logical operators with identifier or regex matching
-- **THEN** the system selects exactly the requirements or SVCs matching that expression
+#### Scenario: SVC_IMPORT_0008
+The system SHALL pass SVC_IMPORT_0008.

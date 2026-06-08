@@ -2,51 +2,32 @@
 
 ## Purpose
 
-Requirements and SVCs evolve over time and not every requirement is satisfied by source code. The
-lifecycle capability defines how a requirement can declare a non-code implementation type, how
-requirements and SVCs declare a lifecycle state, and how the system warns when superseded items are
-still in use.
+Requirement and SVC content is owned by reqstool (single source of truth). This spec references
+reqstool requirement and SVC IDs only; titles and descriptions are injected at read time via
+`reqstool enrich` (or the openspecui hook). See `docs/reqstool/`.
 
 ## Requirements
 
-### Requirement: Non-code implementation types
+### Requirement: LIFECYCLE_0001
+The system SHALL implement LIFECYCLE_0001.
 
-The system SHALL allow a requirement to declare that it is satisfied by something other than source
-code — not-applicable, configuration, platform, or framework — and SHALL not treat such a requirement
-as unimplemented for lacking a code annotation.
+#### Scenario: SVC_LIFECYCLE_0001
+The system SHALL pass SVC_LIFECYCLE_0001.
 
-#### Scenario: Configuration-satisfied requirement
+### Requirement: LIFECYCLE_0002
+The system SHALL implement LIFECYCLE_0002.
 
-- **WHEN** a requirement declares a non-code implementation type
-- **THEN** the system shows the declared type instead of an implementation count and does not flag it
-  as missing an implementation
+#### Scenario: SVC_LIFECYCLE_0002
+The system SHALL pass SVC_LIFECYCLE_0002.
 
-### Requirement: Requirement lifecycle state
+### Requirement: LIFECYCLE_0003
+The system SHALL implement LIFECYCLE_0003.
 
-The system SHALL allow a requirement to declare a lifecycle state — draft, effective, deprecated, or
-obsolete — with an optional reason, defaulting to effective.
+#### Scenario: SVC_LIFECYCLE_0003
+The system SHALL pass SVC_LIFECYCLE_0003.
 
-#### Scenario: Deprecated requirement
+### Requirement: LIFECYCLE_0004
+The system SHALL implement LIFECYCLE_0004.
 
-- **WHEN** a requirement declares a deprecated lifecycle state
-- **THEN** the system records that state and its reason for the requirement
-
-### Requirement: SVC lifecycle state
-
-The system SHALL allow an SVC to declare a lifecycle state — draft, effective, deprecated, or
-obsolete — with an optional reason, defaulting to effective.
-
-#### Scenario: Obsolete SVC
-
-- **WHEN** an SVC declares an obsolete lifecycle state
-- **THEN** the system records that state and its reason for the SVC
-
-### Requirement: Superseded-reference warning
-
-The system SHALL warn when a deprecated or obsolete requirement or SVC is still referenced by active
-items.
-
-#### Scenario: Active reference to a deprecated item
-
-- **WHEN** an active item references a requirement or SVC that is deprecated or obsolete
-- **THEN** the system logs a warning identifying the superseded reference
+#### Scenario: SVC_LIFECYCLE_0004
+The system SHALL pass SVC_LIFECYCLE_0004.

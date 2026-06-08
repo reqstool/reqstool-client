@@ -62,7 +62,7 @@ Out of scope for automated derivation: **MVRs** (human attestations).
 | — | Clean slate: delete reqstool SSOT + `openspec init` | — | ✅ done | `openspec/` |
 | 2 | Author content-rich OpenSpec specs — `commands/` capabilities | Opus | ✅ done | 7 specs / 37 reqs (status 9, report 6, export 5, validate 5, enrich 4, lsp 4, mcp 4); all validate strict |
 | 3 | Extend OpenSpec to remaining domains (domain-by-domain, commit each) | Opus | ✅ done | 5 domains: `data-sources` (8), `ingestion` (8), `imports-and-filtering` (8), `parse-validation` (6), `lifecycle` (4) — all validate strict |
-| 4 | **Flip:** derive SSOT ✅ (71 reqs/svcs, validate strict); re-annotate ✅ (29 decorators, 815 tests pass); todo: thin specs, re-point CI | Opus | 🟡 in progress | `docs/reqstool/*`, re-annotated `src/` |
+| 4 | **Flip:** derive SSOT ✅; re-annotate ✅ (815 tests); thin specs ✅ (12 specs → ID refs, validate strict; enrich round-trip verified); CI: pyproject already points at docs/reqstool | Opus | ✅ done | `docs/reqstool/*`, thin `openspec/specs/*`, re-annotated `src/` |
 | 5 | Validate: `reqstool status` green (needs annotations.yml regen), `openspec validate --all --strict` | Sonnet | ⬜ todo | green checks |
 
 Legend: ⬜ todo · 🟡 in progress · ✅ done · ⏸ blocked
