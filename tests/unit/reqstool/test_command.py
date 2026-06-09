@@ -450,21 +450,9 @@ def test_mcp_no_source_no_config_exits(capsys):
 def test_command_status_writes_result_to_output_destination():
     """STATUS_0009: status content is written to the provided output handle rather than only stdout."""
     out = io.StringIO()
-    args = argparse.Namespace(
-        source="local",
-        path="/x",
-        maven=None,
-        npm=None,
-        pypi=None,
-        format="console",
-        verbosity="normal",
-        incomplete=False,
-        req_ids=None,
-        svc_ids=None,
-        with_post_tests=None,
-        check_all_reqs_met=False,
-        output=out,
-    )
+    # command_status reads only output and check_all_reqs_met directly (everything else goes
+    # through getattr defaults or the mocked StatusCommand / _get_initial_source).
+    args = argparse.Namespace(output=out, check_all_reqs_met=False)
     with (
         patch.object(Command, "_get_initial_source", return_value=MagicMock()),
         patch("reqstool.command.StatusCommand") as mock_status,

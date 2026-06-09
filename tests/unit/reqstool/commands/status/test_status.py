@@ -6,12 +6,8 @@ import pytest
 from reqstool_python_decorators.decorators.decorators import SVCs
 
 from reqstool.commands.status.status import StatusCommand
-from reqstool.common.validator_error_holder import ValidationErrorHolder
-from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.locations.local_location import LocalLocation
-from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
 from reqstool.storage.database import RequirementsDatabase
-from reqstool.storage.requirements_repository import RequirementsRepository
 
 
 @SVCs("SVC_STATUS_0001")
@@ -66,26 +62,20 @@ def test_status_json_format(local_testdata_resources_rootdir_w_path):
     assert nr_of_incomplete_requirements == 5
 
 
-def _inject_post_tests(db, urn, paths):
-    # Reach the name-mangled static helper that performs the injection.
-    return StatusCommand._StatusCommand__inject_post_tests(db, urn, paths)
-
-
 @SVCs("SVC_STATUS_0008")
 def test_with_post_tests_incorporates_junit_outcomes(local_testdata_resources_rootdir_w_path):
-    """STATUS_0008: outcomes from a post-build JUnit XML file are inserted into the status DB."""
+    """STATUS_0008: outcomes from a post-build JUnit XML file are inserted into the status DB.
+
+    test_results has no FK, so an empty database plus any URN is enough to observe the injection —
+    no full parse needed.
+    """
     db = RequirementsDatabase()
-    CombinedRawDatasetsGenerator(
-        initial_location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
-        semantic_validator=SemanticValidator(validation_error_holder=ValidationErrorHolder()),
-        database=db,
-    )
-    repo = RequirementsRepository(db)
     junit = local_testdata_resources_rootdir_w_path(
         "test_basic/no_impls/basic/ms-101/test_results/surefire/TEST-com.example.RequirementsExampleTests.xml"
     )
 
-    _inject_post_tests(db, repo.get_initial_urn(), [str(junit)])
+    # Reach the name-mangled static helper that performs the injection.
+    StatusCommand._StatusCommand__inject_post_tests(db, "ms-101", [str(junit)])
 
     fqns = [row["fqn"] for row in db.connection.execute("SELECT fqn FROM test_results").fetchall()]
     assert any("RequirementsExampleTests" in fqn for fqn in fqns)
