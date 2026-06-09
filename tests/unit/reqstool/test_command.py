@@ -1,8 +1,9 @@
 # Copyright © LFV
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import argparse
+import io
 import sys
 
 import pytest
@@ -311,7 +312,6 @@ def test_artifact_download_error_exits_with_correct_code():
         mock_exit.assert_any_call(EXIT_CODE_ARTIFACT_ERROR)
 
 
-@SVCs("SVC_MCP_0003")
 def test_mcp_parses_without_source():
     args = _make_command_and_parse(["reqstool", "mcp"])
     assert args.command == "mcp"
@@ -326,7 +326,6 @@ def test_mcp_still_accepts_local_source():
     assert args.path == "/some/path"
 
 
-@SVCs("SVC_STATUS_0008")
 def test_status_with_post_tests_single_path():
     args = _make_command_and_parse(["reqstool", "status", "--with-post-tests", "/tmp/e2e.xml", "local", "-p", "/tmp"])
     assert args.command == "status"
@@ -368,10 +367,20 @@ def test_lsp_tcp_transport_args_parsed():
     assert args.port == 9999
 
 
-@SVCs("SVC_LSP_0003")
 def test_lsp_log_file_arg_parsed():
     args = _make_command_and_parse(["reqstool", "lsp", "--log-file", "/tmp/lsp.log"])
     assert args.log_file == "/tmp/lsp.log"
+
+
+@SVCs("SVC_LSP_0003")
+def test_lsp_log_file_passed_to_server():
+    """LSP_0003: the configured log-file path is forwarded to the language server."""
+    cmd = Command()
+    lsp_args = argparse.Namespace(tcp=False, host="127.0.0.1", port=2087, log_file="/tmp/lsp.log")
+    fake_server = MagicMock()
+    with patch.dict(sys.modules, {"reqstool.lsp.server": MagicMock(start_server=fake_server.start_server)}):
+        cmd.command_lsp(lsp_args)
+    assert fake_server.start_server.call_args.kwargs["log_file"] == "/tmp/lsp.log"
 
 
 @SVCs("SVC_LSP_0004")
@@ -404,3 +413,63 @@ def test_mcp_missing_extra_reports_and_exits(capsys):
             cmd.command_mcp(mcp_args)
     assert exc.value.code == 1
     assert "pip install 'mcp>=1.0'" in capsys.readouterr().err
+
+
+@SVCs("SVC_MCP_0003")
+def test_mcp_auto_detects_dataset_from_config():
+    """MCP_0003: with no explicit source, the dataset is resolved from the reqstool AI config file."""
+    cmd = Command()
+    mcp_args = argparse.Namespace(source=None, transport="stdio", host="127.0.0.1", port=8000)
+    mock_server = MagicMock()
+    with (
+        patch.dict(sys.modules, {"reqstool.mcp.server": mock_server}),
+        patch("reqstool.common.reqstool_ai_config.find_config", return_value="/proj/.reqstool-ai.yaml"),
+        patch("reqstool.common.reqstool_ai_config.resolve_system_path", return_value="/proj/docs/reqstool"),
+    ):
+        cmd.command_mcp(mcp_args)
+    location = mock_server.start_server.call_args.kwargs["location"]
+    assert location.path == "/proj/docs/reqstool"
+
+
+@SVCs("SVC_MCP_0003")
+def test_mcp_no_source_no_config_exits(capsys):
+    """MCP_0003: with neither an explicit source nor a config file, the command errors out."""
+    cmd = Command()
+    mcp_args = argparse.Namespace(source=None, transport="stdio", host="127.0.0.1", port=8000)
+    with (
+        patch.dict(sys.modules, {"reqstool.mcp.server": MagicMock()}),
+        patch("reqstool.common.reqstool_ai_config.find_config", return_value=None),
+    ):
+        with pytest.raises(SystemExit) as exc:
+            cmd.command_mcp(mcp_args)
+    assert exc.value.code == 2
+    assert "reqstool mcp:" in capsys.readouterr().err
+
+
+@SVCs("SVC_STATUS_0009")
+def test_command_status_writes_result_to_output_destination():
+    """STATUS_0009: status content is written to the provided output handle rather than only stdout."""
+    out = io.StringIO()
+    args = argparse.Namespace(
+        source="local",
+        path="/x",
+        maven=None,
+        npm=None,
+        pypi=None,
+        format="console",
+        verbosity="normal",
+        incomplete=False,
+        req_ids=None,
+        svc_ids=None,
+        with_post_tests=None,
+        check_all_reqs_met=False,
+        output=out,
+    )
+    with (
+        patch.object(Command, "_get_initial_source", return_value=MagicMock()),
+        patch("reqstool.command.StatusCommand") as mock_status,
+    ):
+        mock_status.return_value.result = ("STATUS-BODY", 0)
+        exit_code = Command().command_status(args)
+    assert out.getvalue() == "STATUS-BODY"
+    assert exit_code == 0

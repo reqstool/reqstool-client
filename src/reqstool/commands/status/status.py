@@ -68,16 +68,7 @@ def _render(*renderables) -> str:
     return cap.get()
 
 
-@Requirements(
-    "STATUS_0001",
-    "STATUS_0002",
-    "STATUS_0003",
-    "STATUS_0004",
-    "STATUS_0005",
-    "STATUS_0006",
-    "STATUS_0007",
-    "STATUS_0008",
-)
+@Requirements("STATUS_0001", "STATUS_0003", "STATUS_0004", "STATUS_0005", "STATUS_0006")
 class StatusCommand:
     def __init__(
         self,

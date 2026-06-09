@@ -24,10 +24,23 @@ from reqstool.models.raw_datasets import CombinedRawDataset
 @SVCs("SVC_INGEST_0001", "SVC_INGEST_0004", "SVC_INGEST_0007")
 def test_basic_local(resource_funcname_rootdir, local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
-    combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
+    crd: CombinedRawDataset = combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
         initial_location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_basic/baseline/ms-101")),
         semantic_validator=semantic_validator,
-    )
+    ).combined_raw_datasets
+
+    rd = crd.raw_datasets["ms-101"]
+
+    # INGEST_0007: the static input files at the content root are parsed
+    assert rd.requirements_data is not None and len(rd.requirements_data.requirements) > 0
+    assert rd.svcs_data is not None and len(rd.svcs_data.cases) > 0
+
+    # INGEST_0004: code annotations are parsed, capturing implementation and test links
+    assert rd.annotations_data is not None
+    impl_ids = {urn_id.id for urn_id in rd.annotations_data.implementations}
+    test_ids = {urn_id.id for urn_id in rd.annotations_data.tests}
+    assert "REQ_101" in impl_ids
+    assert "SVC_101" in test_ids
 
 
 @SVCs("SVC_INGEST_0008")
