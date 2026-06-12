@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 Warning = namedtuple("Warning", ["state", "message"])
 
 
-@Requirements("LIFECYCLE_0002", "LIFECYCLE_0003", "LIFECYCLE_0004")
+@Requirements("LIFECYCLE_0004")
 class LifecycleValidator:
     """
     Logs warnings if any requirement or SVC is used despite being marked deprecated or obsolete.

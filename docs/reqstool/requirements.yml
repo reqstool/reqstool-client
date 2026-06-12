@@ -41,7 +41,7 @@ requirements:
   - id: STATUS_0006
     title: Requirement and SVC filtering
     significance: shall
-    description: The system shall allow status output to be filtered to a specified set of requirement IDs or SVC IDs.
+    description: The system shall allow JSON status output to be filtered to a specified set of requirement IDs or SVC IDs.
     categories: ["interaction-capability"]
     revision: "0.11.0"
   - id: STATUS_0007

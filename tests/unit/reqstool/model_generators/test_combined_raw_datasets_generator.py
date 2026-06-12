@@ -87,7 +87,6 @@ def test_standard_ms001_initial(local_testdata_resources_rootdir_w_path):
     assert crd.raw_datasets["ext-002"].mvrs_data is None
 
 
-@SVCs("SVC_INGEST_0001")
 def test_standard_sys001_initial(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
@@ -133,7 +132,7 @@ def test_circular_implementation_raises(local_testdata_resources_rootdir_w_path)
     assert "Circular implementation detected" in str(excinfo.value)
 
 
-@SVCs("SVC_IMPORT_0003", "SVC_IMPORT_0005")
+@SVCs("SVC_IMPORT_0003")
 def test_implementation_traversal_recursive(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
 

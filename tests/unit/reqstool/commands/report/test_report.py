@@ -16,6 +16,9 @@ def test_get_template_medium_ms001(local_testdata_resources_rootdir_w_path):
         sort_by=[SortByOptions.ID],
     )
     assert rc.result
+    assert "= REQUIREMENTS DOCUMENTATION" in rc.result
+    assert "== TOTAL STATISTICS" in rc.result
+    assert "|===" in rc.result
 
 
 @SVCs("SVC_REPORT_0001")
@@ -28,6 +31,9 @@ def test_get_template_standard_sys001(local_testdata_resources_rootdir_w_path):
         sort_by=[SortByOptions.SIGNIFICANCE],
     )
     assert rc.result
+    assert "= REQUIREMENTS DOCUMENTATION" in rc.result
+    assert "== TOTAL STATISTICS" in rc.result
+    assert "|===" in rc.result
 
 
 @SVCs("SVC_REPORT_0002")

@@ -35,7 +35,7 @@ cases:
   - id: SVC_STATUS_0006
     requirement_ids: ["STATUS_0006"]
     title: "Filtering restricts status to selected IDs"
-    description: "GIVEN a dataset WHEN requirement or SVC IDs are supplied THEN status output is restricted to the requirements in scope of those IDs"
+    description: "GIVEN a dataset WHEN requirement or SVC IDs are supplied to JSON status output THEN the output is restricted to the requirements in scope of those IDs"
     verification: automated-test
     revision: "0.11.0"
   - id: SVC_STATUS_0007

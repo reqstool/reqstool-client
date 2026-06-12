@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock
 
 from reqstool.lsp.server import _find_details
-from reqstool_python_decorators.decorators.decorators import SVCs
 
 
 def _make_ls(projects):
@@ -12,7 +11,6 @@ def _make_ls(projects):
     return ls
 
 
-@SVCs("SVC_LSP_0001")
 def test_find_details_returns_first_match():
     fn = MagicMock(side_effect=[None, {"type": "requirement", "id": "REQ_010"}])
     p1 = MagicMock()

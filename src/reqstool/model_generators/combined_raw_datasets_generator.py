@@ -30,7 +30,7 @@ from reqstool.requirements_indata.requirements_indata import RequirementsIndata
 from reqstool.storage.database import RequirementsDatabase
 
 
-@Requirements("INGEST_0001", "IMPORT_0001", "IMPORT_0002", "IMPORT_0003", "IMPORT_0004", "IMPORT_0005")
+@Requirements("INGEST_0001")
 class CombinedRawDatasetsGenerator:
     def __init__(
         self,
@@ -166,6 +166,7 @@ class CombinedRawDatasetsGenerator:
             for ms_urn in parsed_microservices:
                 self._parsing_graph[ms_urn].append((rd.metadata.urn, "implementation"))
 
+    @Requirements("IMPORT_0001", "IMPORT_0002")
     def __import_systems(
         self,
         raw_datasets: Dict[str, RawDataset],
@@ -207,6 +208,7 @@ class CombinedRawDatasetsGenerator:
 
         return parsed_urns
 
+    @Requirements("IMPORT_0003", "IMPORT_0004")
     def __import_implementations(
         self,
         raw_datasets: Dict[str, RawDataset],

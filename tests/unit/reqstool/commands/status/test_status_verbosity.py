@@ -295,6 +295,21 @@ def test_status_json_req_ids_filter(local_testdata_resources_rootdir_w_path):
     assert "ms-001:REQ_010" in data["requirements"]
 
 
+@SVCs("SVC_STATUS_0006")
+def test_status_json_svc_ids_filter(local_testdata_resources_rootdir_w_path):
+    import json
+
+    result = StatusCommand(
+        location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
+        format="json",
+        svc_ids=["SVC_010"],
+    )
+    status, _ = result.result
+    data = json.loads(status)
+    assert len(data["requirements"]) == 1
+    assert "ms-001:REQ_010" in data["requirements"]
+
+
 # ---------------------------------------------------------------------------
 # Export sqlite
 # ---------------------------------------------------------------------------

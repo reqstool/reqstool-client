@@ -318,7 +318,6 @@ def test_mcp_parses_without_source():
     assert args.source is None
 
 
-@SVCs("SVC_MCP_0001")
 def test_mcp_still_accepts_local_source():
     args = _make_command_and_parse(["reqstool", "mcp", "local", "-p", "/some/path"])
     assert args.command == "mcp"
@@ -460,4 +459,29 @@ def test_command_status_writes_result_to_output_destination():
         mock_status.return_value.result = ("STATUS-BODY", 0)
         exit_code = Command().command_status(args)
     assert out.getvalue() == "STATUS-BODY"
+    assert exit_code == 0
+
+
+@SVCs("SVC_STATUS_0007")
+def test_command_status_returns_nonzero_when_enforcing_and_incomplete():
+    """STATUS_0007: with --check-all-reqs-met and incomplete requirements, exit with the
+    all-requirements-not-implemented code; the same incomplete result exits zero otherwise."""
+    out = io.StringIO()
+    args = argparse.Namespace(output=out, check_all_reqs_met=True)
+    with (
+        patch.object(Command, "_get_initial_source", return_value=MagicMock()),
+        patch("reqstool.command.StatusCommand") as mock_status,
+    ):
+        mock_status.return_value.result = ("STATUS-BODY", 2)
+        exit_code = Command().command_status(args)
+    assert exit_code == EXIT_CODE_ALL_REQS_NOT_IMPLEMENTED
+
+    out = io.StringIO()
+    args = argparse.Namespace(output=out, check_all_reqs_met=False)
+    with (
+        patch.object(Command, "_get_initial_source", return_value=MagicMock()),
+        patch("reqstool.command.StatusCommand") as mock_status,
+    ):
+        mock_status.return_value.result = ("STATUS-BODY", 2)
+        exit_code = Command().command_status(args)
     assert exit_code == 0
