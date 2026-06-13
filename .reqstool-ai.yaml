@@ -1,0 +1,8 @@
+# reqstool-ai configuration — see https://github.com/reqstool/reqstool-ai
+# Capability-prefixed IDs (STATUS_, REPORT_, ...) are managed by hand in
+# requirements.yml; no per-module prefixes are configured for this single dataset.
+urn: reqstool-client
+revision: "0.11.0"
+
+system:
+  path: docs/reqstool

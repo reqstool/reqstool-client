@@ -6,6 +6,7 @@ import zipfile
 import pytest
 
 from reqstool.locations.local_maven_location import LocalMavenLocation
+from reqstool_python_decorators.decorators.decorators import SVCs
 
 
 def _make_zip(zip_path, top_level_dir, files):
@@ -15,6 +16,7 @@ def _make_zip(zip_path, top_level_dir, files):
             zf.writestr(f"{top_level_dir}/{name}", content)
 
 
+@SVCs("SVC_SOURCE_0003")
 def test_local_maven_location_extracts_zip(tmp_path):
     top_level = "ms-001-0.0.1-reqstool"
     zip_path = tmp_path / "artifact.zip"

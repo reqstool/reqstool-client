@@ -1,14 +1,17 @@
 # Copyright © LFV
 
 import json
+from importlib.resources import files
 
+import jsonschema
 from reqstool_python_decorators.decorators.decorators import SVCs
 
+import reqstool.resources.schemas.v1
 from reqstool.commands.generate_json.generate_json import GenerateJsonCommand
 from reqstool.locations.local_location import LocalLocation
 
 
-@SVCs("SVC_027")
+@SVCs("SVC_EXPORT_0001")
 def test_generate_json(local_testdata_resources_rootdir_w_path):
     gjc = GenerateJsonCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -16,7 +19,11 @@ def test_generate_json(local_testdata_resources_rootdir_w_path):
     )
     assert gjc.result
 
+    export_schema = json.loads(files(reqstool.resources.schemas.v1).joinpath("export_output.schema.json").read_text())
+    jsonschema.validate(json.loads(gjc.result), export_schema)
 
+
+@SVCs("SVC_EXPORT_0003")
 def test_generate_json_no_filter_unchanged(local_testdata_resources_rootdir_w_path):
     gjc = GenerateJsonCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),
@@ -28,6 +35,7 @@ def test_generate_json_no_filter_unchanged(local_testdata_resources_rootdir_w_pa
     assert "ms-001:SVC_010" in result["svcs"]
 
 
+@SVCs("SVC_EXPORT_0002")
 def test_generate_json_filter_req_ids(local_testdata_resources_rootdir_w_path):
     gjc = GenerateJsonCommand(
         location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_standard/baseline/ms-001")),

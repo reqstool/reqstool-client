@@ -2,15 +2,12 @@
 
 from pydantic import BaseModel, Field
 
-from reqstool_python_decorators.decorators.decorators import Requirements
-
 
 class RequirementsIndataPathItem(BaseModel):
     path: str
     exists: bool = False
 
 
-@Requirements("REQ_016")
 class RequirementsIndataPaths(BaseModel):
     # static
     requirements_yml: RequirementsIndataPathItem = Field(

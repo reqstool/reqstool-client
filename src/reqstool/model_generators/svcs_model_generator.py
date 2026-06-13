@@ -4,6 +4,7 @@ import sys
 from typing import Dict
 
 from ruamel.yaml import YAML
+from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.commands.exit_codes import EXIT_CODE_SYNTAX_VALIDATION_ERROR
 from reqstool.common.filter_parser import parse_filters
@@ -76,6 +77,7 @@ class SVCsModelGenerator:
             result[id_text] = (id_line, id_col, id_col + len(id_text))
         return result
 
+    @Requirements("LIFECYCLE_0003")
     def __parse_svcs(
         self,
         validated: SVCsPydanticModel,

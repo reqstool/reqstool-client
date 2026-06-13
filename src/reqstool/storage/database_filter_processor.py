@@ -3,6 +3,7 @@
 
 import logging
 
+from reqstool_python_decorators.decorators.decorators import Requirements
 from reqstool.common.models.urn_id import UrnId
 from reqstool.filters.id_filters import IDFilters
 from reqstool.models.raw_datasets import RawDataset
@@ -12,6 +13,7 @@ from reqstool.storage.el_to_sql_compiler import ELToSQLCompiler
 logger = logging.getLogger(__name__)
 
 
+@Requirements("IMPORT_0005", "IMPORT_0006", "IMPORT_0007", "IMPORT_0008")
 class DatabaseFilterProcessor:
     def __init__(self, db: RequirementsDatabase, raw_datasets: dict[str, RawDataset]):
         self._db = db

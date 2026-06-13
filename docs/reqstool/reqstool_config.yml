@@ -5,7 +5,6 @@ build: hatch
 resources:
   requirements: requirements.yml
   software_verification_cases: software_verification_cases.yml
-  manual_verification_results: manual_verification_results.yml
   annotations: ../../build/reqstool/annotations.yml
   test_results:
     - ../../build/**/*.xml

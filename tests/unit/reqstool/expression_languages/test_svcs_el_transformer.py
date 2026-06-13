@@ -57,7 +57,7 @@ def test_comp_id_not_equals(create_tree, svc_data):
     assert GenericELTransformer(urn="urn", data=svc_data("urn:SVC_101")).transform(tree) is True
 
 
-@SVCs("SVC_014")
+@SVCs("SVC_IMPORT_0008")
 def test_comp_id_regex_equals(create_tree, svc_data):
     el = "ids == /urn\\:SVC_(\\d{2,3}|123)$/"
     tree = create_tree(el)

@@ -21,16 +21,29 @@ from reqstool.model_generators.combined_raw_datasets_generator import CombinedRa
 from reqstool.models.raw_datasets import CombinedRawDataset
 
 
-@SVCs("SVC_001")
+@SVCs("SVC_INGEST_0001", "SVC_INGEST_0004", "SVC_INGEST_0007")
 def test_basic_local(resource_funcname_rootdir, local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
-    combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
+    crd: CombinedRawDataset = combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
         initial_location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_basic/baseline/ms-101")),
         semantic_validator=semantic_validator,
-    )
+    ).combined_raw_datasets
+
+    rd = crd.raw_datasets["ms-101"]
+
+    # INGEST_0007: the static input files at the content root are parsed
+    assert rd.requirements_data is not None and len(rd.requirements_data.requirements) > 0
+    assert rd.svcs_data is not None and len(rd.svcs_data.cases) > 0
+
+    # INGEST_0004: code annotations are parsed, capturing implementation and test links
+    assert rd.annotations_data is not None
+    impl_ids = {urn_id.id for urn_id in rd.annotations_data.implementations}
+    test_ids = {urn_id.id for urn_id in rd.annotations_data.tests}
+    assert "REQ_101" in impl_ids
+    assert "SVC_101" in test_ids
 
 
-@SVCs("SVC_001")
+@SVCs("SVC_INGEST_0008")
 def test_basic_requirements_config(resource_funcname_rootdir, local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
@@ -41,7 +54,7 @@ def test_basic_requirements_config(resource_funcname_rootdir, local_testdata_res
     )
 
 
-@SVCs("SVC_001", "SVC_004")
+@SVCs("SVC_INGEST_0002", "SVC_INGEST_0003", "SVC_IMPORT_0001")
 def test_standard_ms001_initial(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
 
@@ -74,7 +87,6 @@ def test_standard_ms001_initial(local_testdata_resources_rootdir_w_path):
     assert crd.raw_datasets["ext-002"].mvrs_data is None
 
 
-@SVCs("SVC_001")
 def test_standard_sys001_initial(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     combined_raw_datasets_generator.CombinedRawDatasetsGenerator(
@@ -83,7 +95,7 @@ def test_standard_sys001_initial(local_testdata_resources_rootdir_w_path):
     )
 
 
-@SVCs("SVC_020")
+@SVCs("SVC_PARSE_0002")
 def test_missing_requirements_file(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     with pytest.raises(MissingRequirementsFileError) as excinfo:
@@ -96,7 +108,7 @@ def test_missing_requirements_file(local_testdata_resources_rootdir_w_path):
     assert "this/path/does/not/have/a/requirements/file" in str(excinfo.value)
 
 
-@SVCs("SVC_020")
+@SVCs("SVC_IMPORT_0002")
 def test_circular_import_raises(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     with pytest.raises(CircularImportError) as excinfo:
@@ -108,7 +120,7 @@ def test_circular_import_raises(local_testdata_resources_rootdir_w_path):
     assert "Circular import detected" in str(excinfo.value)
 
 
-@SVCs("SVC_020")
+@SVCs("SVC_IMPORT_0004")
 def test_circular_implementation_raises(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     with pytest.raises(CircularImplementationError) as excinfo:
@@ -120,7 +132,7 @@ def test_circular_implementation_raises(local_testdata_resources_rootdir_w_path)
     assert "Circular implementation detected" in str(excinfo.value)
 
 
-@SVCs("SVC_001")
+@SVCs("SVC_IMPORT_0003")
 def test_implementation_traversal_recursive(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
 
@@ -163,7 +175,7 @@ def _assert_safe_suffix(suffix, expected_prefix, uri_fragment):
     assert re.match(r"^[a-zA-Z0-9._-]+$", suffix), f"Suffix contains unsafe chars: {suffix!r}"
 
 
-@SVCs("SVC_020")
+@SVCs("SVC_PARSE_0002")
 def test_tmpdir_suffix_local_uses_local_prefix():
     with _capture_suffix_calls() as captured_suffixes:
         with pytest.raises(MissingRequirementsFileError):
@@ -175,7 +187,7 @@ def test_tmpdir_suffix_local_uses_local_prefix():
     _assert_safe_suffix(captured_suffixes[0], "local_", "nonexistent")
 
 
-@SVCs("SVC_020")
+@SVCs("SVC_PARSE_0002")
 @pytest.mark.parametrize(
     "location,expected_prefix,uri_fragment",
     [
