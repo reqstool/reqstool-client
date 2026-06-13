@@ -1,5 +1,6 @@
 # Copyright © LFV
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import mcp.server.fastmcp
@@ -16,7 +17,7 @@ class _FakeFastMCP:
 
     def __init__(self, name):
         self.name = name
-        self.settings = type("Settings", (), {})()
+        self.settings = SimpleNamespace()
         self.tools = {}
         self.run_transport = None
         self.status_result = None
@@ -48,3 +49,20 @@ def test_start_server_serves_resolved_dataset(local_testdata_resources_rootdir_w
     assert fake_mcp.run_transport == "stdio"
     assert fake_mcp.status_result is not None
     assert fake_mcp.status_result["totals"]["requirements"]["total"] > 0
+
+
+@SVCs("SVC_MCP_0002")
+def test_start_server_streamable_http_configures_settings(local_testdata_resources_rootdir_w_path):
+    """MCP_0002: the streamable-HTTP transport is served as stateless JSON responses on the
+    configured host and port."""
+    location = LocalLocation(path=local_testdata_resources_rootdir_w_path("test_basic/baseline/ms-101"))
+
+    with patch.object(mcp.server.fastmcp, "FastMCP", _FakeFastMCP):
+        mcp_server.start_server(location=location, transport="streamable-http", host="0.0.0.0", port=9000)
+
+    fake_mcp = _FakeFastMCP.instances[-1]
+    assert fake_mcp.run_transport == "streamable-http"
+    assert fake_mcp.settings.host == "0.0.0.0"
+    assert fake_mcp.settings.port == 9000
+    assert fake_mcp.settings.json_response is True
+    assert fake_mcp.settings.stateless_http is True

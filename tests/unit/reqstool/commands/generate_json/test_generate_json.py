@@ -1,9 +1,12 @@
 # Copyright © LFV
 
 import json
+from importlib.resources import files
 
+import jsonschema
 from reqstool_python_decorators.decorators.decorators import SVCs
 
+import reqstool.resources.schemas.v1
 from reqstool.commands.generate_json.generate_json import GenerateJsonCommand
 from reqstool.locations.local_location import LocalLocation
 
@@ -15,6 +18,9 @@ def test_generate_json(local_testdata_resources_rootdir_w_path):
         filter_data=True,
     )
     assert gjc.result
+
+    export_schema = json.loads(files(reqstool.resources.schemas.v1).joinpath("export_output.schema.json").read_text())
+    jsonschema.validate(json.loads(gjc.result), export_schema)
 
 
 @SVCs("SVC_EXPORT_0003")

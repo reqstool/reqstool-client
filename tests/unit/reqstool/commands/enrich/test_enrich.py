@@ -87,6 +87,17 @@ def test_command_enrich_reads_stdin_writes_output(monkeypatch):
     assert mock_enrich.call_args.kwargs["input_content"] == "document referencing REQ_X"
 
 
+@SVCs("SVC_ENRICH_0004")
+def test_command_enrich_no_source_no_config_exits(capsys):
+    """ENRICH_0004: with neither an explicit source nor a config file, the command errors out."""
+    args = argparse.Namespace(source=None, preset="openspec:spec", input=None, output=io.StringIO())
+    with patch("reqstool.common.reqstool_ai_config.find_config", return_value=None):
+        with pytest.raises(SystemExit) as exc:
+            Command().command_enrich(args)
+    assert exc.value.code == 2
+    assert "reqstool enrich:" in capsys.readouterr().err
+
+
 @SVCs("SVC_ENRICH_0001")
 def test_mvr_enrichment(ms101):
     input_content, expected = _load("mvr")

@@ -370,7 +370,7 @@ def test_incomplete_reasons_non_code_with_manual_failure():
     assert "not implemented" not in r
 
 
-@SVCs("SVC_STATUS_0003")
+@SVCs("SVC_STATUS_0005")
 def test_status_json_verbosity_warning_is_emitted(local_testdata_resources_rootdir_w_path, caplog):
     """--verbosity is ignored for --format json; a warning must be logged."""
     import logging

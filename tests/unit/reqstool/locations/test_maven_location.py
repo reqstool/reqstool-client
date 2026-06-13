@@ -25,7 +25,7 @@ def test_maven_location_make_available_no_token(tmp_path):
     mock_dl.assert_called_once_with(base=loc.url, token=None)
 
 
-@SVCs("SVC_SOURCE_0005")
+@SVCs("SVC_SOURCE_0005", "SVC_SOURCE_0008")
 def test_maven_location_make_available_with_token(tmp_path):
     loc = MavenLocation(group_id="com.example", artifact_id="my-lib", version="1.0.0", token="my-secret")
     mock_downloader = MagicMock()

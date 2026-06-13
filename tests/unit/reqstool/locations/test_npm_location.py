@@ -39,6 +39,7 @@ def test_npm_location_make_available_no_token(tmp_path):
     assert result == extracted
 
 
+@SVCs("SVC_SOURCE_0008")
 def test_npm_location_make_available_with_token(tmp_path):
     loc = NpmLocation(package="my-pkg-reqstool", version="2.0.0", token="secret-token")
 

@@ -30,7 +30,6 @@ from reqstool.requirements_indata.requirements_indata import RequirementsIndata
 from reqstool.storage.database import RequirementsDatabase
 
 
-@Requirements("INGEST_0001")
 class CombinedRawDatasetsGenerator:
     def __init__(
         self,
