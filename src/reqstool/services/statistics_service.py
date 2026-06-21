@@ -7,17 +7,18 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
-from reqstool.models.svcs import VERIFICATIONPHASE, VERIFICATIONTYPES
+from reqstool.models.svcs import EXPECTS_AUTOMATED_TESTS, EXPECTS_MVRS, VERIFICATIONPHASE
 from reqstool.models.test_data import TEST_RUN_STATUS, TestData
 from reqstool.storage.requirements_repository import RequirementsRepository
 
-EXPECTS_MVRS = [
-    VERIFICATIONTYPES.MANUAL_TEST,
-    VERIFICATIONTYPES.REVIEW,
-    VERIFICATIONTYPES.PLATFORM,
-    VERIFICATIONTYPES.OTHER,
+__all__ = [
+    "EXPECTS_AUTOMATED_TESTS",
+    "EXPECTS_MVRS",
+    "StatisticsService",
+    "TestStats",
+    "RequirementStatus",
+    "TotalStats",
 ]
-EXPECTS_AUTOMATED_TESTS = [VERIFICATIONTYPES.AUTOMATED_TEST]
 
 
 @dataclass(frozen=True)
