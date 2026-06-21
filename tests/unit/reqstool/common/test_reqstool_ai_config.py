@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from reqstool.common.reqstool_ai_config import CONFIG_FILENAME, find_config, resolve_system_path
+from reqstool_python_decorators.decorators.decorators import SVCs
 
 
 def test_find_config_in_cwd(tmp_path: Path, monkeypatch):
@@ -14,6 +15,7 @@ def test_find_config_in_cwd(tmp_path: Path, monkeypatch):
     assert find_config() == cfg.resolve()
 
 
+@SVCs("SVC_ENRICH_0004")
 def test_find_config_in_ancestor(tmp_path: Path):
     cfg = tmp_path / CONFIG_FILENAME
     cfg.write_text("system:\n  path: docs/reqstool\n")

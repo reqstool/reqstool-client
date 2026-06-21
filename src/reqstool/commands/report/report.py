@@ -43,7 +43,7 @@ class Jinja2Templates(Enum):
         return obj
 
 
-@Requirements("REQ_032")
+@Requirements("REPORT_0001", "REPORT_0002")
 class ReportCommand:
     def __init__(
         self,

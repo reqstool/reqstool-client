@@ -6,6 +6,7 @@ import pytest
 
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.locations.npm_location import NpmLocation
+from reqstool_python_decorators.decorators.decorators import SVCs
 
 
 def test_npm_location_defaults():
@@ -19,6 +20,7 @@ def test_npm_location_custom_registry():
     assert loc.url == "https://my.registry.example.com"
 
 
+@SVCs("SVC_SOURCE_0006")
 def test_npm_location_make_available_no_token(tmp_path):
     loc = NpmLocation(package="@scope/my-pkg-reqstool", version="1.2.3")
 
@@ -37,6 +39,7 @@ def test_npm_location_make_available_no_token(tmp_path):
     assert result == extracted
 
 
+@SVCs("SVC_SOURCE_0008")
 def test_npm_location_make_available_with_token(tmp_path):
     loc = NpmLocation(package="my-pkg-reqstool", version="2.0.0", token="secret-token")
 

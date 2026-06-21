@@ -9,7 +9,7 @@ from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
-@SVCs("SVC_009", "SVC_010")
+@SVCs("SVC_IMPORT_0006")
 def test_include_exclude_for_requirements(local_testdata_resources_rootdir_w_path):
     semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
     with build_database(

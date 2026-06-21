@@ -34,7 +34,7 @@ class TestDataModelGenerator:
 
         return TestsData(tests=tests)
 
-    @Requirements("REQ_014", "REQ_015")
+    @Requirements("INGEST_0005", "INGEST_0006")
     def __parse_test_data(self, test_result_files: List[Path], urn: str) -> Dict[UrnId, TestData]:
         r_testdata: Dict[UrnId, TestData] = {}
 

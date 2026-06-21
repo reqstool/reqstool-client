@@ -7,231 +7,452 @@ metadata:
   url: https://github.com/reqstool/reqstool-client
 
 requirements:
-  - id: REQ_001
-    title: Indata from local files
+  # --- status capability (derived from openspec/specs/status) ---
+  - id: STATUS_0001
+    title: Requirement status computation
     significance: shall
-    description: Reqstool should be able to read and parse *.yml files from a local disk.
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_002
-    title: Indata from git location
+    description: The system shall compute, for every requirement, its implementation state, automated test outcome, and manual verification outcome, and classify each requirement as complete or incomplete.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: STATUS_0002
+    title: Completion verdict
     significance: shall
-    description: Reqstool should be able to fetch and parse *.yml files from a git repository.
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_003
-    title: Indata from maven artifacts
+    description: The system shall derive an overall verdict from the number of incomplete requirements, reporting PASS when none are incomplete and FAIL otherwise.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: STATUS_0003
+    title: Console verbosity levels
     significance: shall
-    description: Reqstool should be able to fetch, unzip and parse *.yml files from a maven artifact
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_004
-    title: Requirement categories from ISO standard
+    description: The system shall provide four console verbosity levels (compact, normal, verbose, extra-verbose) presenting increasing detail, defaulting to normal.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: STATUS_0004
+    title: Incomplete-only filtering
     significance: shall
-    description: Requirements shall be categorized using this ISO25000 standard for product quality. See link for further information https://iso25000.com/index.php/en/iso-25000-standards/iso-25010
-    categories: [reliability]
-    revision: 0.0.1
-  - id: REQ_005
-    title: Reqstool client should be able to parse all *.yml files from a microservice variant
+    description: The system shall support restricting console output to only incomplete requirements.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: STATUS_0005
+    title: JSON output format
     significance: shall
-    description: User will have to provide a requirements.yml file in the root of the path provided
-    categories: [compatibility]
-    revision: 0.0.1
-  - id: REQ_006
-    title: Reqstool client should be able to parse all *.yml files except the implementations part of annotations.yml from a system variant
+    description: The system shall be able to emit status as a structured JSON document as an alternative to console output, ignoring console verbosity when JSON is selected.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: STATUS_0006
+    title: Requirement and SVC filtering
     significance: shall
-    description: User will have to provide a requirements.yml file in the root of the path provided
-    categories: [compatibility]
-    revision: 0.0.1
-  - id: REQ_007
-    title: Reqstool client should be able to parse a requirements.yml file from an external variant
+    description: The system shall allow JSON status output to be filtered to a specified set of requirement IDs or SVC IDs.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: STATUS_0007
+    title: CI gating exit code
     significance: shall
-    description: User will have to provide a requirements.yml file in the root of the path provided
-    categories: [compatibility]
-    revision: 0.0.1
-  - id: REQ_008
-    title: Requirements.yml file must reside under content root
+    description: The system shall, when explicitly asked to enforce coverage, exit with a dedicated non-zero code if any requirement is unmet, and otherwise exit zero.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: STATUS_0008
+    title: Post-build test gating
     significance: shall
-    description: User will have to provide a requirements.yml file in the root of the path provided
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_009
-    title: Manual_verificaton_results.yml file must reside under content root
+    description: The system shall accept one or more post-build JUnit XML result files and incorporate their outcomes into the status computation.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: STATUS_0009
+    title: Status output destination
     significance: shall
-    description: User will have to provide a manual_verificaton_results.yml file in the root of the path provided
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_010
-    title: Software_verificaton_cases.yml file must reside under content root
+    description: The system shall write status output to a file when a path is given and to standard output otherwise.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+
+  # --- report capability (derived from openspec/specs/report) ---
+  - id: REPORT_0001
+    title: Report generation
     significance: shall
-    description: User will have to provide a software_verificaton_cases.yml file in the root of the path provided
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_011
-    title: Reqstool_config.yml file must reside under content root
-    significance: may
-    description: User will have to provide a reqstool_config.yml file in the root of the path provided if changes to the default path for dynamic files or project root directory are required
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_012
-    title: Both static and dynamically generated files should should honor their respective json schemas
+    description: The system shall generate a report from the collected statistics that lists every requirement together with its implementation and verification status.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: REPORT_0002
+    title: Output format selection
     significance: shall
-    description: All files that reqstool requires or creates should have a json schema. Reqstool client should validate the content before parsing
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_013
-    title: Reqstool client requires a annotations.yml file in order to parse and track implementation and tests
+    description: The system shall render the report in a selectable markup format, defaulting to AsciiDoc and also supporting Markdown.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: REPORT_0003
+    title: Grouping
+    significance: shall
+    description: The system shall group requirements in the report either by their initial-versus-imported origin or by requirement category.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: REPORT_0004
+    title: Sorting
+    significance: shall
+    description: The system shall sort the requirements within each group by one or more of identifier, significance, or revision.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: REPORT_0005
+    title: Report output destination
+    significance: shall
+    description: The system shall write the report to a file when a path is given and to standard output otherwise.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: REPORT_0006
+    title: Deprecated AsciiDoc alias
     significance: should
-    description: A annotations.yml file should be provided for Reqstool client in order to check implementation ans test results. The default path (target/reqstool) could be altered with the requirements_config file.
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_014
-    title: Reqstool client should be able to parse junit test reports
+    description: The system should retain a deprecated dedicated AsciiDoc report command that behaves like the report command in AsciiDoc format while warning the user to migrate.
+    categories: ["maintainability"]
+    revision: "0.11.0"
+
+  # --- export capability (derived from openspec/specs/export) ---
+  - id: EXPORT_0001
+    title: JSON export
     significance: shall
-    description: "Reqstool client should be able to parse test cases from xml data that follows junit xml structure. Sett this link for an example: https://github.com/testmoapp/junitxml#basic-junit-xml-structure"
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_015
-    title: Reqstool client should be able to parse data from karate test reports
+    description: The system shall export the dataset as a JSON document conforming to the export schema, as the default format.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: EXPORT_0002
+    title: Export filtering
     significance: shall
-    description: Reqstool client should be able to parse test reports from karate test cases
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_016
-    title: Reqstool client requires directory path(s) to test report files in order to read and parse the test results
-    significance: should
-    description: A directory path to where .xml  test report files  resides should be provided for Reqstool client in order to check implementation ans test results. The default paths (target/failsafe-reports | target/surefire-reports) could be altered with the requirements_config file.
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_017
-    title: Parse requirements from a maven artifact
+    description: The system shall allow the JSON export to be restricted to a specified set of requirement IDs or SVC IDs.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: EXPORT_0003
+    title: Unfiltered export
     significance: shall
-    description: "Reqstool client should be able to parse requirements data from a Maven artifact that follows the correct structure described in the documentation. See: https://reqstool.github.io/reqstool-client/reqstool-client/0.3.0/data.html#maven-artifact-zip-directory-structure"
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_018
-    title: Apply filters on imported requirements
+    description: The system shall provide an option to export the dataset without applying the dataset's own import and scope filters.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: EXPORT_0004
+    title: SQLite export
     significance: shall
-    description: User shall be able to filter in or out specific requirement id's from another source
-    categories: [interaction-capability]
-    revision: 0.0.1
-  - id: REQ_019
-    title: Apply filters on imported software verification cases
+    description: The system shall be able to export the dataset as a SQLite database snapshot written to a file, requiring an output file path.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: EXPORT_0005
+    title: Export output destination
     significance: shall
-    description: User shall be able to filter in or out specific software verification id's from another source
-    categories: [interaction-capability]
-    revision: 0.0.1
-  - id: REQ_020
-    title: Custom filter patterns
+    description: The system shall write the JSON export to a file when a path is given and to standard output otherwise.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+
+  # --- validate capability (derived from openspec/specs/validate) ---
+  - id: VALIDATE_0001
+    title: SVC coverage check
+    significance: shall
+    description: The system shall report every requirement that has no software verification case defined.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: VALIDATE_0002
+    title: Manual verification coverage check
+    significance: shall
+    description: The system shall report every SVC that expects a manual verification result but has none recorded.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: VALIDATE_0003
+    title: Referential integrity check
+    significance: shall
+    description: The system shall report referential-integrity errors where an SVC, MVR, or annotation references a non-existent entity, and treat such errors as fatal.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: VALIDATE_0004
+    title: Strict mode
+    significance: shall
+    description: The system shall treat coverage gaps as warnings by default and as errors when strict mode is enabled.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: VALIDATE_0005
+    title: Validation summary
+    significance: shall
+    description: The system shall summarize the outcome with counts of errors and warnings and an overall pass/fail result, signalling failure through its exit code.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+
+  # --- enrich capability (derived from openspec/specs/enrich) ---
+  - id: ENRICH_0001
+    title: Document enrichment
+    significance: shall
+    description: The system shall enrich an input document by injecting the titles and descriptions of the requirement, SVC, and MVR identifiers it references.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: ENRICH_0002
+    title: Enrichment preset selection
+    significance: shall
+    description: The system shall apply a named enrichment preset that determines how references are detected and rendered.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: ENRICH_0003
+    title: Enrichment input and output
+    significance: shall
+    description: The system shall read the document to enrich from a file or standard input and write the result to a file or standard output.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: ENRICH_0004
+    title: Dataset auto-detection
+    significance: shall
+    description: The system shall auto-detect the dataset from the reqstool AI configuration file in the current or an ancestor directory when no source is provided, and report an error when none is found.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+
+  # --- lsp capability (derived from openspec/specs/lsp) ---
+  - id: LSP_0001
+    title: Language server startup
+    significance: shall
+    description: The system shall start a Language Server Protocol server that serves reqstool data to a connected editor client.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: LSP_0002
+    title: Language server transport selection
+    significance: shall
+    description: The system shall serve over stdio by default and support a TCP transport with a configurable host and port.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: LSP_0003
+    title: Language server log file
     significance: may
-    description: User may apply a custom filter pattern for svc id's and requirement id's
-    categories: [flexibility]
-    revision: 0.0.1
-  - id: REQ_021
-    title: All yml files needed for reqstool-client shall follow their respective json schema.
+    description: The system may write server logs to a file in addition to standard error.
+    categories: ["maintainability"]
+    revision: "0.11.0"
+  - id: LSP_0004
+    title: Language server dependency guard
     significance: shall
-    description: Reqstool-client shall validate .yml files and prompt user it errors are detected.
-    categories: [functional-suitability]
-    revision: 0.0.1
-  - id: REQ_022
-    title: Reqstool client shall log a warning if duplicate requirement id's are detected during parsing
+    description: The system shall report a clear, actionable error when the optional dependencies required for the language server are not installed.
+    categories: ["reliability"]
+    revision: "0.11.0"
+
+  # --- mcp capability (derived from openspec/specs/mcp) ---
+  - id: MCP_0001
+    title: MCP server startup
     significance: shall
-    description: User will have to provide a requirements.yml file in the root of the path provided
-    categories: [compatibility]
-    revision: 0.0.1
-  - id: REQ_023
-    title: Reqstool client shall log a warning if duplicate svc id's are detected during parsing
+    description: The system shall start a Model Context Protocol server that exposes the reqstool dataset to connected clients through structured tools.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: MCP_0002
+    title: MCP server transport selection
     significance: shall
-    description: User will have to provide a requirements.yml file in the root of the path provided
-    categories: [compatibility]
-    revision: 0.0.1
-  - id: REQ_024
-    title: Reqstool client shall log a warning if references to non existing requirement id's are detected during parsing
+    description: The system shall support stdio, SSE, and streamable-HTTP transports, defaulting to stdio, with a configurable host and port for the HTTP transports.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: MCP_0003
+    title: MCP dataset resolution
     significance: shall
-    description: User will have to provide a requirements.yml file in the root of the path provided
-    categories: [compatibility]
-    revision: 0.0.1
-  - id: REQ_025
-    title: Reqstool client shall log a warning if references to non existing svc id's are detected during parsing
+    description: The system shall serve an explicitly provided source, or auto-detect the dataset from the reqstool AI configuration file when no source is given, and report an error when neither is available.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
+  - id: MCP_0004
+    title: MCP server dependency guard
     significance: shall
-    description: User will have to provide a requirements.yml file in the root of the path provided
-    categories: [compatibility]
-    revision: 0.0.1
-  - id: REQ_026
-    title: Reqstool client shall exit if it cannot find a requirements.yml file from the path provided
+    description: The system shall report a clear, actionable error when the optional dependencies required for the MCP server are not installed.
+    categories: ["reliability"]
+    revision: "0.11.0"
+
+  # --- data-sources capability (derived from openspec/specs/data-sources) ---
+  - id: SOURCE_0001
+    title: Local materialization contract
     significance: shall
-    description: User will be propted that a required .yml file is missing from the path provided.
-    categories: [interaction-capability]
-    revision: 0.0.1
-  - id: REQ_027
-    title: Generate status
+    description: The system shall make every selected source available on local disk before parsing, regardless of source type.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0002
+    title: Local directory source
     significance: shall
-    description: Reqstool should be able to generate status from the collected statistics, listing all requirements and their status on implementation and tests.
-    categories: [functional-suitability]
-    revision: 0.4.0
-  - id: REQ_028
-    title: Collect statistics for Requirements
+    description: The system shall accept a path to a local directory as a data source.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0003
+    title: Local packaged-artifact source
     significance: shall
-    description: Reqstool should collect statistics for each requirement (SVCs, MVRs, implementation).
-    categories: [maintainability]
-    revision: 0.4.0
-  - id: REQ_029
-    title: Write status to file / stdout
+    description: The system shall accept a local packaged artifact (Maven ZIP, npm tarball, or PyPI source distribution) as a data source and extract it before parsing.
+    categories: ["compatibility"]
+    revision: "0.11.0"
+  - id: SOURCE_0004
+    title: Git repository source
     significance: shall
-    description: Reqstool should be able to write the status to file or default to stdout if no file specified.
-    categories: [functional-suitability]
-    revision: 0.4.0
-  - id: REQ_030
-    title: Generate raw JSON from imported models
+    description: The system shall fetch data from a git repository identified by URL, a path within the repository, and a ref (branch, tag, or commit).
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0005
+    title: Maven artifact source
     significance: shall
-    description: Reqstool should be able to generate imported models into raw JSON.
-    categories: [functional-suitability]
-    revision: 0.4.0
-  - id: REQ_031
-    title: Write generated JSON to file / stdout
+    description: The system shall fetch a Maven artifact identified by group ID, artifact ID, and version, with an optional repository URL and classifier.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0006
+    title: npm package source
     significance: shall
-    description: Reqstool should be able to write the JSON to file or default to stdout if no file specified.
-    categories: [functional-suitability]
-    revision: 0.4.0
-  - id: REQ_032
-    title: Generate report from collected statistics
+    description: The system shall fetch an npm package identified by package name and version, defaulting to the public npm registry when no registry URL is given.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0007
+    title: PyPI package source
     significance: shall
-    description: Reqstool should be able to generate a report from the collected statistics, listing all requirements and their status.
-    categories: [functional-suitability]
-    revision: 0.4.0
-  - id: REQ_033
-    title: Group by in report
+    description: The system shall fetch a PyPI package identified by package name and version, with an optional index URL.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: SOURCE_0008
+    title: Authenticated access
     significance: shall
-    description: Reqstool should be able to generate a report grouped by the categories specified in the requirements or initial/imported urns.
-    categories: [functional-suitability]
-    revision: 0.4.0
-  - id: REQ_034
-    title: Sort by in report
+    description: The system shall accept an authentication token for remote sources, supplied as a direct value with support for variable references in data files.
+    categories: ["security"]
+    revision: "0.11.0"
+
+  # --- ingestion capability (derived from openspec/specs/ingestion) ---
+  - id: INGEST_0001
+    title: Parse requirements
     significance: shall
-    description: Reqstool should be able to sort the generated report.
-    categories: [functional-suitability]
-    revision: 0.4.0
-  - id: REQ_035
-    title: Write report to file / stdout
+    description: The system shall parse requirements from a requirements.yml file, producing requirement entities with their identifier, title, significance, description, categories, and revision.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0002
+    title: Parse software verification cases
     significance: shall
-    description: Reqstool should be able to write the report to file / stdout.
-    categories: [functional-suitability]
-    revision: 0.4.0
-  - id: REQ_036
-    title: Reqstool shall support requirements that does not require an implementation
+    description: The system shall parse software verification cases from a software_verification_cases.yml file, each linked to the requirements it verifies.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0003
+    title: Parse manual verification results
     significance: shall
-    description: A user should be able to define a requirement that does not need an source code implementation.
-    categories: [functional-suitability, flexibility]
-    revision: 0.4.5
-  - id: REQ_037
-    title: Requirements shall have the option to be decommissioned
+    description: The system shall parse manual verification results from a manual_verification_results.yml file, each linked to the SVC it verifies.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0004
+    title: Parse code annotations
+    significance: should
+    description: The system should parse code annotations from a generated annotations.yml file, capturing which code elements implement requirements and which tests verify SVCs.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0005
+    title: Parse automated test results
     significance: shall
-    description: A user shall be able to specify the state of the requirement. Whether it is in use or not.
-    categories: [maintainability]
-    revision: 0.4.6
-  - id: REQ_038
-    title: SVCs shall have the option to be decommissioned
+    description: The system shall parse automated test results from JUnit XML report files.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0006
+    title: Parse Karate test reports
     significance: shall
-    description: A user shall be able to specify the state of the SVC. Whether it is in use or not.
-    categories: [maintainability]
-    revision: 0.4.6
+    description: The system shall parse test results from Karate test reports.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0007
+    title: Static files at the content root
+    significance: shall
+    description: The system shall expect the static input files (requirements.yml, software_verification_cases.yml, manual_verification_results.yml) at the root of the provided content path.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: INGEST_0008
+    title: Configurable file locations
+    significance: should
+    description: The system should support an optional configuration file that overrides the default locations for generated files and test reports.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+
+  # --- imports-and-filtering capability (derived from openspec/specs/imports-and-filtering) ---
+  - id: IMPORT_0001
+    title: Recursive import resolution
+    significance: shall
+    description: The system shall resolve a dataset's imports recursively, including the requirements of each imported dataset and the imports they declare in turn.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: IMPORT_0002
+    title: Import cycle detection
+    significance: shall
+    description: The system shall detect a cycle in the import chain and reject it rather than recursing indefinitely.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: IMPORT_0003
+    title: Recursive implementation resolution
+    significance: shall
+    description: The system shall resolve a dataset's declared implementations recursively, treating each implementing dataset as one that may declare its own implementations.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: IMPORT_0004
+    title: Implementation cycle detection
+    significance: shall
+    description: The system shall detect a cycle in the implementation chain and reject it.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: IMPORT_0005
+    title: Implementation requirements excluded from scope
+    significance: shall
+    description: The system shall exclude the requirements contributed by implementation datasets from the system's own requirement set, retaining only their verification evidence.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: IMPORT_0006
+    title: Filter imported requirements
+    significance: shall
+    description: The system shall allow a dataset to include or exclude specific requirement IDs from a composed source.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: IMPORT_0007
+    title: Filter imported SVCs
+    significance: shall
+    description: The system shall allow a dataset to include or exclude specific SVC IDs from a composed source.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+  - id: IMPORT_0008
+    title: Filter expression language
+    significance: shall
+    description: The system shall support a filter expression language combining logical operators, identifier equality and inequality, and regular-expression matching.
+    categories: ["flexibility"]
+    revision: "0.11.0"
+
+  # --- parse-validation capability (derived from openspec/specs/parse-validation) ---
+  - id: PARSE_0001
+    title: Schema validation
+    significance: shall
+    description: The system shall validate each input file against its JSON schema before parsing and report a validation error when a file does not conform.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: PARSE_0002
+    title: Missing requirements file
+    significance: shall
+    description: The system shall fail with a clear error when no requirements.yml file is found at the provided content root.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: PARSE_0003
+    title: Duplicate requirement identifiers
+    significance: shall
+    description: The system shall warn when duplicate requirement identifiers are detected during parsing.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: PARSE_0004
+    title: Duplicate SVC identifiers
+    significance: shall
+    description: The system shall warn when duplicate SVC identifiers are detected during parsing.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: PARSE_0005
+    title: Dangling requirement references
+    significance: shall
+    description: The system shall warn when a reference to a non-existent requirement identifier is detected during parsing.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: PARSE_0006
+    title: Dangling SVC references
+    significance: shall
+    description: The system shall warn when a reference to a non-existent SVC identifier is detected during parsing.
+    categories: ["reliability"]
+    revision: "0.11.0"
+
+  # --- lifecycle capability (derived from openspec/specs/lifecycle) ---
+  - id: LIFECYCLE_0001
+    title: Non-code implementation types
+    significance: shall
+    description: The system shall allow a requirement to declare that it is satisfied by something other than source code (not-applicable, configuration, platform, or framework) and not treat such a requirement as unimplemented for lacking a code annotation.
+    categories: ["functional-suitability", "flexibility"]
+    revision: "0.11.0"
+  - id: LIFECYCLE_0002
+    title: Requirement lifecycle state
+    significance: shall
+    description: The system shall allow a requirement to declare a lifecycle state (draft, effective, deprecated, or obsolete) with an optional reason, defaulting to effective.
+    categories: ["maintainability"]
+    revision: "0.11.0"
+  - id: LIFECYCLE_0003
+    title: SVC lifecycle state
+    significance: shall
+    description: The system shall allow an SVC to declare a lifecycle state (draft, effective, deprecated, or obsolete) with an optional reason, defaulting to effective.
+    categories: ["maintainability"]
+    revision: "0.11.0"
+  - id: LIFECYCLE_0004
+    title: Superseded-reference warning
+    significance: shall
+    description: The system shall warn when a deprecated or obsolete requirement or SVC is still referenced by active items.
+    categories: ["maintainability"]
+    revision: "0.11.0"

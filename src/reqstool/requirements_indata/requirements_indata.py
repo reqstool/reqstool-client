@@ -39,7 +39,7 @@ class RequirementsIndata(BaseModel):
         self._handle_requirements_config()
         self._ensure_absolute_paths_and_check_existance()
 
-    @Requirements("REQ_011")
+    @Requirements("INGEST_0008")
     def _handle_requirements_config(self):
 
         if os.path.exists(os.path.join(self.dst_path, "reqstool_config.yml")):

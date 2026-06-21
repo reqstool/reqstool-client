@@ -22,7 +22,7 @@ class GroupbyOptions(Enum):
     CATEGORY = "category"
 
 
-@Requirements("REQ_033")
+@Requirements("REPORT_0003")
 class GroupByOrganizor(BaseModel, ABC):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -44,7 +44,7 @@ class GroupByOrganizor(BaseModel, ABC):
     def _add_req_to_group(self, group: str, urn_id: UrnId):
         self.grouped_requirements[group].append(urn_id)
 
-    @Requirements("REQ_034")
+    @Requirements("REPORT_0004")
     def _sort(self):
         if len(self.sort_by) == 0:
             return

@@ -10,7 +10,7 @@ from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
-@Requirements("REQ_039")
+@Requirements("ENRICH_0001", "ENRICH_0002")
 class EnrichCommand:
     def __init__(self, location: LocationInterface, input_content: str, config: EnrichmentConfig):
         self.__initial_location: LocationInterface = location

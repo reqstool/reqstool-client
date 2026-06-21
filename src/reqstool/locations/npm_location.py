@@ -10,12 +10,14 @@ from pydantic import SecretStr, field_validator
 
 from reqstool.common.exceptions import ArtifactDownloadError, ArtifactExtractionError
 from reqstool.common.utils import Utils
+from reqstool_python_decorators.decorators.decorators import Requirements
 from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
 
 _METADATA_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 _REQUEST_TIMEOUT = 30  # seconds
 
 
+@Requirements("SOURCE_0006")
 class NpmLocation(LocationInterface):
     url: str = "https://registry.npmjs.org"
     package: str

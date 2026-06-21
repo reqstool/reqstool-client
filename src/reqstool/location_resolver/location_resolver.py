@@ -4,6 +4,7 @@ from pathlib import PurePath
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
+from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.locations.local_location import LocalLocation
 from reqstool.locations.location import LocationInterface
@@ -45,5 +46,6 @@ class LocationResolver(BaseModel):
 
         return resolved
 
+    @Requirements("SOURCE_0001")
     def make_available_on_localdisk(self, dst_path: str) -> str:
         return self.current._make_available_on_localdisk(dst_path=dst_path)

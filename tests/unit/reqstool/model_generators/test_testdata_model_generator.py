@@ -22,7 +22,7 @@ unit_method_names = [
 ]
 
 
-@SVCs("SVC_006")
+@SVCs("SVC_INGEST_0006")
 @pytest.mark.parametrize("method_name", karate_method_names)
 def test_karate_method_identifier_regex(method_name):
     karate_match = re.match(TestDataModelGenerator.KARATE_METHOD_IDENTIFIER_REGEX, method_name)
@@ -30,7 +30,7 @@ def test_karate_method_identifier_regex(method_name):
     assert karate_match.group(1) == "Create a subscripiton with filter and receive messages"
 
 
-@SVCs("SVC_007")
+@SVCs("SVC_INGEST_0005")
 @pytest.mark.parametrize("method_name", unit_method_names)
 def test_unit_method_identifier_regex(method_name):
     unit_match = re.match(TestDataModelGenerator.UNIT_METHOD_IDENTIFIER_REGEX, method_name)

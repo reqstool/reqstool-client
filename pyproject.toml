@@ -76,7 +76,10 @@ source = "vcs"
 local_scheme = "no-local-version"
 
 [tool.hatch.build.hooks.reqstool]
-sources = ["src", "tests"]
+# Scan only the project's own code and tests for @Requirements/@SVCs. Exclude tests/fixtures and
+# tests/resources — those carry annotations for their own fixture datasets (e.g. SVC_040/050),
+# which must not leak into this project's annotations.yml.
+sources = ["src", "tests/unit", "tests/integration", "tests/e2e"]
 test_results = "build/junit.xml"
 dataset_directory = "docs/reqstool"
 output_directory = "build/reqstool"

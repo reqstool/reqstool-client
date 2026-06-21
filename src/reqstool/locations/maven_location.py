@@ -12,7 +12,7 @@ from reqstool.common.utils import Utils
 from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
 
 
-@Requirements("REQ_003", "REQ_017")
+@Requirements("SOURCE_0005")
 class MavenLocation(LocationInterface):
     url: Optional[str] = "https://repo.maven.apache.org/maven2"
     group_id: str

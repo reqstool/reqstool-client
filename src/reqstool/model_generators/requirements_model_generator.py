@@ -299,7 +299,7 @@ class RequirementsModelGenerator:
             result[id_text] = (id_line, id_col, id_col + len(id_text))
         return result
 
-    @Requirements("REQ_004", "REQ_036")
+    @Requirements("INGEST_0001", "LIFECYCLE_0001", "LIFECYCLE_0002")
     def __parse_requirements(self, model, data, source_lines: Dict[str, tuple[int, int, int]]):  # NOSONAR
         r_reqs = {}
 

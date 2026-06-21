@@ -1,10 +1,15 @@
 # Copyright © LFV
 
 import pytest
+from reqstool_python_decorators.decorators.decorators import SVCs
 
 from reqstool.common.models.urn_id import UrnId
+from reqstool.common.validator_error_holder import ValidationErrorHolder
+from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.filters.requirements_filters import RequirementFilter
 from reqstool.filters.svcs_filters import SVCFilter
+from reqstool.locations.local_location import LocalLocation
+from reqstool.model_generators.combined_raw_datasets_generator import CombinedRawDatasetsGenerator
 from reqstool.models.mvrs import MVRData, MVRsData
 from reqstool.models.raw_datasets import RawDataset
 from reqstool.models.requirements import (
@@ -362,5 +367,28 @@ def test_svc_filter_excludes():
 
     remaining_svcs = {row["id"] for row in db.connection.execute("SELECT id FROM svcs").fetchall()}
     assert remaining_svcs == {"SVC_A"}
+
+    db.close()
+
+
+@SVCs("SVC_IMPORT_0005")
+def test_implementation_requirements_excluded_from_scope(local_testdata_resources_rootdir_w_path):
+    """IMPORT_0005: requirements contributed by implementation datasets (lib-a/b/c) are removed
+    from the final requirement set, while the root's own requirements remain."""
+    db = RequirementsDatabase()
+    semantic_validator = SemanticValidator(validation_error_holder=ValidationErrorHolder())
+    crd = CombinedRawDatasetsGenerator(
+        initial_location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_recursive_impl/root")),
+        semantic_validator=semantic_validator,
+        database=db,
+    ).combined_raw_datasets
+
+    DatabaseFilterProcessor(db, crd.raw_datasets).apply_filters()
+
+    remaining = {row["id"] for row in db.connection.execute("SELECT id FROM requirements").fetchall()}
+    assert remaining == {"REQ_ROOT_001"}
+    assert "REQ_LA_001" not in remaining
+    assert "REQ_LB_001" not in remaining
+    assert "REQ_LC_001" not in remaining
 
     db.close()

@@ -30,7 +30,6 @@ from reqstool.requirements_indata.requirements_indata import RequirementsIndata
 from reqstool.storage.database import RequirementsDatabase
 
 
-@Requirements("REQ_005", "REQ_006", "REQ_007")
 class CombinedRawDatasetsGenerator:
     def __init__(
         self,
@@ -166,6 +165,7 @@ class CombinedRawDatasetsGenerator:
             for ms_urn in parsed_microservices:
                 self._parsing_graph[ms_urn].append((rd.metadata.urn, "implementation"))
 
+    @Requirements("IMPORT_0001", "IMPORT_0002")
     def __import_systems(
         self,
         raw_datasets: Dict[str, RawDataset],
@@ -207,6 +207,7 @@ class CombinedRawDatasetsGenerator:
 
         return parsed_urns
 
+    @Requirements("IMPORT_0003", "IMPORT_0004")
     def __import_implementations(
         self,
         raw_datasets: Dict[str, RawDataset],
@@ -246,7 +247,7 @@ class CombinedRawDatasetsGenerator:
 
         return parsed_urns
 
-    @Requirements("REQ_008", "REQ_026")
+    @Requirements("INGEST_0007", "PARSE_0002")
     def __parse_source(self, current_location_handler: LocationResolver) -> RawDataset:
         annotations_data = None
         svcs_data = None
@@ -346,7 +347,7 @@ class CombinedRawDatasetsGenerator:
             source_paths["annotations"] = paths.annotations_yml.path
         return source_paths
 
-    @Requirements("REQ_009", "REQ_010", "REQ_013")
+    @Requirements("INGEST_0002", "INGEST_0003", "INGEST_0004")
     def __parse_source_other(
         self, actual_tmp_path: str, requirements_indata: RequirementsIndata, rmg: RequirementsModelGenerator
     ):

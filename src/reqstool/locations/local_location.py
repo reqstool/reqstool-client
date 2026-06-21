@@ -7,7 +7,7 @@ from reqstool_python_decorators.decorators.decorators import Requirements
 from reqstool.locations.location import LocationInterface, make_safe_tmpdir_suffix
 
 
-@Requirements("REQ_001")
+@Requirements("SOURCE_0002")
 class LocalLocation(LocationInterface):
     path: str
 
