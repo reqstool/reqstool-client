@@ -3,6 +3,7 @@
 
 from reqstool.common.models.urn_id import UrnId
 from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
+from reqstool.services.statistics_service import EXPECTS_AUTOMATED_TESTS
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
@@ -30,6 +31,32 @@ def _compute_meets(req, repo: RequirementsRepository, svc_urn_ids: list, all_pas
         if effective is not None and not effective.passed:
             return False
     return True
+
+
+def _build_automated_test_summary(svc_urn_ids: list, repo: RequirementsRepository) -> tuple[dict, bool]:
+    """Build an automated-test summary across the given SVCs and whether they all pass.
+
+    An SVC whose verification type expects automated tests but has zero recorded test
+    executions counts as missing. SVCs verified by other means (e.g. manual test) are only
+    counted if they happen to have automated test results attached; their absence is not a
+    gap here since they are verified via MVRs instead (checked separately by the caller).
+    A skipped test also means the requirement is not (yet) met.
+    """
+    test_summary = {"passed": 0, "failed": 0, "skipped": 0, "missing": 0}
+    all_svcs = repo.get_all_svcs()
+    for svc_uid in svc_urn_ids:
+        svc = all_svcs.get(svc_uid)
+        results = repo.get_test_results_for_svc(svc_uid)
+        if not results:
+            if svc is not None and svc.verification in EXPECTS_AUTOMATED_TESTS:
+                test_summary["missing"] += 1
+            continue
+        for t in results:
+            key = t.status.value
+            if key in test_summary:
+                test_summary[key] += 1
+    all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0 and test_summary["skipped"] == 0
+    return test_summary, all_passing
 
 
 def _svc_test_summary(svc_urn_id: UrnId, repo: RequirementsRepository) -> dict:
@@ -226,14 +253,7 @@ def get_requirement_status(raw_id: str, repo: RequirementsRepository) -> dict | 
         return None
 
     svc_urn_ids = repo.get_svcs_for_req(req.id)
-    test_summary = {"passed": 0, "failed": 0, "skipped": 0, "missing": 0}
-    for svc_uid in svc_urn_ids:
-        for t in repo.get_test_results_for_svc(svc_uid):
-            key = t.status.value
-            if key in test_summary:
-                test_summary[key] += 1
-
-    all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
+    test_summary, all_passing = _build_automated_test_summary(svc_urn_ids, repo)
     return {
         "id": req.id.id,
         "lifecycle_state": req.lifecycle.state.value,
@@ -249,13 +269,7 @@ def get_requirements_status_all(repo: RequirementsRepository, urn: str | None = 
     result = []
     for req in reqs.values():
         svc_urn_ids = repo.get_svcs_for_req(req.id)
-        test_summary = {"passed": 0, "failed": 0, "skipped": 0, "missing": 0}
-        for svc_uid in svc_urn_ids:
-            for t in repo.get_test_results_for_svc(svc_uid):
-                key = t.status.value
-                if key in test_summary:
-                    test_summary[key] += 1
-        all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0
+        test_summary, all_passing = _build_automated_test_summary(svc_urn_ids, repo)
         result.append(
             {
                 "id": req.id.id,
