@@ -167,6 +167,20 @@ async def test_get_requirement_status_not_found(mcp_session):
     assert result.isError
 
 
+async def test_get_requirement_status_missing_automated_test_not_met(mcp_session):
+    """An entirely missing automated test must not be reported as meeting requirements (regression for #410).
+
+    The skipped-test case (also fixed by #410) is covered at the unit level in
+    tests/unit/reqstool/common/queries/test_details.py — the REQ_SKIPPED_TEST fixture here
+    doesn't currently exercise that path due to an unrelated fqn mismatch between its
+    annotation and its JUnit XML test result.
+    """
+    result = await mcp_session.call_tool("get_requirement_status", {"id": "REQ_MISSING_TEST"})
+    status = _parse_result(result)
+    assert status["test_summary"]["missing"] >= 1
+    assert status["meets_requirements"] is False
+
+
 # ---------------------------------------------------------------------------
 # list_annotations
 # ---------------------------------------------------------------------------

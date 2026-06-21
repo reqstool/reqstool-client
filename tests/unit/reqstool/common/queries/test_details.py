@@ -122,8 +122,21 @@ def test_get_requirement_status_unknown(session):
     assert get_requirement_status("REQ_NONEXISTENT", session.repo) is None
 
 
-def _make_db_with_req(impl_type, passed: bool, with_annotation: bool = False):
-    """Build a minimal in-memory DB with one requirement + SVC + MVR."""
+def _make_db_with_req(
+    impl_type,
+    passed: bool | None = None,
+    with_annotation: bool = False,
+    verification: VERIFICATIONTYPES = VERIFICATIONTYPES.MANUAL_TEST,
+    with_test_annotation: bool = True,
+    status: TEST_RUN_STATUS | None = None,
+):
+    """Build a minimal in-memory DB with one requirement + SVC (+ optional test annotation/result).
+
+    By default builds a manual-test SVC with a passing/failing automated test result (driven by
+    `passed`), matching the original fixture shape. Pass `verification`/`status` to instead build
+    an automated-test SVC with a specific test outcome, or `with_test_annotation=False` to build
+    an SVC with no test annotation/result at all (the "entirely missing automated test" case).
+    """
     db = RequirementsDatabase()
     db.set_metadata("initial_urn", "ms-001")
     req_id = UrnId(urn="ms-001", id="REQ_T")
@@ -137,19 +150,19 @@ def _make_db_with_req(impl_type, passed: bool, with_annotation: bool = False):
         categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
         revision="1.0.0",
     )
-    svc = SVCData(
-        id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST, revision="1.0.0", requirement_ids=[req_id]
-    )
+    svc = SVCData(id=svc_id, title="S", verification=verification, revision="1.0.0", requirement_ids=[req_id])
     db.insert_requirement(req_id.urn, req)
     db.insert_svc(svc_id.urn, svc)
     if with_annotation:
         db.insert_annotation_impl(
             req_id, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar")
         )
-    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="test_method")
-    db.insert_annotation_test(svc_id, ann)
-    status = TEST_RUN_STATUS.PASSED if passed else TEST_RUN_STATUS.FAILED
-    db.insert_test_result("ms-001", "test_method", status)
+    if with_test_annotation:
+        ann = AnnotationData(element_kind="METHOD", fully_qualified_name="test_method")
+        db.insert_annotation_test(svc_id, ann)
+        if status is None:
+            status = TEST_RUN_STATUS.PASSED if passed else TEST_RUN_STATUS.FAILED
+        db.insert_test_result("ms-001", "test_method", status)
     db.commit()
     return db, req_id
 
@@ -412,6 +425,55 @@ def test_meets_requirements_in_code_failing_mvr_is_false():
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
     assert result["meets_requirements"] is False, "failing MVR should make IN_CODE meets_requirements False"
+    db.close()
+
+
+# -- F2: skipped/missing automated tests must not be silently treated as passing --
+
+
+def test_meets_requirements_automated_skipped_test_is_false():
+    """An automated-test SVC with a skipped test result must not count as met."""
+    db, req_id = _make_db_with_req(
+        IMPLEMENTATION.IN_CODE,
+        with_annotation=True,
+        verification=VERIFICATIONTYPES.AUTOMATED_TEST,
+        status=TEST_RUN_STATUS.SKIPPED,
+    )
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["test_summary"]["skipped"] == 1
+    assert result["meets_requirements"] is False, "a skipped automated test should make meets_requirements False"
+    db.close()
+
+
+def test_meets_requirements_automated_zero_test_results_is_false():
+    """An automated-test SVC with zero recorded test executions must count as missing, not passing."""
+    db, req_id = _make_db_with_req(
+        IMPLEMENTATION.IN_CODE,
+        with_annotation=True,
+        verification=VERIFICATIONTYPES.AUTOMATED_TEST,
+        with_test_annotation=False,
+    )
+    repo = RequirementsRepository(db)
+    result = get_requirement_status(req_id.id, repo)
+    assert result is not None
+    assert result["test_summary"]["missing"] == 1
+    assert result["meets_requirements"] is False, "zero automated test executions should make meets_requirements False"
+    db.close()
+
+
+def test_get_requirements_status_all_automated_skipped_and_missing():
+    """get_requirements_status_all must also flag skipped/missing automated tests as not met."""
+    db, req_id = _make_db_with_req(
+        IMPLEMENTATION.IN_CODE,
+        with_annotation=True,
+        verification=VERIFICATIONTYPES.AUTOMATED_TEST,
+        status=TEST_RUN_STATUS.SKIPPED,
+    )
+    repo = RequirementsRepository(db)
+    results = {r["id"]: r for r in get_requirements_status_all(repo)}
+    assert results[req_id.id]["meets_requirements"] is False
     db.close()
 
 
