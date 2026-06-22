@@ -161,6 +161,7 @@ Full rationale in `docs/DESIGN.md`.
 - **Cycle detection covers both chains**: `CircularImportError` for the import chain, `CircularImplementationError` for the implementation chain.
 - **FK constraints scope evidence from implementation children**: SVCs/MVRs/annotations referencing out-of-scope requirements are rejected by SQLite FK checks on insert — no explicit filtering needed.
 - **Test results need explicit scoping**: no FK (keyed by FQN), so a scope check is required when inserting test results from implementation children.
+- **The requirement "complete" verdict has ONE source of truth**: `StatisticsService`'s per-requirement computation (producing `RequirementStatus`). Every consumer — `status`/`report`/`export`, the MCP tools (`get_status`, `get_requirement_status`, `get_requirements_status`), and LSP — MUST derive completeness from that same computation. Do NOT re-implement "is this requirement met / are its automated tests satisfied" anywhere else (e.g. a parallel helper in `common/queries/details.py`). Two parallel verdict paths silently drifted and caused bugs (#411, #412); a private re-derivation is the regression to guard against. When the verdict logic must be reused, extract/call the shared predicate — never copy its traversal.
 
 ## Key Conventions
 
