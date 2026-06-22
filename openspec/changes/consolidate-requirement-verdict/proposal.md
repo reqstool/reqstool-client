@@ -9,11 +9,23 @@ removes the second implementation so the two can never disagree again.
 
 ## What Changes
 
-- Extract a single per-requirement verdict computation that produces one `RequirementStatus`
-  value, used by both `StatisticsService` (in its per-requirement loop) and the `details.py`
-  MCP status functions.
+- Extract a single per-requirement verdict computation
+  (`compute_requirement_status(req, repo, *, include_post_build)`) that produces one
+  `RequirementStatus` value, used by both `StatisticsService` (in its per-requirement loop) and
+  the `details.py` MCP status functions. The predicate queries the repository through its scoped
+  per-req getters rather than reusing bulk fetches, keeping the repository layer as the data
+  boundary.
+- Extract a single per-requirement serializer (`_requirement_to_dict`) called by both
+  `StatisticsService.to_status_dict()` and the MCP status functions, so all status surfaces share
+  one output shape by construction (not two shapes that happen to match).
 - Delete the parallel predicate from `details.py` (`_compute_meets`,
   `_build_automated_test_summary`).
+- Expose `include_post_build` (default `False`) on the MCP `get_requirement_status` /
+  `get_requirements_status` tools, for parity with `status --with-post-tests`, so CLI and MCP
+  agree in both build-only and post-build modes.
+- **Forward-constraint (LSP):** no LSP completion display exists today and none is added here, but
+  any future one MUST consume `compute_requirement_status` + `_requirement_to_dict` and MUST NOT
+  re-derive the verdict. `MCP_0005` is worded to cover all status surfaces (CLI, MCP, LSP).
 - **BREAKING (MCP output):** the MCP `get_requirement_status` and `get_requirements_status`
   tools emit the unified status shape directly (`completed`, `implementation_type`,
   `automated_tests`/`manual_tests` objects with `total` and `not_applicable`), replacing the
@@ -30,9 +42,10 @@ removes the second implementation so the two can never disagree again.
 <!-- none -->
 
 ### Modified Capabilities
-- `mcp`: adds a requirement that the per-requirement MCP status tools report a completion
-  verdict and output structure identical to the `status` command, derived from a single shared
-  verdict computation.
+- `mcp`: adds a requirement that all per-requirement status surfaces (the `status` CLI, the MCP
+  status tools, and any future LSP completion display) report an identical completion verdict and
+  output structure for the same input, derived from a single shared verdict computation and a
+  single shared serializer, in both build-only and post-build scoping modes.
 
 ## Impact
 
