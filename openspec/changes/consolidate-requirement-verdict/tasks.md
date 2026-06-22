@@ -26,5 +26,5 @@
 ## 5. Verification
 
 - [ ] 5.1 Run `hatch run dev:pytest --cov=reqstool` and `hatch run dev:flake8`
-- [ ] 5.2 Run `reqstool status local -p docs/reqstool` (via `hatch run python src/reqstool/command.py`) and confirm 72/72 complete with `SVC_MCP_0005` covered
+- [ ] 5.2 Run `reqstool status local -p docs/reqstool` (via `hatch run python src/reqstool/command.py`) and confirm all requirements complete with `SVC_MCP_0005` covered
 - [ ] 5.3 Run `openspec validate --all --strict`
