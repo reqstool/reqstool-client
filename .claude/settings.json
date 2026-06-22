@@ -1,0 +1,15 @@
+{
+  "extraKnownMarketplaces": {
+    "reqstool-ai": {
+      "source": {
+        "source": "github",
+        "repo": "reqstool/reqstool-ai"
+      },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "reqstool@reqstool-ai": true,
+    "reqstool-openspec@reqstool-ai": true
+  }
+}
