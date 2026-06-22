@@ -156,10 +156,11 @@ async def test_get_requirement_status(mcp_session):
     status = _parse_result(result)
     assert status["id"] == KNOWN_REQ_ID
     assert "lifecycle_state" in status
-    assert "implementation" in status
-    assert "test_summary" in status
-    assert "meets_requirements" in status
-    assert isinstance(status["meets_requirements"], bool)
+    assert "implementation_type" in status
+    assert "automated_tests" in status
+    assert "manual_tests" in status
+    assert "completed" in status
+    assert isinstance(status["completed"], bool)
 
 
 async def test_get_requirement_status_not_found(mcp_session):
@@ -177,8 +178,8 @@ async def test_get_requirement_status_missing_automated_test_not_met(mcp_session
     """
     result = await mcp_session.call_tool("get_requirement_status", {"id": "REQ_MISSING_TEST"})
     status = _parse_result(result)
-    assert status["test_summary"]["missing"] >= 1
-    assert status["meets_requirements"] is False
+    assert status["automated_tests"]["missing"] >= 1
+    assert status["completed"] is False
 
 
 # ---------------------------------------------------------------------------

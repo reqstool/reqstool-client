@@ -128,6 +128,13 @@ class RequirementsRepository:
 
     # -- Index/lookup queries --
 
+    def get_svc(self, svc_urn_id: UrnId) -> SVCData | None:
+        row = self._db.connection.execute(
+            "SELECT * FROM svcs WHERE urn = ? AND id = ?",
+            (svc_urn_id.urn, svc_urn_id.id),
+        ).fetchone()
+        return self._row_to_svc_data(row) if row else None
+
     def get_svcs_for_req(self, req_urn_id: UrnId) -> list[UrnId]:
         rows = self._db.connection.execute(
             "SELECT svc_urn, svc_id FROM svc_requirement_links WHERE req_urn = ? AND req_id = ?",

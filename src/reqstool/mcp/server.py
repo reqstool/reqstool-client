@@ -66,11 +66,12 @@ def start_server(  # noqa: C901
         return result
 
     @mcp.tool()
-    def get_requirements_status(urn: str | None = None) -> list[dict]:
-        """Batch status for all requirements: id, urn, lifecycle_state, implementation, test_summary,
-        meets_requirements. Use this to find requirements that are incomplete, partially tested,
-        or not yet implemented. Optionally filter by URN."""
-        return _get_requirements_status_all(repo, urn=urn)
+    def get_requirements_status(urn: str | None = None, include_post_build: bool = False) -> list[dict]:
+        """Batch status for all requirements: id, urn, lifecycle_state, completed, implementation_type,
+        automated_tests, manual_tests. Use this to find requirements that are incomplete, partially
+        tested, or not yet implemented. Optionally filter by URN. Set include_post_build=True for
+        parity with `status --with-post-tests` (scopes to post-build-phase SVCs too)."""
+        return _get_requirements_status_all(repo, urn=urn, include_post_build=include_post_build)
 
     @mcp.tool()
     def list_svcs(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
@@ -105,9 +106,11 @@ def start_server(  # noqa: C901
         return StatisticsService(repo).to_status_dict()
 
     @mcp.tool()
-    def get_requirement_status(id: str) -> dict:
-        """Quick status check for one requirement: lifecycle state, implementation status, test summary."""
-        result = _get_requirement_status(id, repo)
+    def get_requirement_status(id: str, include_post_build: bool = False) -> dict:
+        """Status check for one requirement: lifecycle_state, completed, implementation_type,
+        automated_tests, manual_tests. Set include_post_build=True for parity with
+        `status --with-post-tests` (scopes to post-build-phase SVCs too)."""
+        result = _get_requirement_status(id, repo, include_post_build=include_post_build)
         if result is None:
             raise ValueError(f"Requirement {id!r} not found")
         return result
