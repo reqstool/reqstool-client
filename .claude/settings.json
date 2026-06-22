@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "reqstool@reqstool-ai": true,
+    "reqstool-openspec@reqstool-ai": true
+  }
+}
