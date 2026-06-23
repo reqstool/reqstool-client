@@ -10,7 +10,7 @@ from reqstool.common.models.urn_id import UrnId
 class AnnotationData(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    element_kind: str  # FIELD, METHOD, CLASS, ENUM, INTERFACE, RECORD
+    element_kind: str  # FIELD, METHOD, CLASS, ENUM, INTERFACE, ANNOTATION_TYPE, RECORD
     fully_qualified_name: str
 
 

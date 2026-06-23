@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS annotations_impls (
     req_urn TEXT NOT NULL,
     req_id TEXT NOT NULL,
     element_kind TEXT NOT NULL CHECK (element_kind IN (
-        'FIELD', 'METHOD', 'CLASS', 'ENUM', 'INTERFACE', 'RECORD'
+        'FIELD', 'METHOD', 'CLASS', 'ENUM', 'INTERFACE', 'ANNOTATION_TYPE', 'RECORD'
     )),
     fqn TEXT NOT NULL,
     PRIMARY KEY (req_urn, req_id, element_kind, fqn),
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS annotations_tests (
     svc_urn TEXT NOT NULL,
     svc_id TEXT NOT NULL,
     element_kind TEXT NOT NULL CHECK (element_kind IN (
-        'FIELD', 'METHOD', 'CLASS', 'ENUM', 'INTERFACE', 'RECORD'
+        'FIELD', 'METHOD', 'CLASS', 'ENUM', 'INTERFACE', 'ANNOTATION_TYPE', 'RECORD'
     )),
     fqn TEXT NOT NULL,
     PRIMARY KEY (svc_urn, svc_id, element_kind, fqn),
