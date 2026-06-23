@@ -284,7 +284,5 @@ pyrightconfig.json
 
 # Claude Code
 .claude/*
-!.claude/commands/
-!.claude/skills/
 !.claude/settings.json
 workspace/

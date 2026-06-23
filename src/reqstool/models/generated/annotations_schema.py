@@ -10,12 +10,13 @@ from pydantic import BaseModel, ConfigDict, RootModel, constr
 
 class ElementKind(Enum):
     """
-    Enum for all valid elementKinds. E.g. CLASS, ENUM, INTERFACE, RECORD, METHOD, FIELD
+    Enum for all valid elementKinds. E.g. CLASS, ENUM, INTERFACE, ANNOTATION_TYPE, RECORD, METHOD, FIELD
     """
 
     CLASS = 'CLASS'
     ENUM = 'ENUM'
     INTERFACE = 'INTERFACE'
+    ANNOTATION_TYPE = 'ANNOTATION_TYPE'
     RECORD = 'RECORD'
     METHOD = 'METHOD'
     FIELD = 'FIELD'
@@ -24,7 +25,7 @@ class ElementKind(Enum):
 class Requirement(BaseModel):
     elementKind: ElementKind
     """
-    Enum for all valid elementKinds. E.g. CLASS, ENUM, INTERFACE, RECORD, METHOD, FIELD
+    Enum for all valid elementKinds. E.g. CLASS, ENUM, INTERFACE, ANNOTATION_TYPE, RECORD, METHOD, FIELD
     """
     fullyQualifiedName: str
     """

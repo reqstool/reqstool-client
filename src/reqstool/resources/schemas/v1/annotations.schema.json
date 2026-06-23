@@ -51,11 +51,12 @@
                         "CLASS",
                         "ENUM",
                         "INTERFACE",
+                        "ANNOTATION_TYPE",
                         "RECORD",
                         "METHOD",
                         "FIELD"
                     ],
-                    "description": "Enum for all valid elementKinds. E.g. CLASS, ENUM, INTERFACE, RECORD, METHOD, FIELD"
+                    "description": "Enum for all valid elementKinds. E.g. CLASS, ENUM, INTERFACE, ANNOTATION_TYPE, RECORD, METHOD, FIELD"
                 },
                 "fullyQualifiedName": {
                     "type": "string",
