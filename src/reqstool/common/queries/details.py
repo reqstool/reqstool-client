@@ -1,66 +1,11 @@
 # Copyright © LFV
 
 
+from reqstool_python_decorators.decorators.decorators import Requirements
+
 from reqstool.common.models.urn_id import UrnId
-from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
-from reqstool.models.svcs import EXPECTS_AUTOMATED_TESTS, SVCData
+from reqstool.services.statistics_service import compute_requirement_status, requirement_to_dict
 from reqstool.storage.requirements_repository import RequirementsRepository
-
-
-def _compute_meets(req, repo: RequirementsRepository, svc_urn_ids: list, all_passing: bool) -> bool:
-    """Return whether a requirement is considered met by this lightweight check.
-
-    For IN_CODE: requires at least one @Requirements annotation, all automated tests
-    passing, and no failing MVRs.
-    For non-code types: requires at least one SVC, all automated tests passing, and
-    no failing MVRs.
-    """
-    if not svc_urn_ids:
-        return False
-    if req.implementation == IMPLEMENTATION.IN_CODE:
-        if not (len(repo.get_annotations_impls_for_req(req.id)) > 0 and all_passing):
-            return False
-    elif req.implementation in NON_CODE_IMPLEMENTATIONS:
-        if not all_passing:
-            return False
-    else:
-        raise ValueError(f"Unhandled IMPLEMENTATION value: {req.implementation}")
-    # Check MVR results using only the effective (latest) verdict per SVC
-    for svc_uid in svc_urn_ids:
-        effective = repo.get_effective_mvr_for_svc(svc_uid)
-        if effective is not None and not effective.passed:
-            return False
-    return True
-
-
-def _build_automated_test_summary(
-    svc_urn_ids: list, all_svcs: dict[UrnId, SVCData], repo: RequirementsRepository
-) -> tuple[dict, bool]:
-    """Build an automated-test summary across the given SVCs and whether they all pass.
-
-    An SVC whose verification type expects automated tests but has zero recorded test
-    executions counts as missing. SVCs verified by other means (e.g. manual test) are only
-    counted if they happen to have automated test results attached; their absence is not a
-    gap here since they are verified via MVRs instead (checked separately by the caller).
-    A skipped test also means the requirement is not (yet) met.
-
-    ``all_svcs`` is passed in (rather than fetched here) so callers iterating over many
-    requirements can fetch it once instead of re-querying per requirement.
-    """
-    test_summary = {"passed": 0, "failed": 0, "skipped": 0, "missing": 0}
-    for svc_uid in svc_urn_ids:
-        svc = all_svcs.get(svc_uid)
-        results = repo.get_test_results_for_svc(svc_uid)
-        if not results:
-            if svc is not None and svc.verification in EXPECTS_AUTOMATED_TESTS:
-                test_summary["missing"] += 1
-            continue
-        for t in results:
-            key = t.status.value
-            if key in test_summary:
-                test_summary[key] += 1
-    all_passing = test_summary["failed"] == 0 and test_summary["missing"] == 0 and test_summary["skipped"] == 0
-    return test_summary, all_passing
 
 
 def _svc_test_summary(svc_urn_id: UrnId, repo: RequirementsRepository) -> dict:
@@ -144,7 +89,7 @@ def get_svc_details(
     superseded_ids = {m.id for m in repo.get_superseded_mvrs_for_svc(svc.id)}
 
     test_annotations = repo.get_annotations_tests_for_svc(svc.id)
-    test_results = repo.get_test_results_for_svc(svc.id)
+    test_results = repo.get_test_results_for_annotations(svc.id.urn, test_annotations)
 
     all_reqs = repo.get_all_requirements()
 
@@ -248,42 +193,42 @@ def get_urn_details(
     }
 
 
-def get_requirement_status(raw_id: str, repo: RequirementsRepository) -> dict | None:
-    """Lightweight status check — avoids the full detail lookup."""
+@Requirements("MCP_0005")
+def get_requirement_status(
+    raw_id: str, repo: RequirementsRepository, *, include_post_build: bool = False
+) -> dict | None:
+    """Status check for one requirement — delegates to the shared verdict computation
+    so this surface can never drift from `status`/`report`/`export`."""
     initial_urn = repo.get_initial_urn()
     urn_id = UrnId.assure_urn_id(initial_urn, raw_id)
     req = repo.get_all_requirements().get(urn_id)
     if req is None:
         return None
 
-    svc_urn_ids = repo.get_svcs_for_req(req.id)
-    all_svcs = repo.get_all_svcs()
-    test_summary, all_passing = _build_automated_test_summary(svc_urn_ids, all_svcs, repo)
+    status = compute_requirement_status(req, repo, include_post_build=include_post_build)
     return {
         "id": req.id.id,
         "lifecycle_state": req.lifecycle.state.value,
-        "implementation": req.implementation.value,
-        "test_summary": test_summary,
-        "meets_requirements": _compute_meets(req, repo, svc_urn_ids, all_passing),
+        **requirement_to_dict(status),
     }
 
 
-def get_requirements_status_all(repo: RequirementsRepository, urn: str | None = None) -> list[dict]:
-    """Batch status for all requirements. Optionally scoped to a URN."""
+@Requirements("MCP_0005")
+def get_requirements_status_all(
+    repo: RequirementsRepository, urn: str | None = None, *, include_post_build: bool = False
+) -> list[dict]:
+    """Batch status for all requirements. Optionally scoped to a URN. Delegates to the
+    shared verdict computation so this surface can never drift from `status`/`report`/`export`."""
     reqs = repo.get_all_requirements(urn=urn)
-    all_svcs = repo.get_all_svcs()
     result = []
     for req in reqs.values():
-        svc_urn_ids = repo.get_svcs_for_req(req.id)
-        test_summary, all_passing = _build_automated_test_summary(svc_urn_ids, all_svcs, repo)
+        status = compute_requirement_status(req, repo, include_post_build=include_post_build)
         result.append(
             {
                 "id": req.id.id,
                 "urn": req.id.urn,
                 "lifecycle_state": req.lifecycle.state.value,
-                "implementation": req.implementation.value,
-                "test_summary": test_summary,
-                "meets_requirements": _compute_meets(req, repo, svc_urn_ids, all_passing),
+                **requirement_to_dict(status),
             }
         )
     return result

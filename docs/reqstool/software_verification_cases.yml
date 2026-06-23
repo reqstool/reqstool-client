@@ -236,6 +236,12 @@ cases:
     description: "GIVEN the MCP dependencies are not installed WHEN the command runs THEN it reports how to install them and does not start the server"
     verification: automated-test
     revision: "0.11.0"
+  - id: SVC_MCP_0005
+    requirement_ids: ["MCP_0005"]
+    title: "MCP status tools agree with status command"
+    description: "GIVEN the same dataset WHEN get_requirement_status and get_requirements_status are called THEN they report the same completed verdict and output structure as the status command for the same requirement, in both build-only and post-build modes"
+    verification: automated-test
+    revision: "0.11.0"
 
   # --- data-sources ---
   - id: SVC_SOURCE_0001
