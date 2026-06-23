@@ -8,6 +8,10 @@ For DCO sign-off, commit conventions, and code review process, see the organizat
 
 - Python 3.10+
 - [Hatch](https://hatch.pypa.io/) (`pip install hatch`)
+- [reqstool](https://github.com/reqstool/reqstool-client) (`pipx install reqstool`) — for dogfooding
+  this repo's own traceability data against the latest PyPI release; use `hatch run dev:...` below
+  to exercise your local changes instead
+- [OpenSpec](https://github.com/Fission-AI/OpenSpec) (`npm install -g @fission-ai/openspec`)
 
 ## Setup
 
@@ -17,9 +21,13 @@ cd reqstool-client
 hatch env create dev
 ```
 
-If using Claude Code, regenerate the `opsx` slash commands and OpenSpec skills
-(`.claude/commands/opsx/`, `.claude/skills/openspec-*`) after cloning — they're
-CLI-generated tool scaffolding, not committed to the repo:
+If using Claude Code, opening this repo will prompt you to confirm adding the `reqstool-ai`
+marketplace and enabling the `reqstool`/`reqstool-openspec` plugins (configured in
+`.claude/settings.json`) — accept the prompt.
+
+Then regenerate the `opsx` slash commands and OpenSpec skills
+(`.claude/commands/opsx/`, `.claude/skills/openspec-*`) — they're CLI-generated tool scaffolding,
+not committed to the repo:
 
 ```bash
 openspec update   # or: openspec init --tools claude --force
