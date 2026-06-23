@@ -338,7 +338,7 @@
             "properties": {
                 "element_kind": {
                     "type": "string",
-                    "enum": ["FIELD", "METHOD", "CLASS", "ENUM", "INTERFACE", "RECORD"],
+                    "enum": ["FIELD", "METHOD", "CLASS", "ENUM", "INTERFACE", "ANNOTATION_TYPE", "RECORD"],
                     "description": "Kind of code element annotated"
                 },
                 "fully_qualified_name": {
