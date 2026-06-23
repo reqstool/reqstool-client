@@ -311,6 +311,58 @@ def test_get_annotations_tests_for_svc(db):
     assert tests[0].fully_qualified_name == "com.example.FooTest.testBar"
 
 
+def test_get_test_results_for_annotations_method(db):
+    _insert_requirement(db)
+    _insert_svc(db)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.FooTest.testBar")
+    db.insert_test_result(URN, "com.example.FooTest.testBar", TEST_RUN_STATUS.PASSED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    results = repo.get_test_results_for_annotations(URN, [ann])
+    assert len(results) == 1
+    assert results[0].fully_qualified_name == "com.example.FooTest.testBar"
+    assert results[0].status == TEST_RUN_STATUS.PASSED
+
+
+def test_get_test_results_for_annotations_method_missing(db):
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.FooTest.testBar")
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    results = repo.get_test_results_for_annotations(URN, [ann])
+    assert len(results) == 1
+    assert results[0].status == TEST_RUN_STATUS.MISSING
+
+
+def test_get_test_results_for_annotations_class(db):
+    ann = AnnotationData(element_kind="CLASS", fully_qualified_name="com.example.FooTest")
+    db.insert_test_result(URN, "com.example.FooTest.testA", TEST_RUN_STATUS.PASSED)
+    db.insert_test_result(URN, "com.example.FooTest.testB", TEST_RUN_STATUS.FAILED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    results = repo.get_test_results_for_annotations(URN, [ann])
+    assert len(results) == 1
+    assert results[0].status == TEST_RUN_STATUS.FAILED
+
+
+def test_get_test_results_for_svc_delegates_to_annotations(db):
+    """get_test_results_for_svc must produce the same results as resolving its own
+    annotations through get_test_results_for_annotations (it's a thin wrapper)."""
+    _insert_requirement(db)
+    _insert_svc(db)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.FooTest.testBar")
+    db.insert_annotation_test(SVC_ID, ann)
+    db.insert_test_result(URN, "com.example.FooTest.testBar", TEST_RUN_STATUS.PASSED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    via_svc = repo.get_test_results_for_svc(SVC_ID)
+    via_annotations = repo.get_test_results_for_annotations(URN, repo.get_annotations_tests_for_svc(SVC_ID))
+    assert via_svc == via_annotations
+
+
 # -- Test result resolution --
 
 

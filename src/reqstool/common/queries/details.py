@@ -89,7 +89,7 @@ def get_svc_details(
     superseded_ids = {m.id for m in repo.get_superseded_mvrs_for_svc(svc.id)}
 
     test_annotations = repo.get_annotations_tests_for_svc(svc.id)
-    test_results = repo.get_test_results_for_svc(svc.id)
+    test_results = repo.get_test_results_for_annotations(svc.id.urn, test_annotations)
 
     all_reqs = repo.get_all_requirements()
 
