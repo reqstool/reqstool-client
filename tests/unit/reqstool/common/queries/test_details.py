@@ -1,6 +1,7 @@
 # Copyright © LFV
 
 import pytest
+from reqstool_python_decorators.decorators.decorators import SVCs
 
 from reqstool.common.project_session import ProjectSession
 from reqstool.common.models.urn_id import UrnId
@@ -18,8 +19,9 @@ from reqstool.models.requirements import (
     SIGNIFICANCETYPES,
     RequirementData,
 )
-from reqstool.models.svcs import SVCData, VERIFICATIONTYPES
+from reqstool.models.svcs import SVCData, VERIFICATIONPHASE, VERIFICATIONTYPES
 from reqstool.models.test_data import TEST_RUN_STATUS
+from reqstool.services.statistics_service import StatisticsService
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.requirements_repository import RequirementsRepository
 from reqstool.locations.local_location import LocalLocation
@@ -111,31 +113,127 @@ def test_get_requirement_status_known(session):
     assert result is not None
     assert result["id"] == "REQ_010"
     assert "lifecycle_state" in result
-    assert "implementation" in result
-    assert "test_summary" in result
-    assert set(result["test_summary"].keys()) == {"passed", "failed", "skipped", "missing"}
-    assert "meets_requirements" in result
-    assert isinstance(result["meets_requirements"], bool)
+    assert "implementation_type" in result
+    assert "automated_tests" in result
+    assert set(result["automated_tests"].keys()) == {
+        "total",
+        "passed",
+        "failed",
+        "skipped",
+        "missing",
+        "not_applicable",
+    }
+    assert "manual_tests" in result
+    assert set(result["manual_tests"].keys()) == {"total", "passed", "failed", "skipped", "missing", "not_applicable"}
+    assert "completed" in result
+    assert isinstance(result["completed"], bool)
 
 
 def test_get_requirement_status_unknown(session):
     assert get_requirement_status("REQ_NONEXISTENT", session.repo) is None
 
 
+@pytest.mark.parametrize("include_post_build", [False, True])
+@SVCs("SVC_MCP_0005")
+def test_mcp_status_tools_agree_with_statistics_service(session, include_post_build):
+    """get_requirement_status / get_requirements_status must report the same verdict and
+    shape as StatisticsService for every requirement, in both build-only and post-build
+    scoping modes — the consolidation this change exists to guarantee (issue #412)."""
+    repo = session.repo
+    stats = StatisticsService(repo, include_post_build=include_post_build)
+    expected = stats.to_status_dict()["requirements"]
+
+    all_results = {r["id"]: r for r in get_requirements_status_all(repo, include_post_build=include_post_build)}
+
+    assert "REQ_ext002_300" in all_results, "fixture must cover the previously divergent requirement"
+    # Known-correct values, not just cross-path agreement: REQ_ext002_300 is verified only by
+    # SVC_025 ("SVC with missing automated-test", verification automated-test, no test result),
+    # so it must be reported as incomplete with exactly one missing automated test — pinning this
+    # guards against both call paths silently sharing the same wrong answer.
+    assert all_results["REQ_ext002_300"]["completed"] is False
+    assert all_results["REQ_ext002_300"]["automated_tests"]["missing"] == 1
+    assert all_results["REQ_ext002_300"]["automated_tests"]["not_applicable"] is False
+
+    for urn_id_str, expected_status in expected.items():
+        # urn_id_str is the full "urn:id" form; pass it through unsplit so get_requirement_status
+        # resolves requirements that don't live in the project's initial urn (e.g. ext-002:*).
+        single_result = get_requirement_status(urn_id_str, repo, include_post_build=include_post_build)
+        bare_id = urn_id_str.rsplit(":", 1)[1]
+
+        for key in ("completed", "implementation_type", "automated_tests", "manual_tests"):
+            assert single_result[key] == expected_status[key], f"{urn_id_str}: get_requirement_status[{key}] mismatch"
+            assert (
+                all_results[bare_id][key] == expected_status[key]
+            ), f"{urn_id_str}: get_requirements_status[{key}] mismatch"
+
+
+def test_get_requirement_status_include_post_build_changes_verdict():
+    """include_post_build must actually change scoping, not just agree-with-itself.
+
+    A requirement verified only by a post-build SVC with a passing test is non-applicable
+    (incomplete) by default, and completed once include_post_build=True pulls that SVC into
+    scope — proving the parameter has a real effect, not just consistent ignoring of it.
+    """
+    db = RequirementsDatabase()
+    db.set_metadata("initial_urn", "ms-001")
+    req_id = UrnId(urn="ms-001", id="REQ_PB")
+    svc_id = UrnId(urn="ms-001", id="SVC_PB")
+    req = RequirementData(
+        id=req_id,
+        title="T",
+        significance=SIGNIFICANCETYPES.SHALL,
+        description="D",
+        implementation=IMPLEMENTATION.IN_CODE,
+        categories=[CATEGORIES.FUNCTIONAL_SUITABILITY],
+        revision="1.0.0",
+    )
+    svc = SVCData(
+        id=svc_id,
+        title="S",
+        verification=VERIFICATIONTYPES.AUTOMATED_TEST,
+        phase=VERIFICATIONPHASE.POST_BUILD,
+        revision="1.0.0",
+        requirement_ids=[req_id],
+    )
+    db.insert_requirement(req_id.urn, req)
+    db.insert_svc(svc_id.urn, svc)
+    db.insert_annotation_impl(req_id, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.E2ETest.testFlow")
+    db.insert_annotation_test(svc_id, ann)
+    db.insert_test_result("ms-001", "com.example.E2ETest.testFlow", TEST_RUN_STATUS.PASSED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+
+    default_result = get_requirement_status(req_id.id, repo)
+    assert default_result["completed"] is False
+    assert default_result["automated_tests"]["not_applicable"] is True
+
+    post_build_result = get_requirement_status(req_id.id, repo, include_post_build=True)
+    assert post_build_result["completed"] is True
+    assert post_build_result["automated_tests"]["passed"] == 1
+
+    all_results = {r["id"]: r for r in get_requirements_status_all(repo, include_post_build=True)}
+    assert all_results["REQ_PB"]["completed"] is True
+    db.close()
+
+
 def _make_db_with_req(
     impl_type,
     passed: bool | None = None,
     with_annotation: bool = False,
-    verification: VERIFICATIONTYPES = VERIFICATIONTYPES.MANUAL_TEST,
+    verification: VERIFICATIONTYPES = VERIFICATIONTYPES.AUTOMATED_TEST,
     with_test_annotation: bool = True,
     status: TEST_RUN_STATUS | None = None,
 ):
     """Build a minimal in-memory DB with one requirement + SVC (+ optional test annotation/result).
 
-    By default builds a manual-test SVC with a passing/failing automated test result (driven by
-    `passed`), matching the original fixture shape. Pass `verification`/`status` to instead build
-    an automated-test SVC with a specific test outcome, or `with_test_annotation=False` to build
-    an SVC with no test annotation/result at all (the "entirely missing automated test" case).
+    By default builds an automated-test SVC, so callers exercise the `automated_tests`
+    (`should_have_automated_tests`) gate driven by `passed`. Pass `verification=MANUAL_TEST`
+    to exercise the `manual_tests` (`should_have_mvrs`) gate instead — see `_make_db_with_mvr`
+    below for the dedicated MVR-gate fixture. Pass `status` for a specific test outcome, or
+    `with_test_annotation=False` to build an SVC with no test annotation/result at all (the
+    "entirely missing automated test" case).
     """
     db = RequirementsDatabase()
     db.set_metadata("initial_urn", "ms-001")
@@ -167,22 +265,23 @@ def _make_db_with_req(
     return db, req_id
 
 
-def test_meets_requirements_in_code_with_annotation_and_passing_tests():
+def test_completed_in_code_with_annotation_and_passing_tests():
+    """Exercises the automated_tests gate (default AUTOMATED_TEST verification)."""
     db, req_id = _make_db_with_req(IMPLEMENTATION.IN_CODE, passed=True, with_annotation=True)
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["implementation"] == "in-code"
-    assert result["meets_requirements"] is True
+    assert result["implementation_type"] == "in-code"
+    assert result["completed"] is True
     db.close()
 
 
-def test_meets_requirements_in_code_without_annotation_is_false():
+def test_completed_in_code_without_annotation_is_false():
     db, req_id = _make_db_with_req(IMPLEMENTATION.IN_CODE, passed=True, with_annotation=False)
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["meets_requirements"] is False
+    assert result["completed"] is False
     db.close()
 
 
@@ -195,13 +294,15 @@ def test_meets_requirements_in_code_without_annotation_is_false():
         IMPLEMENTATION.FRAMEWORK,
     ],
 )
-def test_meets_requirements_non_code_type_passing_tests_true(impl_type):
+def test_completed_non_code_type_passing_tests_true(impl_type):
+    """Exercises the automated_tests gate (default AUTOMATED_TEST verification); see
+    test_completed_non_code_passing_mvr_is_true for the equivalent manual_tests-gate case."""
     db, req_id = _make_db_with_req(impl_type, passed=True, with_annotation=False)
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["implementation"] == impl_type.value
-    assert result["meets_requirements"] is True
+    assert result["implementation_type"] == impl_type.value
+    assert result["completed"] is True
     db.close()
 
 
@@ -214,17 +315,19 @@ def test_meets_requirements_non_code_type_passing_tests_true(impl_type):
         IMPLEMENTATION.FRAMEWORK,
     ],
 )
-def test_meets_requirements_non_code_type_failing_tests_false(impl_type):
+def test_completed_non_code_type_failing_tests_false(impl_type):
+    """Exercises the automated_tests gate (default AUTOMATED_TEST verification); see
+    test_completed_non_code_failing_mvr_is_false for the equivalent manual_tests-gate case."""
     db, req_id = _make_db_with_req(impl_type, passed=False, with_annotation=False)
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["meets_requirements"] is False
+    assert result["completed"] is False
     db.close()
 
 
 def test_get_requirements_status_all_mixed_types():
-    """get_requirements_status_all returns correct meets_requirements for each impl type."""
+    """get_requirements_status_all returns correct completed verdict for each impl type."""
     db = RequirementsDatabase()
     db.set_metadata("initial_urn", "ms-001")
     URN = "ms-001"
@@ -248,7 +351,11 @@ def test_get_requirements_status_all_mixed_types():
 
     for svc_id, req_id in [(svc_code, in_code_id), (svc_cfg, cfg_id)]:
         svc = SVCData(
-            id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST, revision="1.0.0", requirement_ids=[req_id]
+            id=svc_id,
+            title="S",
+            verification=VERIFICATIONTYPES.AUTOMATED_TEST,
+            revision="1.0.0",
+            requirement_ids=[req_id],
         )
         db.insert_svc(svc_id.urn, svc)
         ann = AnnotationData(element_kind="METHOD", fully_qualified_name=f"test_{svc_id.id}")
@@ -261,8 +368,8 @@ def test_get_requirements_status_all_mixed_types():
     repo = RequirementsRepository(db)
     results = {r["id"]: r for r in get_requirements_status_all(repo)}
 
-    assert results["REQ_CODE"]["meets_requirements"] is True
-    assert results["REQ_CFG"]["meets_requirements"] is True
+    assert results["REQ_CODE"]["completed"] is True
+    assert results["REQ_CFG"]["completed"] is True
     db.close()
 
 
@@ -281,7 +388,7 @@ def test_get_requirements_status_all_in_code_without_annotation_false():
     )
     svc_id = UrnId(urn="ms-001", id="SVC_T")
     svc = SVCData(
-        id=svc_id, title="S", verification=VERIFICATIONTYPES.MANUAL_TEST, revision="1.0.0", requirement_ids=[req_id]
+        id=svc_id, title="S", verification=VERIFICATIONTYPES.AUTOMATED_TEST, revision="1.0.0", requirement_ids=[req_id]
     )
     ann = AnnotationData(element_kind="METHOD", fully_qualified_name="test_m")
     db.insert_requirement(req_id.urn, req)
@@ -292,7 +399,7 @@ def test_get_requirements_status_all_in_code_without_annotation_false():
 
     repo = RequirementsRepository(db)
     results = {r["id"]: r for r in get_requirements_status_all(repo)}
-    assert results["REQ_NO_ANN"]["meets_requirements"] is False
+    assert results["REQ_NO_ANN"]["completed"] is False
     db.close()
 
 
@@ -364,13 +471,13 @@ def _make_db_with_mvr(impl_type, mvr_passed: bool):
         IMPLEMENTATION.FRAMEWORK,
     ],
 )
-def test_meets_requirements_non_code_failing_mvr_is_false(impl_type):
+def test_completed_non_code_failing_mvr_is_false(impl_type):
     """Non-code req with a failing MVR must not be considered met."""
     db, req_id = _make_db_with_mvr(impl_type, mvr_passed=False)
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["meets_requirements"] is False, f"{impl_type}: failing MVR should make meets_requirements False"
+    assert result["completed"] is False, f"{impl_type}: failing MVR should make completed False"
     db.close()
 
 
@@ -383,17 +490,17 @@ def test_meets_requirements_non_code_failing_mvr_is_false(impl_type):
         IMPLEMENTATION.FRAMEWORK,
     ],
 )
-def test_meets_requirements_non_code_passing_mvr_is_true(impl_type):
+def test_completed_non_code_passing_mvr_is_true(impl_type):
     """Non-code req with a passing MVR and no failing automated tests is met."""
     db, req_id = _make_db_with_mvr(impl_type, mvr_passed=True)
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["meets_requirements"] is True
+    assert result["completed"] is True
     db.close()
 
 
-def test_meets_requirements_in_code_failing_mvr_is_false():
+def test_completed_in_code_failing_mvr_is_false():
     """IN_CODE req with annotation + passing auto-test but failing MVR must not be met."""
     from reqstool.models.mvrs import MVRData
 
@@ -424,14 +531,14 @@ def test_meets_requirements_in_code_failing_mvr_is_false():
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["meets_requirements"] is False, "failing MVR should make IN_CODE meets_requirements False"
+    assert result["completed"] is False, "failing MVR should make IN_CODE completed False"
     db.close()
 
 
 # -- F2: skipped/missing automated tests must not be silently treated as passing --
 
 
-def test_meets_requirements_automated_skipped_test_is_false():
+def test_completed_automated_skipped_test_is_false():
     """An automated-test SVC with a skipped test result must not count as met."""
     db, req_id = _make_db_with_req(
         IMPLEMENTATION.IN_CODE,
@@ -442,12 +549,12 @@ def test_meets_requirements_automated_skipped_test_is_false():
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["test_summary"]["skipped"] == 1
-    assert result["meets_requirements"] is False, "a skipped automated test should make meets_requirements False"
+    assert result["automated_tests"]["skipped"] == 1
+    assert result["completed"] is False, "a skipped automated test should make completed False"
     db.close()
 
 
-def test_meets_requirements_automated_zero_test_results_is_false():
+def test_completed_automated_zero_test_results_is_false():
     """An automated-test SVC with zero recorded test executions must count as missing, not passing."""
     db, req_id = _make_db_with_req(
         IMPLEMENTATION.IN_CODE,
@@ -458,8 +565,8 @@ def test_meets_requirements_automated_zero_test_results_is_false():
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["test_summary"]["missing"] == 1
-    assert result["meets_requirements"] is False, "zero automated test executions should make meets_requirements False"
+    assert result["automated_tests"]["missing"] == 1
+    assert result["completed"] is False, "zero automated test executions should make completed False"
     db.close()
 
 
@@ -473,7 +580,7 @@ def test_get_requirements_status_all_automated_skipped_and_missing():
     )
     repo = RequirementsRepository(db)
     results = {r["id"]: r for r in get_requirements_status_all(repo)}
-    assert results[req_id.id]["meets_requirements"] is False
+    assert results[req_id.id]["completed"] is False
     db.close()
 
 
@@ -527,23 +634,23 @@ def _make_db_with_superseded_mvrs(mvr_pass_sequence: list[tuple[str, bool]]) -> 
     return db, req_id, svc_id
 
 
-def test_compute_meets_superseded_fail_latest_pass_is_true():
-    """fail→pass: latest (passing) MVR makes _compute_meets True."""
+def test_completed_superseded_fail_latest_pass_is_true():
+    """fail→pass: latest (passing) MVR makes the verdict completed."""
     db, req_id, _ = _make_db_with_superseded_mvrs([("2026-01-01T00:00:00Z", False), ("2026-01-02T00:00:00Z", True)])
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["meets_requirements"] is True
+    assert result["completed"] is True
     db.close()
 
 
-def test_compute_meets_superseded_pass_latest_fail_is_false():
-    """pass→fail: latest (failing) MVR makes _compute_meets False."""
+def test_completed_superseded_pass_latest_fail_is_false():
+    """pass→fail: latest (failing) MVR makes the verdict not completed."""
     db, req_id, _ = _make_db_with_superseded_mvrs([("2026-01-01T00:00:00Z", True), ("2026-01-02T00:00:00Z", False)])
     repo = RequirementsRepository(db)
     result = get_requirement_status(req_id.id, repo)
     assert result is not None
-    assert result["meets_requirements"] is False
+    assert result["completed"] is False
     db.close()
 
 
