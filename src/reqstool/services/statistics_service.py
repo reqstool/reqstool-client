@@ -98,7 +98,9 @@ class TotalStats:
         return self.completed_requirements - self.non_code_completed
 
 
-def compute_requirement_status(req, repo: RequirementsRepository, *, include_post_build: bool = False) -> RequirementStatus:
+def compute_requirement_status(
+    req, repo: RequirementsRepository, *, include_post_build: bool = False
+) -> RequirementStatus:
     """Compute the single "is this requirement complete?" verdict for one requirement.
 
     Queries the repository through its scoped per-requirement getters so callers never

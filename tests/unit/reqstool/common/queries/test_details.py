@@ -115,7 +115,14 @@ def test_get_requirement_status_known(session):
     assert "lifecycle_state" in result
     assert "implementation_type" in result
     assert "automated_tests" in result
-    assert set(result["automated_tests"].keys()) == {"total", "passed", "failed", "skipped", "missing", "not_applicable"}
+    assert set(result["automated_tests"].keys()) == {
+        "total",
+        "passed",
+        "failed",
+        "skipped",
+        "missing",
+        "not_applicable",
+    }
     assert "manual_tests" in result
     assert set(result["manual_tests"].keys()) == {"total", "passed", "failed", "skipped", "missing", "not_applicable"}
     assert "completed" in result
@@ -148,9 +155,9 @@ def test_mcp_status_tools_agree_with_statistics_service(session, include_post_bu
 
         for key in ("completed", "implementation_type", "automated_tests", "manual_tests"):
             assert single_result[key] == expected_status[key], f"{urn_id_str}: get_requirement_status[{key}] mismatch"
-            assert all_results[bare_id][key] == expected_status[key], (
-                f"{urn_id_str}: get_requirements_status[{key}] mismatch"
-            )
+            assert (
+                all_results[bare_id][key] == expected_status[key]
+            ), f"{urn_id_str}: get_requirements_status[{key}] mismatch"
 
 
 def _make_db_with_req(
