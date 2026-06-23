@@ -14,7 +14,7 @@ from reqstool.models.requirements import (
 )
 from reqstool.models.svcs import SVCData, VERIFICATIONPHASE, VERIFICATIONTYPES
 from reqstool.models.test_data import TEST_RUN_STATUS
-from reqstool.services.statistics_service import StatisticsService, TestStats
+from reqstool.services.statistics_service import StatisticsService, TestStats, compute_requirement_status
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.requirements_repository import RequirementsRepository
 
@@ -598,6 +598,85 @@ def test_post_build_manual_test_svc_is_non_gating_by_default(db):
 
     req_status = stats.requirement_statistics[REQ_ID]
     assert req_status.manual_tests.not_applicable is True
+
+
+# -- compute_requirement_status (direct, not via StatisticsService) --
+
+
+def test_compute_requirement_status_not_applicable_with_no_svcs(db):
+    """A requirement with no linked SVCs at all is incomplete (nothing to verify against)."""
+    _insert_req(db)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    req = repo.get_all_requirements()[REQ_ID]
+    status = compute_requirement_status(req, repo)
+
+    assert status.automated_tests.not_applicable is True
+    assert status.manual_tests.not_applicable is True
+    assert status.completed is False
+
+
+def test_compute_requirement_status_missing_mvr(db):
+    _insert_req(db)
+    _insert_svc(db, verification=VERIFICATIONTYPES.MANUAL_TEST)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    req = repo.get_all_requirements()[REQ_ID]
+    status = compute_requirement_status(req, repo)
+
+    assert status.manual_tests.missing == 1
+    assert status.completed is False
+
+
+def test_compute_requirement_status_missing_automated_test(db):
+    _insert_req(db)
+    _insert_svc(db, verification=VERIFICATIONTYPES.AUTOMATED_TEST)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.FooTest.testBar")
+    db.insert_annotation_test(SVC_ID, ann)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    req = repo.get_all_requirements()[REQ_ID]
+    status = compute_requirement_status(req, repo)
+
+    assert status.automated_tests.missing == 1
+    assert status.completed is False
+
+
+def test_compute_requirement_status_completed(db):
+    _insert_req(db)
+    _insert_svc(db, verification=VERIFICATIONTYPES.AUTOMATED_TEST)
+    ann = AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.FooTest.testBar")
+    db.insert_annotation_test(SVC_ID, ann)
+    db.insert_annotation_impl(REQ_ID, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.insert_test_result(URN, "com.example.FooTest.testBar", TEST_RUN_STATUS.PASSED)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    req = repo.get_all_requirements()[REQ_ID]
+    status = compute_requirement_status(req, repo)
+
+    assert status.completed is True
+
+
+@pytest.mark.parametrize("impl_type", _ALL_NON_CODE)
+def test_compute_requirement_status_non_code_with_annotation_raises(db, impl_type):
+    """The TypeError guard in _check_implementation must be reachable directly, not just via
+    StatisticsService's constructor (which also exercises this branch)."""
+    req_id = UrnId(urn=URN, id="REQ_ERR")
+    _insert_req(db, req_id=req_id, implementation=impl_type)
+    db.insert_annotation_impl(req_id, AnnotationData(element_kind="METHOD", fully_qualified_name="com.example.Foo.bar"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    req = repo.get_all_requirements()[req_id]
+    with pytest.raises(TypeError, match="should not have an implementation"):
+        compute_requirement_status(req, repo)
 
 
 def test_post_build_manual_test_svc_gates_when_include_post_build_true(db):

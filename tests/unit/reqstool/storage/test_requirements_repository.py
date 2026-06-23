@@ -204,6 +204,26 @@ def test_get_all_mvrs(db):
 # -- Index/lookup queries --
 
 
+def test_get_svc(db):
+    _insert_requirement(db)
+    _insert_svc(db)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    svc = repo.get_svc(SVC_ID)
+    assert svc is not None
+    assert svc.title == "SVC"
+    assert svc.verification == VERIFICATIONTYPES.AUTOMATED_TEST
+    assert REQ_ID in svc.requirement_ids
+
+
+def test_get_svc_not_found(db):
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    assert repo.get_svc(SVC_ID) is None
+
+
 def test_get_svcs_for_req(db):
     _insert_requirement(db)
     _insert_svc(db, SVC_ID, req_ids=[REQ_ID])

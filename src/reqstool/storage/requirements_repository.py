@@ -265,10 +265,18 @@ class RequirementsRepository:
     def get_test_results_for_svc(self, svc_urn_id: UrnId) -> list[TestData]:
         """Return test results for each annotation attached to the given SVC."""
         annotations = self.get_annotations_tests_for_svc(svc_urn_id)
+        return self.get_test_results_for_annotations(svc_urn_id.urn, annotations)
+
+    def get_test_results_for_annotations(self, urn: str, annotations: list[AnnotationData]) -> list[TestData]:
+        """Resolve test results for an already-fetched list of test annotations.
+
+        Lets callers that already hold the annotation list (e.g. to check for emptiness)
+        avoid re-querying `annotations_tests` via `get_test_results_for_svc`.
+        """
         results = []
         for ann in annotations:
             if ann.element_kind == "CLASS":
-                results.append(self._process_class_annotated_test_results(svc_urn_id.urn, ann.fully_qualified_name))
+                results.append(self._process_class_annotated_test_results(urn, ann.fully_qualified_name))
             else:
                 row = self._db.connection.execute(
                     "SELECT fqn, status FROM test_results WHERE fqn = ?",

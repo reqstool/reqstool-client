@@ -168,13 +168,16 @@ Overall traceability status across all requirements — completion counts, test 
 
 ==== `get_requirement_status`
 
-Quick status for a single requirement.
+Status for a single requirement, derived from the same verdict computation as the `status` CLI
+command — `get_status`, `get_requirement_status`, and `get_requirements_status` always agree.
 
 *Parameters:*
 
 * `id` _(string, required)_
+* `include_post_build` _(boolean, optional, default `false`)_ — also scope to post-build-phase
+  SVCs, for parity with `status --with-post-tests`
 
-*Returns:* `{ id, lifecycle_state, implementation, test_summary: {passed, failed, skipped, missing}, meets_requirements }`
+*Returns:* `{ id, lifecycle_state, completed, implementations, implementation_type, automated_tests: {total, passed, failed, skipped, missing, not_applicable}, manual_tests: {total, passed, failed, skipped, missing, not_applicable} }`
 
 ==== `get_requirements_status`
 
@@ -185,13 +188,14 @@ requirements without N+1 individual calls.
 *Parameters:*
 
 * `urn` _(string, optional)_ — scope to a single project node
+* `include_post_build` _(boolean, optional, default `false`)_ — same as `get_requirement_status`
 
-*Returns:* array of `{ id, urn, lifecycle_state, implementation, test_summary, meets_requirements }`
+*Returns:* array of `{ id, urn, lifecycle_state, completed, implementations, implementation_type, automated_tests, manual_tests }`
 
 == Example: Finding Incomplete Requirements
 
 The following client-side filter finds requirements that have started but are not yet done — they
-have an implementation and at least one passing test, but `meets_requirements` is still false
+have an implementation and at least one passing automated test, but are still not `completed`
 (e.g. due to missing or failing tests for other SVCs):
 
 [source,python]
@@ -200,9 +204,9 @@ statuses = get_requirements_status()
 
 in_progress = [
     r for r in statuses
-    if not r["meets_requirements"]
-    and r["implementation"] != "not_implemented"
-    and r["test_summary"]["passed"] > 0
+    if not r["completed"]
+    and r["implementation_type"] != "N/A"
+    and r["automated_tests"]["passed"] > 0
 ]
 ----
 

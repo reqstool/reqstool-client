@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.models.urn_id import UrnId
-from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS
+from reqstool.models.requirements import IMPLEMENTATION, NON_CODE_IMPLEMENTATIONS, RequirementData
 from reqstool.models.svcs import EXPECTS_AUTOMATED_TESTS, EXPECTS_MVRS, VERIFICATIONPHASE
 from reqstool.models.test_data import TEST_RUN_STATUS, TestData
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -19,7 +19,7 @@ __all__ = [
     "RequirementStatus",
     "TotalStats",
     "compute_requirement_status",
-    "_requirement_to_dict",
+    "requirement_to_dict",
 ]
 
 
@@ -99,7 +99,7 @@ class TotalStats:
 
 
 def compute_requirement_status(
-    req, repo: RequirementsRepository, *, include_post_build: bool = False
+    req: RequirementData, repo: RequirementsRepository, *, include_post_build: bool = False
 ) -> RequirementStatus:
     """Compute the single "is this requirement complete?" verdict for one requirement.
 
@@ -177,7 +177,7 @@ def _compute_requirement_automated_stats(
     for svc in verdict_svcs:
         annotations = repo.get_annotations_tests_for_svc(svc.id)
         if annotations:
-            tests.extend(repo.get_test_results_for_svc(svc.id))
+            tests.extend(repo.get_test_results_for_annotations(svc.id.urn, annotations))
         elif svc.verification in EXPECTS_AUTOMATED_TESTS:
             tests.append(TestData(fully_qualified_name="", status=TEST_RUN_STATUS.MISSING))
 
@@ -221,7 +221,7 @@ def _check_implementation(urn_id: UrnId, nr_of_implementations: int, implementat
     raise ValueError(f"Unhandled IMPLEMENTATION value: {implementation}")
 
 
-def _requirement_to_dict(status: RequirementStatus) -> dict:
+def requirement_to_dict(status: RequirementStatus) -> dict:
     """Serialize one requirement's verdict. The single shape shared by `status`/`report`/`export` and MCP."""
     return {
         "completed": status.completed,
@@ -361,7 +361,7 @@ class StatisticsService:
         initial_urn = self._repo.get_initial_urn()
         filtered = self._repo.is_filtered()
 
-        requirements = {str(urn_id): _requirement_to_dict(status) for urn_id, status in self._requirement_stats.items()}
+        requirements = {str(urn_id): requirement_to_dict(status) for urn_id, status in self._requirement_stats.items()}
 
         ts = self._totals
         totals = {

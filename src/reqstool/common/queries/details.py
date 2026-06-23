@@ -4,7 +4,7 @@
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.models.urn_id import UrnId
-from reqstool.services.statistics_service import compute_requirement_status, _requirement_to_dict
+from reqstool.services.statistics_service import compute_requirement_status, requirement_to_dict
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
@@ -209,7 +209,7 @@ def get_requirement_status(
     return {
         "id": req.id.id,
         "lifecycle_state": req.lifecycle.state.value,
-        **_requirement_to_dict(status),
+        **requirement_to_dict(status),
     }
 
 
@@ -228,7 +228,7 @@ def get_requirements_status_all(
                 "id": req.id.id,
                 "urn": req.id.urn,
                 "lifecycle_state": req.lifecycle.state.value,
-                **_requirement_to_dict(status),
+                **requirement_to_dict(status),
             }
         )
     return result

@@ -168,6 +168,15 @@ async def test_get_requirement_status_not_found(mcp_session):
     assert result.isError
 
 
+@pytest.mark.parametrize("include_post_build", [False, True])
+async def test_get_requirement_status_not_found_with_include_post_build(mcp_session, include_post_build):
+    """The not-found path must be unaffected by the include_post_build parameter combination."""
+    result = await mcp_session.call_tool(
+        "get_requirement_status", {"id": "REQ_NONEXISTENT", "include_post_build": include_post_build}
+    )
+    assert result.isError
+
+
 async def test_get_requirement_status_missing_automated_test_not_met(mcp_session):
     """An entirely missing automated test must not be reported as meeting requirements (regression for #410).
 
