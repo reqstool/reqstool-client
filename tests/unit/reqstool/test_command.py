@@ -411,7 +411,7 @@ def test_mcp_missing_extra_reports_and_exits(capsys):
         with pytest.raises(SystemExit) as exc:
             cmd.command_mcp(mcp_args)
     assert exc.value.code == 1
-    assert "pip install 'mcp>=1.0'" in capsys.readouterr().err
+    assert "pip install 'mcp>=2.0'" in capsys.readouterr().err
 
 
 @SVCs("SVC_MCP_0003")

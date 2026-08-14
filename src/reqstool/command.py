@@ -592,7 +592,7 @@ class Command:
             from reqstool.mcp.server import start_server
         except ImportError:
             print(
-                "MCP server requires extra dependencies: pip install 'mcp>=1.0'",
+                "MCP server requires extra dependencies: pip install 'mcp>=2.0'",
                 file=sys.stderr,
             )
             sys.exit(1)
