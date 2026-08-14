@@ -1,27 +1,28 @@
 # Copyright © LFV
 
-from types import SimpleNamespace
+
+import asyncio
 from unittest.mock import patch
 
-import mcp.server.fastmcp
+import mcp.server.mcpserver
 from reqstool_python_decorators.decorators.decorators import SVCs
 
 from reqstool.locations.local_location import LocalLocation
 from reqstool.mcp import server as mcp_server
 
 
-class _FakeFastMCP:
-    """Stand-in for mcp.server.fastmcp.FastMCP: captures registered tools and the run() call."""
+class _FakeMCPServer:
+    """Stand-in for mcp.server.mcpserver.MCPServer: captures registered tools and the run() call."""
 
-    instances: list["_FakeFastMCP"] = []
+    instances: list["_FakeMCPServer"] = []
 
-    def __init__(self, name):
+    def __init__(self, name=None, **kwargs):
         self.name = name
-        self.settings = SimpleNamespace()
         self.tools = {}
         self.run_transport = None
+        self.run_kwargs = None
         self.status_result = None
-        _FakeFastMCP.instances.append(self)
+        _FakeMCPServer.instances.append(self)
 
     def tool(self):
         def decorator(fn):
@@ -30,10 +31,12 @@ class _FakeFastMCP:
 
         return decorator
 
-    def run(self, transport):
+    def run(self, transport, **kwargs):
         """Simulate a connected client calling a registered tool while the server is up."""
         self.run_transport = transport
-        self.status_result = self.tools["get_status"]()
+        self.run_kwargs = kwargs
+        # Tools are async so they execute on the event loop thread (SQLite affinity).
+        self.status_result = asyncio.run(self.tools["get_status"]())
 
 
 @SVCs("SVC_MCP_0001")
@@ -42,11 +45,12 @@ def test_start_server_serves_resolved_dataset(local_testdata_resources_rootdir_w
     and exposes its dataset through the registered tools."""
     location = LocalLocation(path=local_testdata_resources_rootdir_w_path("test_basic/baseline/ms-101"))
 
-    with patch.object(mcp.server.fastmcp, "FastMCP", _FakeFastMCP):
+    with patch.object(mcp.server.mcpserver, "MCPServer", _FakeMCPServer):
         mcp_server.start_server(location=location, transport="stdio")
 
-    fake_mcp = _FakeFastMCP.instances[-1]
+    fake_mcp = _FakeMCPServer.instances[-1]
     assert fake_mcp.run_transport == "stdio"
+    assert fake_mcp.run_kwargs == {}
     assert fake_mcp.status_result is not None
     assert fake_mcp.status_result["totals"]["requirements"]["total"] > 0
 
@@ -57,12 +61,9 @@ def test_start_server_streamable_http_configures_settings(local_testdata_resourc
     configured host and port."""
     location = LocalLocation(path=local_testdata_resources_rootdir_w_path("test_basic/baseline/ms-101"))
 
-    with patch.object(mcp.server.fastmcp, "FastMCP", _FakeFastMCP):
+    with patch.object(mcp.server.mcpserver, "MCPServer", _FakeMCPServer):
         mcp_server.start_server(location=location, transport="streamable-http", host="0.0.0.0", port=9000)
 
-    fake_mcp = _FakeFastMCP.instances[-1]
+    fake_mcp = _FakeMCPServer.instances[-1]
     assert fake_mcp.run_transport == "streamable-http"
-    assert fake_mcp.settings.host == "0.0.0.0"
-    assert fake_mcp.settings.port == 9000
-    assert fake_mcp.settings.json_response is True
-    assert fake_mcp.settings.stateless_http is True
+    assert fake_mcp.run_kwargs == {"host": "0.0.0.0", "port": 9000, "json_response": True, "stateless_http": True}

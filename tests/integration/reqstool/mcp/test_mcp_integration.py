@@ -13,7 +13,7 @@ KNOWN_SVC_ID = "SVC_010"
 
 
 def _parse_result(result) -> list | dict:
-    """FastMCP returns each list item as a separate TextContent block."""
+    """The MCP server returns each list item as a separate TextContent block."""
     blocks = [json.loads(b.text) for b in result.content if hasattr(b, "text")]
     return blocks if len(blocks) != 1 else blocks[0]
 
@@ -75,7 +75,7 @@ async def test_get_requirement_known(mcp_session):
 
 async def test_get_requirement_not_found(mcp_session):
     result = await mcp_session.call_tool("get_requirement", {"id": "REQ_NONEXISTENT"})
-    assert result.isError
+    assert result.is_error
 
 
 # ---------------------------------------------------------------------------
@@ -112,7 +112,7 @@ async def test_get_svc_known(mcp_session):
 
 async def test_get_svc_not_found(mcp_session):
     result = await mcp_session.call_tool("get_svc", {"id": "SVC_NONEXISTENT"})
-    assert result.isError
+    assert result.is_error
 
 
 # ---------------------------------------------------------------------------
@@ -131,7 +131,7 @@ async def test_list_mvrs(mcp_session):
 
 async def test_get_mvr_not_found(mcp_session):
     result = await mcp_session.call_tool("get_mvr", {"id": "MVR_NONEXISTENT"})
-    assert result.isError
+    assert result.is_error
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +165,7 @@ async def test_get_requirement_status(mcp_session):
 
 async def test_get_requirement_status_not_found(mcp_session):
     result = await mcp_session.call_tool("get_requirement_status", {"id": "REQ_NONEXISTENT"})
-    assert result.isError
+    assert result.is_error
 
 
 @pytest.mark.parametrize("include_post_build", [False, True])
@@ -174,7 +174,7 @@ async def test_get_requirement_status_not_found_with_include_post_build(mcp_sess
     result = await mcp_session.call_tool(
         "get_requirement_status", {"id": "REQ_NONEXISTENT", "include_post_build": include_post_build}
     )
-    assert result.isError
+    assert result.is_error
 
 
 async def test_get_requirement_status_missing_automated_test_not_met(mcp_session):

@@ -47,7 +47,7 @@ dependencies = [
     "pygit2==1.20.0",
     "referencing==0.37.0",
     "requests-file==3.0.1",
-    "rich>=13.0",
+    "rich==15.0.0",
     "ruamel.yaml==0.19.1",
     "reqstool-python-decorators==0.1.0",
     "packaging==26.3",
@@ -55,9 +55,9 @@ dependencies = [
     "beautifulsoup4==4.15.0",
     "defusedxml==0.7.1",
     "expandvars==1.1.2",
-    "pygls>=2.0,<3.0",
-    "lsprotocol>=2024.0.0",
-    "mcp>=1.0",
+    "pygls==2.1.1",
+    "lsprotocol==2025.0.0",
+    "mcp==2.0.0",
 ]
 
 [project.urls]

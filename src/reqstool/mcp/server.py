@@ -29,9 +29,9 @@ def start_server(  # noqa: C901
     port: int = 8000,
 ) -> None:
     try:
-        from mcp.server.fastmcp import FastMCP
+        from mcp.server.mcpserver import MCPServer
     except ImportError as exc:
-        raise ImportError("MCP server requires extra dependencies: pip install 'mcp>=1.0'") from exc
+        raise ImportError("MCP server requires extra dependencies: pip install 'mcp>=2.0'") from exc
 
     session = ProjectSession(location)
     session.build()
@@ -44,21 +44,23 @@ def start_server(  # noqa: C901
     repo: RequirementsRepository = session.repo
     urn_source_paths = session.urn_source_paths
 
-    mcp = FastMCP("reqstool")
-    mcp.settings.host = host
-    mcp.settings.port = port
+    mcp = MCPServer(name="reqstool")
+
+    # SDK 2.x: transport options are run() kwargs instead of server settings.
+    run_kwargs: dict = {}
+    if transport in ("sse", "streamable-http"):
+        run_kwargs.update(host=host, port=port)
     if transport == "streamable-http":
-        mcp.settings.json_response = True
-        mcp.settings.stateless_http = True
+        run_kwargs.update(json_response=True, stateless_http=True)
 
     @mcp.tool()
-    def list_requirements(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
+    async def list_requirements(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
         """List requirements with id, title, and lifecycle state.
         Filter by urn and/or lifecycle_state (draft|effective|deprecated|obsolete)."""
         return get_requirements_list(repo, urn=urn, lifecycle_state=lifecycle_state)
 
     @mcp.tool()
-    def get_requirement(id: str) -> dict:
+    async def get_requirement(id: str) -> dict:
         """Get full details for a requirement by ID (e.g. REQ_010)."""
         result = get_requirement_details(id, repo, urn_source_paths)
         if result is None:
@@ -66,7 +68,7 @@ def start_server(  # noqa: C901
         return result
 
     @mcp.tool()
-    def get_requirements_status(urn: str | None = None, include_post_build: bool = False) -> list[dict]:
+    async def get_requirements_status(urn: str | None = None, include_post_build: bool = False) -> list[dict]:
         """Batch status for all requirements: id, urn, lifecycle_state, completed, implementation_type,
         automated_tests, manual_tests. Use this to find requirements that are incomplete, partially
         tested, or not yet implemented. Optionally filter by URN. Set include_post_build=True for
@@ -74,13 +76,13 @@ def start_server(  # noqa: C901
         return _get_requirements_status_all(repo, urn=urn, include_post_build=include_post_build)
 
     @mcp.tool()
-    def list_svcs(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
+    async def list_svcs(urn: str | None = None, lifecycle_state: str | None = None) -> list[dict]:
         """List SVCs with id, title, lifecycle state, and verification type.
         Filter by urn and/or lifecycle_state (draft|effective|deprecated|obsolete)."""
         return get_svcs_list(repo, urn=urn, lifecycle_state=lifecycle_state)
 
     @mcp.tool()
-    def get_svc(id: str) -> dict:
+    async def get_svc(id: str) -> dict:
         """Get full details for an SVC by ID (e.g. SVC_010)."""
         result = get_svc_details(id, repo, urn_source_paths)
         if result is None:
@@ -88,12 +90,12 @@ def start_server(  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_mvrs(urn: str | None = None, passed: bool | None = None) -> list[dict]:
+    async def list_mvrs(urn: str | None = None, passed: bool | None = None) -> list[dict]:
         """List MVRs with id and passed status. Filter by urn and/or passed (True|False)."""
         return get_mvrs_list(repo, urn=urn, passed=passed)
 
     @mcp.tool()
-    def get_mvr(id: str) -> dict:
+    async def get_mvr(id: str) -> dict:
         """Get full details for an MVR by ID."""
         result = get_mvr_details(id, repo, urn_source_paths)
         if result is None:
@@ -101,12 +103,12 @@ def start_server(  # noqa: C901
         return result
 
     @mcp.tool()
-    def get_status() -> dict:
+    async def get_status() -> dict:
         """Get overall traceability status — completion per requirement, test totals."""
         return StatisticsService(repo).to_status_dict()
 
     @mcp.tool()
-    def get_requirement_status(id: str, include_post_build: bool = False) -> dict:
+    async def get_requirement_status(id: str, include_post_build: bool = False) -> dict:
         """Status check for one requirement: lifecycle_state, completed, implementation_type,
         automated_tests, manual_tests. Set include_post_build=True for parity with
         `status --with-post-tests` (scopes to post-build-phase SVCs too)."""
@@ -116,7 +118,7 @@ def start_server(  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_annotations(urn: str | None = None) -> list[dict]:
+    async def list_annotations(urn: str | None = None) -> list[dict]:
         """List implementation annotations (@Requirements) found in source code. Optionally filter by URN."""
         impl_annotations = repo.get_annotations_impls(urn=urn)
         result = []
@@ -133,12 +135,12 @@ def start_server(  # noqa: C901
         return result
 
     @mcp.tool()
-    def list_urns() -> list[dict]:
+    async def list_urns() -> list[dict]:
         """List all URNs in the project graph with variant, title, url, location, and file paths."""
         return get_urns_list(repo, urn_source_paths)
 
     @mcp.tool()
-    def get_urn_details(urn: str) -> dict:
+    async def get_urn_details(urn: str) -> dict:
         """Get details for a URN: variant, title, location, file paths, and entity counts."""
         result = _get_urn_details(urn, repo, urn_source_paths)
         if result is None:
@@ -146,7 +148,7 @@ def start_server(  # noqa: C901
         return result
 
     @mcp.tool()
-    def enrich_document(content: str, preset: str) -> str:
+    async def enrich_document(content: str, preset: str) -> str:
         """Enrich an OpenSpec document by resolving requirement/SVC/MVR IDs.
 
         Injects titles and further fields next to each known ID according to the
@@ -162,6 +164,6 @@ def start_server(  # noqa: C901
 
     try:
         logger.info("Starting reqstool MCP server (transport=%s, host=%s, port=%s)", transport, host, port)
-        mcp.run(transport=transport)
+        mcp.run(transport=transport, **run_kwargs)
     finally:
         session.close()
