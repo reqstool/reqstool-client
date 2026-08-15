@@ -3,11 +3,13 @@
 import logging
 import os
 from collections import defaultdict
+from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
 from reqstool.common.exceptions import CircularImplementationError, CircularImportError, MissingRequirementsFileError
+from reqstool.common.snapshot_fingerprint import FileStamp, GlobSpec, SnapshotFingerprint
 from reqstool.common.utils import TempDirectoryManager, Utils
 from reqstool.common.validators.semantic_validator import SemanticValidator
 from reqstool.location_resolver.location_resolver import LocationResolver
@@ -81,6 +83,7 @@ class CombinedRawDatasetsGenerator:
             urn_parsing_order=self._parsing_order,
             parsing_graph=self._parsing_graph,
             urn_source_paths=urn_source_paths,
+            fingerprint=SnapshotFingerprint.merge([rd.fingerprint for rd in raw_datasets.values()]),
         )
 
         self.semantic_validator.validate_post_parsing(combined_raw_dataset=combined_raw_datasets)
@@ -277,7 +280,7 @@ class CombinedRawDatasetsGenerator:
             logging.info(f"{requirements_indata.dst_path}")
 
         # parse file sources other than requirements.yml
-        annotations_data, svcs_data, automated_tests, mvrs_data = self.__parse_source_other(
+        annotations_data, svcs_data, automated_tests, mvrs_data, test_result_files = self.__parse_source_other(
             actual_tmp_path, requirements_indata, rmg
         )
 
@@ -285,6 +288,14 @@ class CombinedRawDatasetsGenerator:
 
         # Capture resolved file paths for LocalLocation only
         source_paths = self.__extract_source_paths(current_location_handler.current, requirements_indata)
+
+        fingerprint = self.__extract_fingerprint(
+            location=current_location_handler.current,
+            requirements_indata=requirements_indata,
+            actual_tmp_path=actual_tmp_path,
+            test_result_files=test_result_files,
+            urn=rmg.requirements_data.metadata.urn,
+        )
 
         raw_dataset = RawDataset(
             requirements_data=rmg.requirements_data,
@@ -295,6 +306,7 @@ class CombinedRawDatasetsGenerator:
             location_type=location_type,
             location_uri=location_uri,
             source_paths=source_paths,
+            fingerprint=fingerprint,
         )
 
         return raw_dataset
@@ -347,6 +359,51 @@ class CombinedRawDatasetsGenerator:
             source_paths["annotations"] = paths.annotations_yml.path
         return source_paths
 
+    @staticmethod
+    def __extract_fingerprint(
+        location: LocationInterface,
+        requirements_indata: RequirementsIndata,
+        actual_tmp_path: str,
+        test_result_files: Dict[str, List[Path]],
+        urn: str,
+    ) -> SnapshotFingerprint:
+        """Stamp the local input files this source was parsed from.
+
+        Only LocalLocation is fingerprinted: everything else is a version-pinned download
+        materialized under a temp directory that is removed once parsing finishes.
+        """
+        if not isinstance(location, LocalLocation):
+            return SnapshotFingerprint()
+
+        # actual_tmp_path is a symlink into the temp tree; the temp tree is gone by the time
+        # staleness is checked, so record paths under the real project directory instead.
+        real_root = os.readlink(actual_tmp_path)
+
+        paths = requirements_indata.requirements_indata_paths
+        stamps = [
+            FileStamp.capture(os.path.join(real_root, "reqstool_config.yml"), "config", urn),
+            # Stamped whether or not they exist — an annotations.yml the build has yet to
+            # generate is exactly the change a long-lived server must notice.
+            FileStamp.capture(paths.requirements_yml.path, "requirements", urn),
+            FileStamp.capture(paths.svcs_yml.path, "svcs", urn),
+            FileStamp.capture(paths.mvrs_yml.path, "mvrs", urn),
+            FileStamp.capture(paths.annotations_yml.path, "annotations", urn),
+        ]
+
+        globs = [
+            GlobSpec.capture(
+                root=real_root,
+                pattern=pattern,
+                urn=urn,
+                matched_paths=[
+                    os.path.join(real_root, os.path.relpath(str(f), actual_tmp_path)) for f in matched_files
+                ],
+            )
+            for pattern, matched_files in test_result_files.items()
+        ]
+
+        return SnapshotFingerprint(stamps=tuple(stamps), globs=tuple(globs))
+
     @Requirements("INGEST_0002", "INGEST_0003", "INGEST_0004")
     def __parse_source_other(
         self, actual_tmp_path: str, requirements_indata: RequirementsIndata, rmg: RequirementsModelGenerator
@@ -356,6 +413,7 @@ class CombinedRawDatasetsGenerator:
         mvrs_data: MVRsData = None
         automated_tests: TestsData = None
         tests = {}
+        test_result_files: Dict[str, List[Path]] = {}
         # get current urn
         current_urn = rmg.requirements_data.metadata.urn
 
@@ -371,9 +429,10 @@ class CombinedRawDatasetsGenerator:
 
         for test_result_pattern in requirements_indata.test_results_patterns:
 
-            test_result_files = Utils.get_matching_files(path=actual_tmp_path, patterns=[test_result_pattern])
+            matching_files = Utils.get_matching_files(path=actual_tmp_path, patterns=[test_result_pattern])
+            test_result_files[test_result_pattern] = matching_files
 
-            automated_tests_results = TestDataModelGenerator(test_result_files, urn=current_urn).model
+            automated_tests_results = TestDataModelGenerator(matching_files, urn=current_urn).model
 
             tests |= automated_tests_results.tests
 
@@ -394,4 +453,4 @@ class CombinedRawDatasetsGenerator:
                 uri=requirements_indata.requirements_indata_paths.annotations_yml.path, urn=current_urn
             ).model
 
-        return annotations_data, svcs_data, automated_tests, mvrs_data
+        return annotations_data, svcs_data, automated_tests, mvrs_data, test_result_files

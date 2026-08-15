@@ -48,6 +48,17 @@ class GitRefNotFoundError(Exception):
         super().__init__(f"ref '{ref}' not found in {url}")
 
 
+class SnapshotReloadError(Exception):
+    """Raised when a session's input files changed but the new state cannot be parsed.
+
+    Answering from the superseded snapshot would be a well-formed but wrong answer, so
+    callers get this instead.
+    """
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 class EnvVarInterpolationError(Exception):
     """Raised when environment variable interpolation of YAML input fails.
 

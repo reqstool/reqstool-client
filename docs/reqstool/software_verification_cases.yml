@@ -242,6 +242,24 @@ cases:
     description: "GIVEN the same dataset WHEN get_requirement_status and get_requirements_status are called THEN they report the same completed verdict and output structure as the status command for the same requirement, in both build-only and post-build modes"
     verification: automated-test
     revision: "0.11.0"
+  - id: SVC_MCP_0006
+    requirement_ids: ["MCP_0006"]
+    title: "MCP server follows changes to the served project"
+    description: "GIVEN a running MCP server WHEN the served project's requirements, annotations or test results are changed, added or removed THEN subsequent tool calls answer from the changed files without a restart, and WHEN nothing changed THEN the project is not reparsed"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_MCP_0007
+    requirement_ids: ["MCP_0007"]
+    title: "MCP server reports a failed reload"
+    description: "GIVEN a running MCP server WHEN the served project has changed but no longer parses THEN tool calls report the load error instead of answering from the previous snapshot"
+    verification: automated-test
+    revision: "0.11.0"
+  - id: SVC_MCP_0008
+    requirement_ids: ["MCP_0008"]
+    title: "MCP server reports snapshot provenance and absent artifacts"
+    description: "GIVEN a running MCP server WHEN get_status is called THEN it reports when its data was parsed, and WHEN a configured test results pattern matches no files THEN that is reported as a warning rather than as zero tests"
+    verification: automated-test
+    revision: "0.11.0"
 
   # --- data-sources ---
   - id: SVC_SOURCE_0001

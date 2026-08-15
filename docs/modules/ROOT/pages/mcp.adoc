@@ -29,7 +29,7 @@ reqstool mcp local -p /path/to/reqstool
 ----
 
 The server starts and blocks, serving MCP requests over stdio. The project at the given path is
-loaded once at startup.
+loaded at startup and reloaded whenever its files change — see <<snapshot-freshness>>.
 
 === Other sources
 
@@ -164,7 +164,17 @@ Overall traceability status across all requirements — completion counts, test 
 
 *Parameters:* none
 
-*Returns:* status summary dict
+*Returns:* status summary dict, plus a `snapshot` field describing the data it was computed
+from: `{ built_at, reload, tracked_files, warnings }`. See <<snapshot-freshness>>.
+
+==== `refresh`
+
+Forces an immediate reload of the project from disk. Reloading is automatic when input files
+change, so this is only needed to reload unconditionally or to confirm what is being served.
+
+*Parameters:* none
+
+*Returns:* `{ built_at, reload, tracked_files, warnings }`
 
 ==== `get_requirement_status`
 
@@ -209,6 +219,29 @@ in_progress = [
     and r["automated_tests"]["passed"] > 0
 ]
 ----
+
+[[snapshot-freshness]]
+== Snapshot Freshness
+
+An MCP server is typically spawned by an AI harness and left running for days, while builds
+regenerate `annotations.yml` and JUnit XML underneath it. The server therefore records which
+local files it parsed — including files it looked for and did not find, and the concrete files
+each `test_results` pattern matched — and re-checks them before answering each request. If
+anything changed, the project is reloaded first.
+
+Consequences worth knowing:
+
+* *Files that appear later count as changes.* A server started before the first build picks up
+  the `annotations.yml` that build produces; it does not keep reporting zero implementations.
+* *A project that no longer parses is an error, not a stale answer.* If the sources changed but
+  the new state cannot be loaded — a half-written YAML file, say — tools fail with the parse
+  error rather than answering from the superseded snapshot. Fixing the file restores service on
+  the next call.
+* *Absent build artifacts are reported, not counted as zero.* When a configured `test_results`
+  pattern matches no files, `get_status` says so under `snapshot.warnings` instead of silently
+  reporting a project with no tests.
+* *Only local sources are watched.* Remote sources (git, maven, npm, pypi) are version-pinned
+  downloads, so they are never treated as stale. Use `refresh` to reload those.
 
 == reqstool-ai
 

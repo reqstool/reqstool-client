@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from reqstool.common.snapshot_fingerprint import SnapshotFingerprint
 from reqstool.models.annotations import AnnotationsData
 from reqstool.models.mvrs import MVRsData
 from reqstool.models.requirements import RequirementsData
@@ -31,6 +32,10 @@ class RawDataset(BaseModel):
     # Resolved file paths (file_type → absolute path), only populated for LocalLocation
     source_paths: Dict[str, str] = Field(default_factory=dict)
 
+    # Identity of the local input files this dataset was parsed from, for staleness detection
+    # by long-lived servers. Empty for non-local locations (version-pinned, materialized to tmp).
+    fingerprint: SnapshotFingerprint = Field(default_factory=SnapshotFingerprint)
+
 
 class CombinedRawDataset(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -42,3 +47,6 @@ class CombinedRawDataset(BaseModel):
 
     # Aggregated resolved file paths: urn → file_type → absolute path (LSP only, LocalLocation only)
     urn_source_paths: Dict[str, Dict[str, str]] = Field(default_factory=dict)
+
+    # Merged fingerprint of every local input file parsed into this dataset
+    fingerprint: SnapshotFingerprint = Field(default_factory=SnapshotFingerprint)
