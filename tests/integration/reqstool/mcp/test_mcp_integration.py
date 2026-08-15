@@ -24,7 +24,7 @@ def _parse_result(result) -> list | dict:
 
 
 async def test_list_tools(mcp_session):
-    """Server advertises all 9 expected tools."""
+    """Server advertises all 10 expected tools."""
     result = await mcp_session.list_tools()
     tool_names = {t.name for t in result.tools}
     expected = {
@@ -37,6 +37,7 @@ async def test_list_tools(mcp_session):
         "get_status",
         "get_requirement_status",
         "list_annotations",
+        "refresh",
     }
     assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
 

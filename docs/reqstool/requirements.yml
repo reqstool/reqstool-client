@@ -248,6 +248,24 @@ requirements:
     description: The system shall report an identical completion verdict and output structure for a given requirement across the status CLI command and the MCP get_requirement_status and get_requirements_status tools, in both build-only and post-build scoping modes, derived from a single shared verdict computation and a single shared serializer.
     categories: ["functional-suitability"]
     revision: "0.11.0"
+  - id: MCP_0006
+    title: MCP snapshot freshness
+    significance: shall
+    description: The system shall answer MCP queries from a snapshot that reflects the current state of the served project's local input files, reloading them automatically when they change and on explicit request, so that a long-lived server does not answer from the snapshot captured when it started.
+    categories: ["functional-suitability"]
+    revision: "0.11.0"
+  - id: MCP_0007
+    title: MCP snapshot reload failure reporting
+    significance: shall
+    description: The system shall report an error when the served project's input files have changed but the new state cannot be loaded, and shall not answer from the superseded snapshot.
+    categories: ["reliability"]
+    revision: "0.11.0"
+  - id: MCP_0008
+    title: MCP snapshot provenance and missing artifact reporting
+    significance: shall
+    description: The system shall report when the served snapshot was parsed, and shall explicitly report configured test result patterns that match no files, so that absent build artifacts are distinguishable from an absence of tests.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
 
   # --- data-sources capability (derived from openspec/specs/data-sources) ---
   - id: SOURCE_0001
