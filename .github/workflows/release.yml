@@ -1,0 +1,151 @@
+name: Release
+
+# The whole release, start to finish. See RELEASING.md in reqstool/.github for
+# what each step does, and for why the release is created as a prerelease rather
+# than a draft.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (PEP 440, no v prefix), e.g. 0.2.0. Leave empty to auto-detect from Conventional Commits."
+        required: false
+        type: string
+      prerelease:
+        description: "Publish as a release candidate instead of a release: verified like any release, but never promoted to latest. The number is chosen for you (0.2.0 -> 0.2.0rc1, then the next)."
+        required: false
+        type: choice
+        options: [none, rc, b, a]
+        default: none
+      ref:
+        description: "Branch to release from. Leave empty for the branch this workflow was dispatched on."
+        required: false
+        type: string
+      force:
+        description: "Allow a version that disagrees with the auto-detected one."
+        required: false
+        type: boolean
+        default: false
+      dry-run:
+        description: "Validate and preview only -- nothing tagged, nothing published."
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    uses: reqstool/.github/.github/workflows/common-release-prepare.yml@main
+    permissions:
+      contents: read
+    with:
+      version-format: pep440
+      version: ${{ inputs.version }}
+      prerelease: ${{ inputs.prerelease }}
+      ref: ${{ inputs.ref }}
+      force: ${{ inputs.force }}
+      dry-run: ${{ inputs.dry-run }}
+
+  # The same checks that guard main, called rather than reimplemented, and run
+  # before the approval gate so the reviewer approves something already green
+  # rather than a version string.
+  checks:
+    needs: prepare
+    if: ${{ !inputs.dry-run }}
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+
+  # THE APPROVAL GATE -- bound to the `stable` environment, so it sits pending
+  # until a required reviewer approves it on the run page.
+  tag:
+    needs: [prepare, checks]
+    if: ${{ !inputs.dry-run }}
+    uses: reqstool/.github/.github/workflows/common-release-tag.yml@main
+    permissions:
+      contents: write
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      ref: ${{ inputs.ref }}
+
+  # Rebuilt from the tag, which is what gives the artifacts their version:
+  # hatch-vcs reads it from git rather than from a version string in the tree.
+  build-tagged:
+    needs: [prepare, tag]
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+    with:
+      ref: ${{ needs.prepare.outputs.version }}
+      artifact-name: dist-tagged
+
+  assets:
+    needs: [prepare, build-tagged]
+    uses: reqstool/.github/.github/workflows/common-release-assets.yml@main
+    permissions:
+      contents: write
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      artifact: dist-tagged
+
+  publish-to-testpypi:
+    needs: [prepare, assets]
+    uses: reqstool/.github/.github/workflows/python-publish-to-pypi.yml@main
+    permissions:
+      id-token: write
+    with:
+      target: testpypi
+      artifact: dist-tagged
+
+  # PyPI is the only step here that cannot be undone: a version can be yanked but
+  # never replaced. A release candidate stops at Test PyPI -- pip needs --pre to
+  # see a prerelease anyway.
+  publish-to-pypi:
+    needs: [prepare, publish-to-testpypi]
+    if: ${{ needs.prepare.outputs.prerelease != 'true' }}
+    uses: reqstool/.github/.github/workflows/python-publish-to-pypi.yml@main
+    permissions:
+      id-token: write
+    with:
+      target: pypi
+      artifact: dist-tagged
+
+  # The image wraps the PyPI release, so it can only be built once that exists.
+  publish-image-to-ghcr:
+    needs: [prepare, publish-to-pypi]
+    uses: ./.github/workflows/publish-image.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+
+  # Last, deliberately. Everything above can fail, and until this runs nothing
+  # resolving "the latest release" can see what was built -- the release is still
+  # a prerelease. Promotion itself is one API call against a release that already
+  # has its artifacts.
+  #
+  # The guard is `no job failed`, not the default `every job succeeded`: a release
+  # candidate deliberately skips the publish jobs that a real release runs, and a
+  # skipped dependency would otherwise cascade and skip this too -- leaving the
+  # candidate unpromoted, which is right, and every *real* release unpromoted the
+  # moment any optional job is skipped, which is not.
+  #
+  # `!inputs.dry-run` has to be spelled out for the same reason: on a dry run
+  # every job above is skipped, and "nothing failed" would otherwise be true.
+  promote:
+    needs: [prepare, assets, publish-to-testpypi, publish-to-pypi, publish-image-to-ghcr]
+    if: ${{ !inputs.dry-run && !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
+    uses: reqstool/.github/.github/workflows/common-release-promote.yml@main
+    permissions:
+      contents: write
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
