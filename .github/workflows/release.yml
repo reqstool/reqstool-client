@@ -72,6 +72,7 @@ jobs:
       contents: write
     with:
       version: ${{ needs.prepare.outputs.version }}
+      version-format: pep440
       ref: ${{ inputs.ref }}
 
   # Rebuilt from the tag, which is what gives the artifacts their version:
