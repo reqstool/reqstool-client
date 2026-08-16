@@ -1,0 +1,29 @@
+name: Publish dev build to Test PyPI
+
+# The continuous dev feed: every push to main lands on Test PyPI as a `.devN`
+# build. Separate from the release flow, which publishes the tagged version to
+# Test PyPI and then PyPI -- both use skip-existing, so they cannot collide.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Reuse build
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+
+  publish-to-test-pypi:
+    needs: build
+    uses: reqstool/.github/.github/workflows/python-publish-to-pypi.yml@main
+    permissions:
+      id-token: write
+    with:
+      target: testpypi

@@ -1,6 +1,20 @@
 name: Build PyPI
 on:
   workflow_call:
+    inputs:
+      ref:
+        description: "Branch, tag or SHA to build. Empty = the caller's ref."
+        required: false
+        type: string
+        default: ""
+      artifact-name:
+        description: >
+          Name to upload the build output under. The release flow runs this
+          workflow twice in one run -- once on the branch, once on the tag -- and
+          upload-artifact rejects a duplicate name.
+        required: false
+        type: string
+        default: "dist"
   workflow_dispatch:
   push:
     branches:
@@ -23,10 +37,15 @@ jobs:
     needs: linting
     runs-on: ubuntu-latest
     steps:
+      # Full history and tags: hatch-vcs derives the version from git state, so a
+      # shallow clone would build the wrong number rather than fail.
       - name: Check out source repository
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0 #full history
+          persist-credentials: false
+          fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ inputs.ref || github.ref }}
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -46,5 +65,5 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: dist
+          name: ${{ inputs.artifact-name || 'dist' }}
           path: dist/
