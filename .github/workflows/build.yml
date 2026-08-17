@@ -51,7 +51,8 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install dependencies
-        run: pip install hatch
+        # renovate: datasource=pypi depName=hatch
+        run: pip install hatch==1.18.0
       - name: Run unit tests
         run: hatch run dev:pytest --junitxml=build/junit.xml --cov=reqstool --cov-report=html -o junit_family=xunit2
       - name: Build project
