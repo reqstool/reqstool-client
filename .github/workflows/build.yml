@@ -40,16 +40,16 @@ jobs:
       # Full history and tags: hatch-vcs derives the version from git state, so a
       # shallow clone would build the wrong number rather than fail.
       - name: Check out source repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
           fetch-tags: true
           ref: ${{ inputs.ref || github.ref }}
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v7.0.0
         with:
-          python-version: "3.13"
+          python-version: "3.13.15"
       - name: Install dependencies
         # renovate: datasource=pypi depName=hatch
         run: pip install hatch==1.18.0
@@ -64,7 +64,7 @@ jobs:
           reqstool status local -p docs/reqstool
       # Upload artifacts for later use
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{ inputs.artifact-name || 'dist' }}
           path: dist/
