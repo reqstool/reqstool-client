@@ -25,7 +25,7 @@ jobs:
         run: hatch run dev:flake8
       - name: Install pip package check-jsonschema
         # renovate: datasource=pypi depName=check-jsonschema
-        run: pip install check-jsonschema==0.38.0
+        run: pip install check-jsonschema==0.38.1
       - name: Validate JSON Schemas
         run: check-jsonschema --verbose --schemafile "https://json-schema.org/draft/2020-12/schema" src/reqstool/resources/schemas/*/*
       - name: Validate generated Pydantic models are up to date
