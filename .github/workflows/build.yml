@@ -49,7 +49,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.0.0
         with:
-          python-version: "3.13.15"
+          python-version: "3.13.16"
       - name: Install dependencies
         # renovate: datasource=pypi depName=hatch
         run: pip install hatch==1.18.1
