@@ -41,12 +41,16 @@ jobs:
             type=sha
             type=raw,value=latest
 
+      # Probe with pip itself: the JSON API lists a release before the /simple/
+      # index pip reads from does, and the build below failed in that gap.
       - name: Wait for PyPI availability
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
-          echo "Waiting for reqstool==${VERSION} to become available on PyPI..."
+          echo "Waiting for reqstool==${VERSION} to become installable from PyPI..."
           for i in $(seq 1 90); do
-            if curl -fsSL -o /dev/null "https://pypi.org/pypi/reqstool/${VERSION}/json"; then
+            if python3 -m pip download --quiet --disable-pip-version-check --no-deps --no-cache-dir \
+                --dest "${RUNNER_TEMP}/pypi-probe" "reqstool==${VERSION}"; then
               echo "reqstool==${VERSION} is available on PyPI"
               exit 0
             fi
