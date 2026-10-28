@@ -41,7 +41,7 @@ permissions:
 
 jobs:
   prepare:
-    uses: reqstool/.github/.github/workflows/common-release-prepare.yml@a4203a58cec87861655512b6b277a859db385796 # 1.1.0
+    uses: reqstool/.github/.github/workflows/common-release-prepare.yml@47ea2f814efd0a4dd02bce2d9fd9d97725945cf6 # 1.2.0
     permissions:
       contents: read
     with:
@@ -67,7 +67,7 @@ jobs:
   tag:
     needs: [prepare, checks]
     if: ${{ !inputs.dry-run }}
-    uses: reqstool/.github/.github/workflows/common-release-tag.yml@a4203a58cec87861655512b6b277a859db385796 # 1.1.0
+    uses: reqstool/.github/.github/workflows/common-release-tag.yml@47ea2f814efd0a4dd02bce2d9fd9d97725945cf6 # 1.2.0
     permissions:
       contents: write
     with:
@@ -88,7 +88,7 @@ jobs:
 
   assets:
     needs: [prepare, build-tagged]
-    uses: reqstool/.github/.github/workflows/common-release-assets.yml@a4203a58cec87861655512b6b277a859db385796 # 1.1.0
+    uses: reqstool/.github/.github/workflows/common-release-assets.yml@47ea2f814efd0a4dd02bce2d9fd9d97725945cf6 # 1.2.0
     permissions:
       contents: write
     with:
@@ -109,7 +109,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: reqstool/.github/.github/actions/download-dists@a4203a58cec87861655512b6b277a859db385796 # 1.1.0
+      - uses: reqstool/.github/.github/actions/download-dists@47ea2f814efd0a4dd02bce2d9fd9d97725945cf6 # 1.2.0
         with:
           artifact: dist-tagged
       # Inline, not inside download-dists: nesting this Docker action in a
@@ -142,7 +142,7 @@ jobs:
   promote:
     needs: [prepare, assets, publish-to-pypi, publish-image-to-ghcr]
     if: ${{ !inputs.dry-run && !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    uses: reqstool/.github/.github/workflows/common-release-promote.yml@a4203a58cec87861655512b6b277a859db385796 # 1.1.0
+    uses: reqstool/.github/.github/workflows/common-release-promote.yml@47ea2f814efd0a4dd02bce2d9fd9d97725945cf6 # 1.2.0
     permissions:
       contents: write
     with:
