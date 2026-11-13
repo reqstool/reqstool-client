@@ -1,7 +1,10 @@
 # Copyright © LFV
 
+from types import SimpleNamespace
+
 from reqstool.common.enrichment.enricher import (
     BUILT_IN_PRESETS,
+    EnrichmentConfig,
     _block_field,
     _format_value,
     _in_backtick_span,
@@ -9,6 +12,7 @@ from reqstool.common.enrichment.enricher import (
     _make_pattern,
     enrich_text,
 )
+from reqstool.common.models.urn_id import UrnId
 
 
 # ---------------------------------------------------------------------------
@@ -177,3 +181,58 @@ def test_enrich_text_fenced_block_skipped():
     result = enrich_text(text, {}, {}, {}, BUILT_IN_PRESETS["openspec:design"])
     assert "—" not in result
     assert result == text
+
+
+_TITLE_ONLY_SPEC = EnrichmentConfig("colon-header", True, True, True)
+
+
+def _enrich_spec(text: str) -> str:
+    svcs = {
+        UrnId(urn="ms-101", id="SVC_201"): SimpleNamespace(title="Scenario title"),
+        UrnId(urn="ms-101", id="SVC_202"): SimpleNamespace(title="Other title"),
+    }
+    return enrich_text(text, {}, svcs, {}, _TITLE_ONLY_SPEC)
+
+
+def test_enrich_text_drops_when_then_step_stub():
+    text = "#### Scenario: SVC_201\n- **WHEN** SVC_201 is run\n- **THEN** it passes\n\nNext.\n"
+    assert _enrich_spec(text) == "#### Scenario: SVC_201 — Scenario title\n\nNext.\n"
+
+
+def test_enrich_text_drops_when_then_step_stub_crlf():
+    text = "#### Scenario: SVC_201\r\n- **WHEN** SVC_201 is run\r\n- **THEN** it passes\r\nNext.\r\n"
+    assert _enrich_spec(text) == "#### Scenario: SVC_201 — Scenario title\r\nNext.\r\n"
+
+
+def test_enrich_text_drops_when_then_step_stub_variants():
+    text = "#### Scenario: SVC_201\n  *  **WHEN**  SVC_201 is run.\n+ **THEN**\tit passes.  \n"
+    assert _enrich_spec(text) == "#### Scenario: SVC_201 — Scenario title\n"
+
+
+def test_enrich_text_keeps_when_step_without_then_stub():
+    text = "#### Scenario: SVC_201\n- **WHEN** SVC_201 is run\n- **THEN** the report lists it\n"
+    assert _enrich_spec(text) == (
+        "#### Scenario: SVC_201 — Scenario title\n- **WHEN** SVC_201 is run\n- **THEN** the report lists it\n"
+    )
+
+
+def test_enrich_text_keeps_when_step_at_end_of_text():
+    text = "#### Scenario: SVC_201\n- **WHEN** SVC_201 is run"
+    assert _enrich_spec(text) == "#### Scenario: SVC_201 — Scenario title\n- **WHEN** SVC_201 is run"
+
+
+def test_enrich_text_keeps_when_step_for_another_id():
+    text = "#### Scenario: SVC_201\n- **WHEN** SVC_202 is run\n- **THEN** it passes\n"
+    assert _enrich_spec(text) == (
+        "#### Scenario: SVC_201 — Scenario title\n- **WHEN** SVC_202 is run\n- **THEN** it passes\n"
+    )
+
+
+def test_enrich_text_released_when_step_does_not_swallow_next_header():
+    text = (
+        "#### Scenario: SVC_201\n- **WHEN** SVC_201 is run\n"
+        "#### Scenario: SVC_202\n- **WHEN** SVC_202 is run\n- **THEN** it passes\n"
+    )
+    assert _enrich_spec(text) == (
+        "#### Scenario: SVC_201 — Scenario title\n- **WHEN** SVC_201 is run\n#### Scenario: SVC_202 — Other title\n"
+    )
