@@ -1,9 +1,10 @@
 # Copyright © LFV
 
-from unittest.mock import MagicMock, patch
+from types import SimpleNamespace
 
 from reqstool.common.enrichment.enricher import (
     BUILT_IN_PRESETS,
+    EnrichmentConfig,
     _block_field,
     _format_value,
     _in_backtick_span,
@@ -182,20 +183,30 @@ def test_enrich_text_fenced_block_skipped():
     assert result == text
 
 
-def _svc_201():
-    svc = MagicMock()
-    svc.title = "Scenario title"
-    return {UrnId(urn="ms-101", id="SVC_201"): svc}
+_TITLE_ONLY_SPEC = EnrichmentConfig("colon-header", True, True, True)
 
 
 def _enrich_spec(text: str) -> str:
-    with patch("reqstool.common.enrichment.enricher._svc_block_lines", return_value=[]):
-        return enrich_text(text, {}, _svc_201(), {}, BUILT_IN_PRESETS["openspec:spec"])
+    svcs = {
+        UrnId(urn="ms-101", id="SVC_201"): SimpleNamespace(title="Scenario title"),
+        UrnId(urn="ms-101", id="SVC_202"): SimpleNamespace(title="Other title"),
+    }
+    return enrich_text(text, {}, svcs, {}, _TITLE_ONLY_SPEC)
 
 
 def test_enrich_text_drops_when_then_step_stub():
     text = "#### Scenario: SVC_201\n- **WHEN** SVC_201 is run\n- **THEN** it passes\n\nNext.\n"
     assert _enrich_spec(text) == "#### Scenario: SVC_201 — Scenario title\n\nNext.\n"
+
+
+def test_enrich_text_drops_when_then_step_stub_crlf():
+    text = "#### Scenario: SVC_201\r\n- **WHEN** SVC_201 is run\r\n- **THEN** it passes\r\nNext.\r\n"
+    assert _enrich_spec(text) == "#### Scenario: SVC_201 — Scenario title\r\nNext.\r\n"
+
+
+def test_enrich_text_drops_when_then_step_stub_variants():
+    text = "#### Scenario: SVC_201\n  *  **WHEN**  SVC_201 is run.\n+ **THEN**\tit passes.  \n"
+    assert _enrich_spec(text) == "#### Scenario: SVC_201 — Scenario title\n"
 
 
 def test_enrich_text_keeps_when_step_without_then_stub():
@@ -214,4 +225,14 @@ def test_enrich_text_keeps_when_step_for_another_id():
     text = "#### Scenario: SVC_201\n- **WHEN** SVC_202 is run\n- **THEN** it passes\n"
     assert _enrich_spec(text) == (
         "#### Scenario: SVC_201 — Scenario title\n- **WHEN** SVC_202 is run\n- **THEN** it passes\n"
+    )
+
+
+def test_enrich_text_released_when_step_does_not_swallow_next_header():
+    text = (
+        "#### Scenario: SVC_201\n- **WHEN** SVC_201 is run\n"
+        "#### Scenario: SVC_202\n- **WHEN** SVC_202 is run\n- **THEN** it passes\n"
+    )
+    assert _enrich_spec(text) == (
+        "#### Scenario: SVC_201 — Scenario title\n- **WHEN** SVC_201 is run\n#### Scenario: SVC_202 — Other title\n"
     )

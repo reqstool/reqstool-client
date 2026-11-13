@@ -151,23 +151,22 @@ def _in_backtick_span(line: str, pos: int) -> bool:
     return False
 
 
+def _matches_line(line: str, body: str) -> bool:
+    return bool(re.match(r"^\s*" + body + r"\s*$", line))
+
+
 def _is_stub(line: str, id_str: str) -> bool:
-    return bool(
-        re.match(
-            r"^\s*The system SHALL (?:implement|pass)\s+" + re.escape(id_str) + r"\.?\s*$",
-            line,
-        )
-    )
+    return _matches_line(line, r"The system SHALL (?:implement|pass)\s+" + re.escape(id_str) + r"\.?")
 
 
 # OpenSpec CLI 1.16+ requires WHEN and THEN steps in every scenario, so the scenario stub
 # is the pair "- **WHEN** <ID> is run" / "- **THEN** it passes" instead of one line.
 def _is_when_step_stub(line: str, id_str: str) -> bool:
-    return bool(re.match(r"^\s*- \*\*WHEN\*\* " + re.escape(id_str) + r" is run\s*$", line))
+    return _matches_line(line, r"[-*+]\s+\*\*WHEN\*\*\s+" + re.escape(id_str) + r"\s+is run\.?")
 
 
 def _is_then_step_stub(line: str) -> bool:
-    return bool(re.match(r"^\s*- \*\*THEN\*\* it passes\s*$", line))
+    return _matches_line(line, r"[-*+]\s+\*\*THEN\*\*\s+it passes\.?")
 
 
 def enrich_text(  # noqa: C901
