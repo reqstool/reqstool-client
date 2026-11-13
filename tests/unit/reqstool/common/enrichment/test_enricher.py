@@ -1,5 +1,7 @@
 # Copyright © LFV
 
+from unittest.mock import MagicMock, patch
+
 from reqstool.common.enrichment.enricher import (
     BUILT_IN_PRESETS,
     _block_field,
@@ -9,6 +11,7 @@ from reqstool.common.enrichment.enricher import (
     _make_pattern,
     enrich_text,
 )
+from reqstool.common.models.urn_id import UrnId
 
 
 # ---------------------------------------------------------------------------
@@ -177,3 +180,38 @@ def test_enrich_text_fenced_block_skipped():
     result = enrich_text(text, {}, {}, {}, BUILT_IN_PRESETS["openspec:design"])
     assert "—" not in result
     assert result == text
+
+
+def _svc_201():
+    svc = MagicMock()
+    svc.title = "Scenario title"
+    return {UrnId(urn="ms-101", id="SVC_201"): svc}
+
+
+def _enrich_spec(text: str) -> str:
+    with patch("reqstool.common.enrichment.enricher._svc_block_lines", return_value=[]):
+        return enrich_text(text, {}, _svc_201(), {}, BUILT_IN_PRESETS["openspec:spec"])
+
+
+def test_enrich_text_drops_when_then_step_stub():
+    text = "#### Scenario: SVC_201\n- **WHEN** SVC_201 is run\n- **THEN** it passes\n\nNext.\n"
+    assert _enrich_spec(text) == "#### Scenario: SVC_201 — Scenario title\n\nNext.\n"
+
+
+def test_enrich_text_keeps_when_step_without_then_stub():
+    text = "#### Scenario: SVC_201\n- **WHEN** SVC_201 is run\n- **THEN** the report lists it\n"
+    assert _enrich_spec(text) == (
+        "#### Scenario: SVC_201 — Scenario title\n- **WHEN** SVC_201 is run\n- **THEN** the report lists it\n"
+    )
+
+
+def test_enrich_text_keeps_when_step_at_end_of_text():
+    text = "#### Scenario: SVC_201\n- **WHEN** SVC_201 is run"
+    assert _enrich_spec(text) == "#### Scenario: SVC_201 — Scenario title\n- **WHEN** SVC_201 is run"
+
+
+def test_enrich_text_keeps_when_step_for_another_id():
+    text = "#### Scenario: SVC_201\n- **WHEN** SVC_202 is run\n- **THEN** it passes\n"
+    assert _enrich_spec(text) == (
+        "#### Scenario: SVC_201 — Scenario title\n- **WHEN** SVC_202 is run\n- **THEN** it passes\n"
+    )

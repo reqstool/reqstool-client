@@ -160,6 +160,16 @@ def _is_stub(line: str, id_str: str) -> bool:
     )
 
 
+# OpenSpec CLI 1.16+ requires WHEN and THEN steps in every scenario, so the scenario stub
+# is the pair "- **WHEN** <ID> is run" / "- **THEN** it passes" instead of one line.
+def _is_when_step_stub(line: str, id_str: str) -> bool:
+    return bool(re.match(r"^\s*- \*\*WHEN\*\* " + re.escape(id_str) + r" is run\s*$", line))
+
+
+def _is_then_step_stub(line: str) -> bool:
+    return bool(re.match(r"^\s*- \*\*THEN\*\* it passes\s*$", line))
+
+
 def enrich_text(  # noqa: C901
     text: str,
     requirements: dict,
@@ -175,10 +185,17 @@ def enrich_text(  # noqa: C901
     output = []
     in_fenced_block = False
     last_enriched_id: Optional[str] = None
+    held_when_step: Optional[str] = None
 
     for line in text.splitlines(keepends=True):
         stripped = line.rstrip("\n\r")
         trailing = line[len(stripped) :]  # noqa: E203
+
+        if held_when_step is not None:
+            when_step, held_when_step = held_when_step, None
+            if _is_then_step_stub(stripped):
+                continue
+            output.append(when_step)
 
         # Fenced block state machine
         if stripped.strip().startswith("```") or stripped.strip().startswith("~~~"):
@@ -196,6 +213,10 @@ def enrich_text(  # noqa: C901
             if last_enriched_id is not None:
                 if _is_stub(stripped, last_enriched_id):
                     last_enriched_id = None
+                    continue
+                if _is_when_step_stub(stripped, last_enriched_id):
+                    last_enriched_id = None
+                    held_when_step = line
                     continue
                 last_enriched_id = None
 
@@ -228,5 +249,8 @@ def enrich_text(  # noqa: C901
                 info = lookup[id_str]
                 result = result[: m.end()] + f" — {info.inline_text}" + result[m.end() :]  # noqa: E203
             output.append(result + trailing)
+
+    if held_when_step is not None:
+        output.append(held_when_step)
 
     return "".join(output)

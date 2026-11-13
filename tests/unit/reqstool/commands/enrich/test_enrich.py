@@ -42,6 +42,13 @@ def test_spec_no_description(ms101):
 
 
 @SVCs("SVC_ENRICH_0002")
+def test_spec_scenario_step_stub_dropped(ms101):
+    input_content, expected = _load("spec_scenario_steps")
+    result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:spec"])
+    assert result.result == expected
+
+
+@SVCs("SVC_ENRICH_0002")
 def test_inline_title_only(ms101):
     input_content, expected = _load("inline_title_only")
     result = EnrichCommand(location=ms101, input_content=input_content, config=BUILT_IN_PRESETS["openspec:design"])
