@@ -1,0 +1,55 @@
+# TEMPORARY (PR #495): cross-OS regression check. Remove before merge.
+name: TEMP cross-OS regression
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+permissions:
+  contents: read
+jobs:
+  cross-os:
+    if: github.head_ref == 'claude/project-thread-2cntvy'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          fetch-tags: true
+          path: client
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: main
+          path: client-main
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          repository: reqstool/reqstool-regression
+          path: regression
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.13.18"
+      - run: pip install hatch==1.18.2
+      - name: Unit tests (branch)
+        working-directory: client
+        continue-on-error: ${{ runner.os == 'Windows' }}
+        run: hatch run dev:pytest -q -p no:cacheprovider tests/unit -o addopts="--import-mode=importlib"
+      - name: Regression fixtures, branch vs main
+        working-directory: client
+        run: hatch run dev:python .github/tmp/cross_os_regression.py . ../client-main ../regression ../out
+      - name: CLI smoke on own dataset (branch)
+        working-directory: client
+        run: hatch run python src/reqstool/command.py status local -p docs/reqstool || echo "exit=$?"
+      - if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: cross-os-${{ matrix.os }}
+          path: out/
