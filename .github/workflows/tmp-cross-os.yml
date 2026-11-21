@@ -36,7 +36,7 @@ jobs:
           path: regression
       - uses: actions/setup-python@v7.1.0
         with:
-          python-version: "3.13.18"
+          python-version: "3.13"
       - run: pip install hatch==1.18.2
       - name: Unit tests (branch)
         working-directory: client
