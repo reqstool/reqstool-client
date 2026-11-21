@@ -28,11 +28,18 @@ def run(src_root: Path, label: str, out_dir: Path, regression: Path) -> dict:
             key = f"{fixture.replace('/', '_')}-{'_'.join(cmd).replace('--format_', '')}"
             p = subprocess.run(
                 [sys.executable, "-m", "reqstool.command", *cmd, "local", "-p", str(regression / "fixtures" / fixture)],
-                capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=env,
             )
             text = ANSI.sub("", p.stdout)
             (out_dir / label).mkdir(parents=True, exist_ok=True)
-            (out_dir / label / f"{key}.txt").write_text(f"{text}\n--- stderr ---\n{ANSI.sub('', p.stderr)}\nexit={p.returncode}\n", encoding="utf-8")
+            stderr = ANSI.sub("", p.stderr)
+            (out_dir / label / f"{key}.txt").write_text(
+                f"{text}\n--- stderr ---\n{stderr}\nexit={p.returncode}\n", encoding="utf-8"
+            )
             if cmd == ["export"] and p.returncode == 0:
                 text = json.dumps(norm(json.loads(text)), sort_keys=True)
             results[key] = (p.returncode, text)
