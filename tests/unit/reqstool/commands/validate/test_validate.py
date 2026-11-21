@@ -1,6 +1,10 @@
 # Copyright © LFV
 
+import re
+import shutil
 from unittest.mock import MagicMock
+
+import pytest
 
 from reqstool_python_decorators.decorators.decorators import SVCs
 
@@ -84,3 +88,50 @@ def test_validate_referential_errors_cause_exit_one(local_testdata_resources_roo
     )
     assert result.exit_code == 1
     assert "✗" in result.result
+
+
+@pytest.fixture
+def dangling_ref_ms101(tmp_path, local_testdata_resources_rootdir_w_path):
+    """Copy of the test_basic baseline with REQ_101 referencing a requirement that does not exist."""
+    dst = tmp_path / "ms-101"
+    shutil.copytree(local_testdata_resources_rootdir_w_path("test_basic/baseline/ms-101"), dst)
+    req_file = dst / "requirements.yml"
+    text = req_file.read_text()
+    text, n = re.subn(
+        r"(  - id: REQ_101\n(?:    .*\n)*?)(    revision:)",
+        r'\1    references:\n      requirement_ids: ["nope-999:REQ_DOES_NOT_EXIST"]\n\2',
+        text,
+        count=1,
+    )
+    assert n == 1
+    req_file.write_text(text)
+    return dst
+
+
+@SVCs("SVC_VALIDATE_0006")
+def test_validate_warns_on_dangling_requirement_reference(dangling_ref_ms101):
+    """#490: a reference to a non-existent requirement is a warning, not silently accepted."""
+    result = ValidateCommand(location=LocalLocation(path=str(dangling_ref_ms101)))
+    assert "⚠" in result.result
+    assert "ms-101:REQ_101" in result.result
+    assert "references non-existing requirement nope-999:REQ_DOES_NOT_EXIST" in result.result
+    assert "✓ All checks passed" not in result.result
+    assert result.exit_code == 0
+
+
+@SVCs("SVC_VALIDATE_0006")
+def test_validate_strict_fails_on_dangling_requirement_reference(dangling_ref_ms101):
+    result = ValidateCommand(location=LocalLocation(path=str(dangling_ref_ms101)), strict=True)
+    assert "references non-existing requirement" in result.result
+    assert result.exit_code == 1
+
+
+@SVCs("SVC_VALIDATE_0006")
+def test_validate_valid_requirement_reference_not_reported(local_testdata_resources_rootdir_w_path):
+    """test_basic baseline has REQ_201 -> REQ_101 (existing); must not be flagged."""
+    result = ValidateCommand(
+        location=LocalLocation(path=local_testdata_resources_rootdir_w_path("test_basic/baseline/ms-101")),
+        strict=True,
+    )
+    assert "non-existing requirement" not in result.result
+    assert result.exit_code == 0

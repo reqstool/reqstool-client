@@ -164,6 +164,12 @@ requirements:
     description: The system shall summarize the outcome with counts of errors and warnings and an overall pass/fail result, signalling failure through its exit code.
     categories: ["interaction-capability"]
     revision: "0.11.0"
+  - id: VALIDATE_0006
+    title: Dangling requirement reference check
+    significance: shall
+    description: The system shall report every requirement whose references name a requirement that does not exist, as a warning by default and as an error when strict mode is enabled.
+    categories: ["reliability"]
+    revision: "1.1.0"
 
   # --- enrich capability (derived from openspec/specs/enrich) ---
   - id: ENRICH_0001

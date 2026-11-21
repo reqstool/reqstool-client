@@ -161,6 +161,23 @@ def test_get_all_requirements_references(db):
     assert UrnId(urn="sys-001", id="REQ_100") in refs[0].requirement_ids
 
 
+def test_get_dangling_requirement_references(db):
+    _insert_requirement(db)  # references sys-001:REQ_100, which is not in the database
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    assert repo.get_dangling_requirement_references() == [(REQ_ID, UrnId(urn="sys-001", id="REQ_100"))]
+
+
+def test_get_dangling_requirement_references_ignores_existing_targets(db):
+    _insert_requirement(db)
+    _insert_requirement(db, urn_id=UrnId(urn="sys-001", id="REQ_100"))
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    assert repo.get_dangling_requirement_references() == []
+
+
 def test_get_all_requirements_lifecycle(db):
     _insert_requirement(db)
     db.commit()
