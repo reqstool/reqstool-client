@@ -1,5 +1,6 @@
 """TEMPORARY (PR #495): run reqstool-regression fixtures with this branch and with main, compare outputs."""
 
+import hashlib
 import json
 import os
 import re
@@ -34,7 +35,7 @@ def run(src_root: Path, label: str, out_dir: Path, regression: Path) -> dict:
                 errors="replace",
                 env=env,
             )
-            text = ANSI.sub("", p.stdout)
+            text = ANSI.sub("", p.stdout).replace("\r\n", "\n")
             (out_dir / label).mkdir(parents=True, exist_ok=True)
             stderr = ANSI.sub("", p.stderr)
             (out_dir / label / f"{key}.txt").write_text(
@@ -55,7 +56,9 @@ def main():
         b_rc, b_out = branch[key]
         m_rc, m_out = base[key]
         same = (b_rc, b_out) == (m_rc, m_out)
-        print(f"{key:45} branch exit={b_rc:<3} main exit={m_rc:<3} {'IDENTICAL' if same else 'DIFFERENT'}")
+        digest = hashlib.sha1(b_out.encode("utf-8")).hexdigest()[:10]
+        verdict = "IDENTICAL" if same else "DIFFERENT"
+        print(f"{key:45} branch exit={b_rc:<3} main exit={m_rc:<3} {verdict} branch-sha={digest}")
         if not b_out.strip():
             failed = True
         if not same and sys.platform != "win32":
