@@ -266,6 +266,12 @@ requirements:
     description: The system shall report when the served snapshot was parsed, and shall explicitly report configured test result patterns that match no files, so that absent build artifacts are distinguishable from an absence of tests.
     categories: ["interaction-capability"]
     revision: "0.11.0"
+  - id: MCP_0009
+    title: MCP full-text search
+    significance: shall
+    description: The system shall provide an MCP search tool that ranks free-text matches over requirements, SVCs and MVRs, filterable by kind, URN and lifecycle state, reporting for requirement hits the completion verdict from the shared status computation, from an index that always reflects the loaded snapshot.
+    categories: ["interaction-capability"]
+    revision: "0.11.0"
 
   # --- data-sources capability (derived from openspec/specs/data-sources) ---
   - id: SOURCE_0001
