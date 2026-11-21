@@ -72,7 +72,8 @@ class TestDataModelGenerator:
 
                 test_run_status: TEST_RUN_STATUS
 
-                if testcase.find("./failure") is not None:
+                # <error> (e.g. pytest setup/teardown failure) means the test did not pass
+                if testcase.find("./failure") is not None or testcase.find("./error") is not None:
                     test_run_status = TEST_RUN_STATUS.FAILED
                 elif testcase.find("./skipped") is not None:
                     test_run_status = TEST_RUN_STATUS.SKIPPED
