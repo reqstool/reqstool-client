@@ -271,7 +271,7 @@ requirements:
     significance: shall
     description: The system shall provide an MCP search tool that ranks free-text matches over requirements, SVCs and MVRs, filterable by kind, URN and lifecycle state, reporting for requirement hits the completion verdict from the shared status computation, from an index that always reflects the loaded snapshot.
     categories: ["interaction-capability"]
-    revision: "0.11.0"
+    revision: "1.1.0"
 
   # --- data-sources capability (derived from openspec/specs/data-sources) ---
   - id: SOURCE_0001

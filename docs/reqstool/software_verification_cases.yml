@@ -265,7 +265,7 @@ cases:
     title: "MCP search returns ranked, filtered hits with the shared verdict"
     description: "GIVEN a running MCP server WHEN search is called THEN hits are ranked, honour kind/URN/lifecycle filters, carry the same completed verdict as get_requirements_status, and follow the snapshot after a reload"
     verification: automated-test
-    revision: "0.11.0"
+    revision: "1.1.0"
 
   # --- data-sources ---
   - id: SVC_SOURCE_0001
