@@ -49,7 +49,7 @@ def test_make_available_on_localdisk_falls_back_to_junction_on_windows(tmp_path,
         raise OSError(1314, "A required privilege is not held by the client")
 
     monkeypatch.setattr(local_location.os, "symlink", no_symlink_privilege)
-    monkeypatch.setattr(local_location.sys, "platform", "win32")
+    monkeypatch.setattr(sys, "platform", "win32")
     monkeypatch.setitem(sys.modules, "_winapi", types.SimpleNamespace(CreateJunction=lambda s, d: calls.append((s, d))))
 
     LocalLocation(path=str(src))._make_available_on_localdisk(dst_path=dst)
@@ -66,7 +66,7 @@ def test_make_available_on_localdisk_reraises_symlink_error_off_windows(tmp_path
         raise OSError(1, "Operation not permitted")
 
     monkeypatch.setattr(local_location.os, "symlink", no_symlink_privilege)
-    monkeypatch.setattr(local_location.sys, "platform", "linux")
+    monkeypatch.setattr(sys, "platform", "linux")
 
     with pytest.raises(OSError):
         LocalLocation(path=str(src))._make_available_on_localdisk(dst_path=dst)

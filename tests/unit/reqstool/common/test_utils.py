@@ -5,6 +5,7 @@ from pathlib import PureWindowsPath
 from urllib.parse import urlparse
 
 import pytest
+import requests
 
 from reqstool.common.exceptions import EnvVarInterpolationError
 from reqstool.common.utils import Utils
@@ -91,13 +92,30 @@ def test_strip_windows_extended_length_prefix(path, expected):
     assert Utils.strip_windows_extended_length_prefix(path) == expected
 
 
-@pytest.mark.parametrize("path", ["C:\\Users\\me\\requirements.yml", "\\\\?\\C:\\Users\\me\\requirements.yml"])
-def test_windows_path_becomes_hostless_file_uri(path):
-    # Mirrors Utils.to_file_uri with Windows path semantics, which cannot run on a POSIX host
-    uri = PureWindowsPath(Utils.strip_windows_extended_length_prefix(path)).as_uri()
+class _FakeWindowsPath(PureWindowsPath):
+    """Windows path semantics on any host (a real WindowsPath cannot be instantiated on POSIX)."""
 
-    assert uri == "file:///C:/Users/me/requirements.yml"
-    assert urlparse(uri).netloc == ""  # requests-file rejects URIs with a host component
+    def absolute(self):
+        return self
+
+
+@pytest.mark.parametrize("path", ["C:\\Users\\me\\requirements.yml", "\\\\?\\C:\\Users\\me\\requirements.yml"])
+def test_open_file_https_file_requests_hostless_file_uri_for_windows_path(monkeypatch, path):
+    # Before the fix the request URL was "file://C:\\Users\\...", where requests-file reads "C:" as a host and
+    # raises "file: URLs with hostname components are not permitted".
+    monkeypatch.setattr("reqstool.common.utils.Path", _FakeWindowsPath)
+    requested = []
+
+    def fake_get(self, url, **kwargs):
+        requested.append(url)
+        return requests.Response()
+
+    monkeypatch.setattr(requests.Session, "get", fake_get)
+
+    Utils.open_file_https_file(path)
+
+    assert requested == ["file:///C:/Users/me/requirements.yml"]
+    assert urlparse(requested[0]).netloc == ""
 
 
 def test_open_file_https_file_reads_path_with_reserved_characters(tmp_path):
