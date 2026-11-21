@@ -111,6 +111,20 @@ class Utils:
         return fn
 
     @staticmethod
+    def strip_windows_extended_length_prefix(path: str) -> str:
+        """Turn ``\\\\?\\C:\\x`` into ``C:\\x`` and ``\\\\?\\UNC\\srv\\share`` into ``\\\\srv\\share``."""
+        if path.startswith("\\\\?\\UNC\\"):
+            return "\\\\" + path[8:]
+        if path.startswith("\\\\?\\"):
+            return path[4:]
+        return path
+
+    @staticmethod
+    def to_file_uri(path: str | Path) -> str:
+        """Build a ``file:`` URI for a local path, percent-encoded and valid on Windows and POSIX."""
+        return Path(Utils.strip_windows_extended_length_prefix(str(path))).absolute().as_uri()
+
+    @staticmethod
     def open_file_https_file(uri: str, token=None, **kwargs):
         user_agent = f"reqstool/{Utils.get_version()}"
 
@@ -124,9 +138,7 @@ class Utils:
         session.mount("file://", FileAdapter())
 
         if not (uri.startswith("https://")):
-            path: Path = Path(uri)
-
-            uri = "file://" + str(path.absolute())
+            uri = Utils.to_file_uri(uri)
 
         response = session.get(url=uri, headers=headers, allow_redirects=True, **kwargs)
 

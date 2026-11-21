@@ -1,6 +1,9 @@
 # Copyright © LFV
 
 
+from pathlib import PureWindowsPath
+from urllib.parse import urlparse
+
 import pytest
 
 from reqstool.common.exceptions import EnvVarInterpolationError
@@ -70,3 +73,46 @@ def test_interpolate_env_vars_leaves_bare_dollar_and_schema_directive_untouched(
 def test_interpolate_env_vars_noop_on_text_without_placeholders():
     text = "version: 1.0.0\nname: reqstool\n"
     assert Utils.interpolate_env_vars(text) == text
+
+
+# Issue #457: local files are read through requests-file, so the file: URI must be valid on Windows
+
+
+@pytest.mark.parametrize(
+    "path,expected",
+    [
+        ("\\\\?\\C:\\Users\\me\\requirements.yml", "C:\\Users\\me\\requirements.yml"),
+        ("\\\\?\\UNC\\server\\share\\requirements.yml", "\\\\server\\share\\requirements.yml"),
+        ("C:\\Users\\me\\requirements.yml", "C:\\Users\\me\\requirements.yml"),
+        ("/home/me/requirements.yml", "/home/me/requirements.yml"),
+    ],
+)
+def test_strip_windows_extended_length_prefix(path, expected):
+    assert Utils.strip_windows_extended_length_prefix(path) == expected
+
+
+@pytest.mark.parametrize("path", ["C:\\Users\\me\\requirements.yml", "\\\\?\\C:\\Users\\me\\requirements.yml"])
+def test_windows_path_becomes_hostless_file_uri(path):
+    # Mirrors Utils.to_file_uri with Windows path semantics, which cannot run on a POSIX host
+    uri = PureWindowsPath(Utils.strip_windows_extended_length_prefix(path)).as_uri()
+
+    assert uri == "file:///C:/Users/me/requirements.yml"
+    assert urlparse(uri).netloc == ""  # requests-file rejects URIs with a host component
+
+
+def test_open_file_https_file_reads_path_with_reserved_characters(tmp_path):
+    # "#" used to be sent unencoded and cut the path at the fragment
+    directory = tmp_path / "my project #1"
+    directory.mkdir()
+    (directory / "requirements.yml").write_text("hello")
+
+    response = Utils.open_file_https_file(str(directory / "requirements.yml"))
+
+    assert response.status_code == 200
+    assert response.text == "hello"
+
+
+def test_to_file_uri_resolves_relative_path(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    assert Utils.to_file_uri("requirements.yml") == (tmp_path / "requirements.yml").as_uri()
