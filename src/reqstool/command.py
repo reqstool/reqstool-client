@@ -147,7 +147,8 @@ class Command:
         assert isinstance(file_path, str)
         directory = os.path.dirname(os.path.abspath(file_path))
         os.makedirs(directory, exist_ok=True)
-        return open(file_path, "w")
+        # Reports contain non-ASCII characters (e.g. U+200B), which the Windows locale codec (cp1252) cannot encode.
+        return open(file_path, "w", encoding="utf-8")
 
     def _add_argument_output(self, argument_parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
         argument_parser.add_argument(
@@ -496,6 +497,10 @@ class Command:
             sort_by=[SortByOptions(s) for s in report_args.sort_by],
             format=format,
         )
+
+        if output is sys.stdout and (sys.stdout.encoding or "").lower().replace("-", "") != "utf8":
+            # Redirected output on Windows defaults to cp1252, which cannot encode the report.
+            sys.stdout.reconfigure(encoding="utf-8")
 
         output.write(result.result)
 
