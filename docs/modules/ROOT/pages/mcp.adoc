@@ -91,6 +91,45 @@ Returns a lightweight list of all manual verification results.
 
 *Returns:* array of `{ id, passed }`
 
+==== `search`
+
+Full-text search over requirement IDs, titles, descriptions and rationale, SVC IDs, titles,
+descriptions and instructions, and MVR comments. Backed by an SQLite FTS5 index built with the
+snapshot, so results always match the loaded data. Terms are ANDed; stems and prefixes match
+(`erase` finds _erased_ and _erasure_). Title matches outrank description and rationale matches.
+
+*Parameters:*
+
+[cols="1,1,3"]
+|===
+|Name |Type |Description
+
+|`query`
+|string
+|Free text. Punctuation is ignored; it is never interpreted as search syntax.
+
+|`kinds`
+|string[] (optional)
+|`requirement`, `svc`, `mvr`
+
+|`urn`
+|string (optional)
+|Restrict to one URN
+
+|`lifecycle_state`
+|string (optional)
+|`draft`, `effective`, `deprecated`, `obsolete`. Excludes MVRs, which have no lifecycle.
+
+|`limit`
+|integer (default 20, max 100)
+|Maximum hits
+|===
+
+*Returns:* `{ query, results: [{ kind, id, urn, title, lifecycle_state, snippet, completed }] }`.
+`completed` is present for requirements only, from the same verdict computation as `status`.
+`title` and `lifecycle_state` are omitted for MVRs. A `note` field appears if the Python build lacks
+FTS5 and results are unranked substring matches.
+
 ==== `list_annotations`
 
 Returns all `@Requirements` implementation annotations found in source code.

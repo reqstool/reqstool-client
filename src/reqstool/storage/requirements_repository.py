@@ -19,11 +19,24 @@ from reqstool.models.requirements import (
 from reqstool.models.svcs import VERIFICATIONPHASE, VERIFICATIONTYPES, SVCData
 from reqstool.models.test_data import TEST_RUN_STATUS, TestData
 from reqstool.storage.database import RequirementsDatabase
+from reqstool.storage.search_index import SearchHit, search as _search
 
 
 class RequirementsRepository:
     def __init__(self, db: RequirementsDatabase):
         self._db = db
+
+    # -- Search --
+
+    def search(
+        self,
+        query: str,
+        kinds: list[str] | None = None,
+        urn: str | None = None,
+        lifecycle_state: str | None = None,
+        limit: int = 20,
+    ) -> tuple[list[SearchHit], bool]:
+        return _search(self._db, query, kinds=kinds, urn=urn, lifecycle_state=lifecycle_state, limit=limit)
 
     # -- Metadata queries --
 
