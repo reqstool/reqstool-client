@@ -15,6 +15,7 @@ from reqstool.model_generators.combined_raw_datasets_generator import CombinedRa
 from reqstool.model_generators.parsing_config import ParsingConfig
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.database_filter_processor import DatabaseFilterProcessor
+from reqstool.storage.search_index import build_search_index
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,7 @@ class ProjectSession:
 
                 DatabaseFilterProcessor(db, crd.raw_datasets).apply_filters()
                 LifecycleValidator(RequirementsRepository(db))
+                build_search_index(db)
 
                 self._db = db
                 self._repo = RequirementsRepository(db)

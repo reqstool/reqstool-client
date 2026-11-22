@@ -36,6 +36,8 @@ jobs:
   build:
     needs: linting
     runs-on: ubuntu-latest
+    outputs:
+      python-minor: ${{ steps.python-minor.outputs.version }}
     steps:
       # Full history and tags: hatch-vcs derives the version from git state, so a
       # shallow clone would build the wrong number rather than fail.
@@ -50,6 +52,9 @@ jobs:
         uses: actions/setup-python@v7.1.0
         with:
           python-version: "3.13.18"
+      - name: Export Python minor version
+        id: python-minor
+        run: echo "version=$(python -c 'import sys; print("%d.%d" % sys.version_info[:2])')" >> "$GITHUB_OUTPUT"
       - name: Install dependencies
         # renovate: datasource=pypi depName=hatch
         run: pip install hatch==1.18.2
@@ -68,3 +73,74 @@ jobs:
         with:
           name: ${{ inputs.artifact-name || 'dist' }}
           path: dist/
+
+  # Installs the wheel built above (on Linux) on every supported OS and runs the CLI over the
+  # reqstool-regression fixtures, so platform-specific breakage (e.g. #457 on Windows) turns CI red.
+  smoke:
+    name: Smoke (${{ matrix.os }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.ref || github.ref }}
+      - name: Check out reqstool-regression fixtures
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          repository: reqstool/reqstool-regression
+          path: regression
+      - name: Set up Python
+        uses: actions/setup-python@v7.1.0
+        with:
+          # major.minor of the build job's Python: a patch version may be missing on macOS/Windows runners
+          python-version: ${{ needs.build.outputs.python-minor }}
+      - name: Download built wheel
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: ${{ inputs.artifact-name || 'dist' }}
+          path: dist
+      - name: Install wheel
+        run: pip install dist/*.whl
+      - name: reqstool --help
+        run: reqstool -h
+      - name: Run fixtures
+        # Run from outside the checkout so the installed package is the one under test.
+        run: python .github/scripts/smoke_regression.py regression "$RUNNER_TEMP/smoke-out"
+        working-directory: ${{ github.workspace }}
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: smoke-${{ matrix.os }}-${{ inputs.artifact-name || 'dist' }}
+          path: ${{ runner.temp }}/smoke-out
+
+  smoke-compare:
+    name: Smoke (outputs identical across OSes)
+    needs: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download outputs
+        uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: smoke-*-${{ inputs.artifact-name || 'dist' }}
+          path: out
+      - name: Compare macOS and Windows against Linux
+        run: |
+          status=0
+          for os in macos-latest windows-latest; do
+            echo "::group::diff ubuntu-latest vs $os"
+            diff -ru "out/smoke-ubuntu-latest-${{ inputs.artifact-name || 'dist' }}" "out/smoke-$os-${{ inputs.artifact-name || 'dist' }}" | head -100 || true
+            diff -rq "out/smoke-ubuntu-latest-${{ inputs.artifact-name || 'dist' }}" "out/smoke-$os-${{ inputs.artifact-name || 'dist' }}" || status=1
+            echo "::endgroup::"
+          done
+          exit $status

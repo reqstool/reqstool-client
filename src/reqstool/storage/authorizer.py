@@ -17,6 +17,13 @@ _ALLOWED_TABLES = frozenset(
         "parsing_graph",
         "urn_metadata",
         "metadata",
+        # FTS5 search index and its shadow tables (see search_index.py)
+        "search_fts",
+        "search_fts_data",
+        "search_fts_idx",
+        "search_fts_content",
+        "search_fts_docsize",
+        "search_fts_config",
     }
 )
 
