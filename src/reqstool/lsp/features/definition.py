@@ -7,6 +7,7 @@ import re
 
 from lsprotocol import types
 
+from reqstool.common.utils import Utils
 from reqstool.lsp.annotation_parser import annotation_at_position
 from reqstool.lsp.project_state import ProjectState
 
@@ -210,5 +211,4 @@ def _id_at_yaml_position(text: str, position: types.Position) -> str | None:
 
 def _path_to_uri(path: str) -> str:
     """Convert a file path to a file URI."""
-    abs_path = os.path.abspath(path)
-    return "file://" + abs_path
+    return Utils.to_file_uri(path)
