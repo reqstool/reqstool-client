@@ -375,9 +375,10 @@ class CombinedRawDatasetsGenerator:
         if not isinstance(location, LocalLocation):
             return SnapshotFingerprint()
 
-        # actual_tmp_path is a symlink into the temp tree; the temp tree is gone by the time
+        # actual_tmp_path is a link into the temp tree; the temp tree is gone by the time
         # staleness is checked, so record paths under the real project directory instead.
-        real_root = os.readlink(actual_tmp_path)
+        # Not os.readlink: on Windows it returns a \\?\ prefixed path, and a junction may be used.
+        real_root = os.path.abspath(location.path)
 
         paths = requirements_indata.requirements_indata_paths
         stamps = [
