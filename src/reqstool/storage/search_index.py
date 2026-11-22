@@ -129,7 +129,7 @@ def search(
             + f" ORDER BY bm25({SEARCH_TABLE}, {_BM25_WEIGHTS}), {_KIND_ORDER}, id_only LIMIT ?"
         )
         rows = conn.execute(sql, [_fts_query(tokens), *params, limit]).fetchall()
-        return [SearchHit(r["urn"], r["id_only"], r["kind"], r["snippet"]) for r in rows], True
+        return [SearchHit(r["urn"], r["id_only"], r["kind"], _one_line(r["snippet"])) for r in rows], True
 
     return _like_search(conn, tokens, where, params, limit), False
 
@@ -148,15 +148,21 @@ def _like_search(conn, tokens, where, params, limit) -> list[SearchHit]:
         + "".join(f" AND {w}" for w in where)
         + f" ORDER BY {_KIND_ORDER}, id LIMIT ?"
     )
-    rows = conn.execute(sql, [f"%{t}%" for t in tokens] + params + [limit]).fetchall()
+    rows = conn.execute(sql, [f"%{_like_escape(t)}%" for t in tokens] + params + [limit]).fetchall()
     return [SearchHit(r["urn"], r["id"], r["kind"], _snippet(r["text"], tokens[0])) for r in rows]
+
+
+def _like_escape(token: str) -> str:
+    """Make `%`, `_` and the escape character itself literal in a LIKE pattern (see ESCAPE '\\')."""
+    return token.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _one_line(text: str) -> str:
+    return " ".join(text.split())
 
 
 def _snippet(text: str, token: str, width: int = 60) -> str:
     i = text.lower().find(token.lower())
     start = max(0, i - width // 2)
-    return (
-        ("…" if start else "")
-        + text[start : start + width]  # noqa: E203.replace("\n", " ")
-        + ("…" if len(text) > start + width else "")
-    )
+    end = start + width
+    return ("…" if start else "") + _one_line(text[start:end]) + ("…" if len(text) > end else "")

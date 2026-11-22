@@ -4,6 +4,7 @@ import sqlite3
 
 import pytest
 
+from reqstool.storage import search_index
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.search_index import build_search_index, search
 
@@ -79,4 +80,52 @@ def test_falls_back_to_like_without_index():
     _req(database, "a", "REQ_001", "Right to erasure", "Data is erased.")
     hits, ranked = search(database, "erasure")
     assert not ranked and [h.id for h in hits] == ["REQ_001"]
+    database.close()
+
+
+# -- snippets, LIKE escaping, missing FTS5 --
+
+
+def _multiline_db(index: bool):
+    database = RequirementsDatabase()
+    _req(database, "a", "REQ_001", "Erasure", "First line\nsecond line erased here\r\nthird")
+    database.connection.execute(
+        "INSERT INTO mvrs (urn, id, passed, comment) VALUES ('a', 'MVR_001', 1, 'multi\nline erased')"
+    )
+    if index:
+        assert build_search_index(database)
+    return database
+
+
+@pytest.mark.parametrize("index", [True, False], ids=["fts5", "like-fallback"])
+def test_snippets_are_single_line(index):
+    database = _multiline_db(index)
+    hits, ranked = search(database, "erased")
+    database.close()
+
+    assert ranked is index
+    assert {h.id for h in hits} == {"REQ_001", "MVR_001"}
+    assert all("\n" not in h.snippet and "\r" not in h.snippet for h in hits)
+
+
+def test_like_fallback_treats_underscore_and_percent_literally():
+    database = RequirementsDatabase()
+    _req(database, "a", "REQ_PRIV_001", "Title", "text")
+    _req(database, "a", "REQ_PRIVXYZ", "Other", "100% sure")
+    hits, ranked = search(database, "REQ_PRIV_00_")
+    assert not ranked and hits == []
+    assert {h.id for h in search(database, "REQ_PRIV")[0]} == {"REQ_PRIV_001", "REQ_PRIVXYZ"}
+    database.close()
+
+
+def test_without_fts5_build_reports_false_and_keeps_the_authorizer(monkeypatch):
+    monkeypatch.setattr(search_index, "_CREATE", "CREATE VIRTUAL TABLE search_fts USING no_such_module(x)")
+    database = RequirementsDatabase()
+    _req(database, "a", "REQ_001", "Right to erasure", "Data is erased.")
+
+    assert build_search_index(database) is False
+    hits, ranked = search(database, "erasure")
+    assert not ranked and [h.id for h in hits] == ["REQ_001"]
+    with pytest.raises(sqlite3.DatabaseError):
+        database.connection.execute("SELECT * FROM sqlite_master")
     database.close()
