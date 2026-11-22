@@ -96,3 +96,27 @@ def test_testdata_model_generator(local_testdata_resources_rootdir_w_path):
     )
 
     assert tdmg is not None
+
+
+@pytest.mark.parametrize(
+    "testcase_body, expected",
+    [
+        ("", TEST_RUN_STATUS.PASSED),
+        ("<skipped/>", TEST_RUN_STATUS.SKIPPED),
+        ('<failure message="assert False">assert False</failure>', TEST_RUN_STATUS.FAILED),
+        ('<error message="failed on setup">RuntimeError: fixture failed</error>', TEST_RUN_STATUS.FAILED),
+        ('<error message="failed on teardown">RuntimeError</error>', TEST_RUN_STATUS.FAILED),
+    ],
+)
+def test_testcase_status_mapping(tmp_path, testcase_body, expected):
+    junit = tmp_path / "junit.xml"
+    junit.write_text(
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<testsuites><testsuite name="pytest" tests="1">'
+        f'<testcase classname="tests.test_example" name="test_example" time="0.001">{testcase_body}</testcase>'
+        "</testsuite></testsuites>"
+    )
+
+    tests = TestDataModelGenerator(test_result_files=[junit], urn="test").model.tests
+
+    assert tests[UrnId(urn="test", id="tests.test_example.test_example")].status == expected
