@@ -68,7 +68,6 @@ jobs:
     needs: build
     uses: reqstool/.github/.github/workflows/common-reqstool-verify.yml@ci/385-shared-python-build # SPIKE: pin to release SHA
     with:
-      ref: ${{ inputs.ref }}
       build-artifact: ${{ inputs.artifact-name || 'dist' }}-build
 
   # Installs the wheel built above (on Linux) on every supported OS and runs the CLI over the
