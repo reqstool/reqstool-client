@@ -1,6 +1,7 @@
 # Copyright © LFV
 
 import os
+import sys
 
 from reqstool_python_decorators.decorators.decorators import Requirements
 
@@ -15,18 +16,20 @@ class LocalLocation(LocationInterface):
         return make_safe_tmpdir_suffix("local", f"file://{os.path.abspath(self.path)}")
 
     def _make_available_on_localdisk(self, dst_path: str):
-        # dst_directory already exists but should a symlimk, remove
+        # dst_directory already exists but should be a symlink, remove
         os.rmdir(dst_path)
 
         src_path = os.path.abspath(self.path)
 
-        dst_path_parent_directory, dst_path_last_segment = os.path.split(dst_path)
+        try:
+            os.symlink(src_path, dst_path, target_is_directory=True)
+        except OSError:
+            # Creating a symlink on Windows requires admin rights or Developer Mode.
+            # A directory junction needs neither and behaves the same for local directories.
+            if sys.platform != "win32":
+                raise
+            import _winapi
 
-        dst_dir_fd = os.open(dst_path_parent_directory, os.O_RDONLY)
-
-        symlink_name = str(dst_path_last_segment)  # Name of the symlink to be created
-        os.symlink(src_path, symlink_name, dir_fd=dst_dir_fd, target_is_directory=True)
-
-        os.close(dst_dir_fd)
+            _winapi.CreateJunction(src_path, str(dst_path))
 
         return dst_path
