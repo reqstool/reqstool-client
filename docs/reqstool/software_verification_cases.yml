@@ -158,6 +158,12 @@ cases:
     description: "GIVEN no referential errors and no coverage gaps WHEN validate runs THEN it reports all checks passed and exits successfully"
     verification: automated-test
     revision: "0.11.0"
+  - id: SVC_VALIDATE_0006
+    requirement_ids: ["VALIDATE_0006"]
+    title: "Dangling requirement references reported"
+    description: "GIVEN a requirement whose references name a non-existent requirement WHEN validate runs THEN a warning is reported, and WHEN strict mode is enabled THEN validation fails"
+    verification: automated-test
+    revision: "1.1.0"
 
   # --- enrich ---
   - id: SVC_ENRICH_0001
