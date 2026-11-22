@@ -80,6 +80,8 @@ def main() -> int:
             print(f"{key:45} exit={p.returncode}")
             if not out.strip():
                 empty.append(key)
+                lines = [line for line in normalise(err).splitlines() if line.strip()]
+                print(f"    no output; last stderr line: {lines[-1] if lines else '(none)'}")
     if empty:
         print(f"No output from: {', '.join(empty)}", file=sys.stderr)
     return 1 if empty else 0
