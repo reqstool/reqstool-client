@@ -80,9 +80,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     env:
-      # Minor version only: the patch pinned for the build job is not available on every runner image
-      # (3.13.18 was missing on macOS arm64 and Windows 2025). Kept out of `with:` on purpose -- Renovate
-      # pins a literal `python-version:` to an exact patch (#503), but does not touch this value.
+      # In env, not `with:`, so Renovate does not pin it to a patch version the macOS/Windows runners lack.
       SMOKE_PYTHON_VERSION: "3.13"
     defaults:
       run:
