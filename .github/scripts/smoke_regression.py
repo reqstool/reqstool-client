@@ -8,6 +8,7 @@ separate job diffs them against the Linux run. Exits non-zero only if the CLI pr
 """
 
 import json
+import locale
 import re
 import subprocess
 import sys
@@ -21,6 +22,17 @@ COMMANDS = {
     "report-markdown": ["report", "--format", "markdown"],
     "export": ["export"],
 }
+
+
+def decode(raw: bytes) -> str:
+    """Decode CLI output as the user would see it: UTF-8, else the console/locale code page.
+
+    On Windows the CLI writes redirected ``status`` output in cp1252 (``·`` is 0xB7), while ``report`` is UTF-8.
+    """
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode(locale.getpreferredencoding(False), errors="replace")
 
 
 def normalise(text: str) -> str:
@@ -59,13 +71,14 @@ def main() -> int:
                 "-p",
                 str(regression / "fixtures" / fixture),
             ]
-            p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+            p = subprocess.run(cmd, capture_output=True)
+            out, err = decode(p.stdout), decode(p.stderr)
             key = f"{fixture.replace('/', '_')}-{name}"
-            stdout = normalise_export(p.stdout) if name == "export" else normalise(p.stdout)
-            body = f"{stdout}\n--- stderr ---\n{normalise(p.stderr)}\nexit={p.returncode}\n"
+            stdout = normalise_export(out) if name == "export" else normalise(out)
+            body = f"{stdout}\n--- stderr ---\n{normalise(err)}\nexit={p.returncode}\n"
             (out_dir / f"{key}.txt").write_text(body, encoding="utf-8", newline="\n")
             print(f"{key:45} exit={p.returncode}")
-            if not p.stdout.strip():
+            if not out.strip():
                 empty.append(key)
     if empty:
         print(f"No output from: {', '.join(empty)}", file=sys.stderr)
