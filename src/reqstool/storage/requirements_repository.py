@@ -105,6 +105,20 @@ class RequirementsRepository:
             result[urn_id] = self._row_to_requirement_data(row)
         return result
 
+    def get_dangling_requirement_references(self) -> list[tuple[UrnId, UrnId]]:
+        """Return ``(referencing requirement, missing target)`` pairs for every
+        ``references.requirement_ids`` entry whose target is not a requirement in the database."""
+        rows = self._db.connection.execute(
+            "SELECT rr.req_urn, rr.req_id, rr.ref_req_urn, rr.ref_req_id"
+            " FROM requirement_references rr"
+            " LEFT JOIN requirements t ON t.urn = rr.ref_req_urn AND t.id = rr.ref_req_id"
+            " WHERE t.id IS NULL"
+            " ORDER BY rr.req_urn, rr.req_id, rr.ref_req_urn, rr.ref_req_id"
+        ).fetchall()
+        return [
+            (UrnId(urn=r["req_urn"], id=r["req_id"]), UrnId(urn=r["ref_req_urn"], id=r["ref_req_id"])) for r in rows
+        ]
+
     def get_all_svcs(self, urn: str | None = None, lifecycle_state: str | None = None) -> dict[UrnId, SVCData]:
         clauses: list[str] = []
         args: list = []

@@ -136,8 +136,9 @@ Checks performed:
 * Every requirement has at least one SVC defined.
 * Every manual SVC has at least one MVR defined.
 * All SVC/MVR/annotation cross-references point to existing IDs (referential integrity via `SemanticValidator`).
+* Every `references.requirement_ids` entry on a requirement points to an existing requirement (reported as a warning; it will become an error in the next major version).
 
-Referential errors are always fatal (exit 1). Coverage gaps are warnings by default; use `--strict` to promote them to errors (CI gate for spec completeness).
+Referential errors are always fatal (exit 1). Coverage gaps and dangling requirement references are warnings by default; use `--strict` to promote them to errors (CI gate for spec completeness).
 
 *Usage:*
 [source,bash]

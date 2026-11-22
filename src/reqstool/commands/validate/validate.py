@@ -10,7 +10,7 @@ from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
 
-@Requirements("VALIDATE_0003", "VALIDATE_0004", "VALIDATE_0005")
+@Requirements("VALIDATE_0003", "VALIDATE_0004", "VALIDATE_0005", "VALIDATE_0006")
 class ValidateCommand:
     """Validate spec completeness: every requirement has ≥1 SVC; every manual SVC has an MVR.
 
@@ -33,7 +33,7 @@ class ValidateCommand:
             repo = RequirementsRepository(db)
             initial_urn = repo.get_initial_urn()
             ref_errors = [e.msg.strip() for e in holder.get_errors()]
-            coverage_warnings = self._check_coverage(repo)
+            coverage_warnings = self._check_coverage(repo) + self._check_dangling_references(repo)
 
         lines = []
         lines.append(f"Validating reqstool setup · {initial_urn}\n")
@@ -87,3 +87,10 @@ class ValidateCommand:
                     warnings.append(f"{svc_uid}    {svc.verification.value} — no MVR defined")
 
         return warnings
+
+    @Requirements("VALIDATE_0006")
+    def _check_dangling_references(self, repo: RequirementsRepository) -> list[str]:
+        return [
+            f"{src}    references non-existing requirement {target}"
+            for src, target in repo.get_dangling_requirement_references()
+        ]

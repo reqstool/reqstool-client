@@ -37,3 +37,9 @@ The system SHALL implement VALIDATE_0005.
 
 #### Scenario: SVC_VALIDATE_0005
 The system SHALL pass SVC_VALIDATE_0005.
+
+### Requirement: VALIDATE_0006
+The system SHALL implement VALIDATE_0006.
+
+#### Scenario: SVC_VALIDATE_0006
+The system SHALL pass SVC_VALIDATE_0006.

@@ -121,3 +121,9 @@ def test_id_at_yaml_position_out_of_range():
 def test_path_to_uri():
     uri = _path_to_uri("/home/user/project/requirements.yml")
     assert uri == "file:///home/user/project/requirements.yml"
+
+
+def test_path_to_uri_percent_encodes_reserved_characters():
+    # "#" and spaces used to be emitted raw, so editors read the rest of the path as a fragment
+    uri = _path_to_uri("/home/user/my project #1/requirements.yml")
+    assert uri == "file:///home/user/my%20project%20%231/requirements.yml"

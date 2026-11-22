@@ -485,3 +485,54 @@ def test_command_status_returns_nonzero_when_enforcing_and_incomplete():
         mock_status.return_value.result = ("STATUS-BODY", 2)
         exit_code = Command().command_status(args)
     assert exit_code == 0
+
+
+# ---------------------------------------------------------------------------
+# Report output encoding (Windows default locale is cp1252)
+# ---------------------------------------------------------------------------
+
+_FIXTURE = "tests/resources/test_data/data/local/test_standard/baseline/ms-001"
+_ZERO_WIDTH_SPACE = "​"  # emitted by the report templates; not encodable in cp1252
+
+
+def _run_report_with_legacy_locale(*report_args, output=None):
+    import os
+    import subprocess
+
+    env = {**os.environ, "PYTHONUTF8": "0", "PYTHONCOERCECLOCALE": "0", "LC_ALL": "C", "LANG": "C"}
+    env.pop("PYTHONIOENCODING", None)
+    return subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "reqstool.command",
+            "report",
+            *report_args,
+            "local",
+            "-p",
+            _FIXTURE,
+            *(["-o", str(output)] if output else []),
+        ],
+        capture_output=True,
+        env=env,
+        cwd=os.getcwd(),
+    )
+
+
+@SVCs("SVC_REPORT_0005")
+@pytest.mark.parametrize("fmt", ["asciidoc", "markdown"])
+def test_report_to_file_is_utf8_under_legacy_locale(tmp_path, fmt):
+    out = tmp_path / f"report.{fmt}"
+
+    result = _run_report_with_legacy_locale("--format", fmt, output=out)
+
+    assert result.returncode == 0, result.stderr.decode(errors="replace")
+    assert _ZERO_WIDTH_SPACE in out.read_text(encoding="utf-8")
+
+
+@SVCs("SVC_REPORT_0005")
+def test_report_to_stdout_is_utf8_under_legacy_locale():
+    result = _run_report_with_legacy_locale("--format", "asciidoc")
+
+    assert result.returncode == 0, result.stderr.decode(errors="replace")
+    assert _ZERO_WIDTH_SPACE in result.stdout.decode("utf-8")
