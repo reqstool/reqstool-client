@@ -392,12 +392,16 @@ def _publish_all_diagnostics(ls: ReqstoolLanguageServer) -> None:
         _publish_diagnostics_for_document(ls, uri)
 
 
-def start_server(tcp: bool = False, host: str = "127.0.0.1", port: int = 2087, log_file: str | None = None) -> None:
-    """Entry point for `reqstool lsp` command."""
+def _log_handlers(log_file: str | None) -> list[logging.Handler]:
     handlers: list[logging.Handler] = [logging.StreamHandler()]
     if log_file:
-        handlers.append(logging.FileHandler(log_file))
-    logging.basicConfig(level=logging.INFO, handlers=handlers, force=True)
+        handlers.append(logging.FileHandler(log_file, encoding="utf-8"))
+    return handlers
+
+
+def start_server(tcp: bool = False, host: str = "127.0.0.1", port: int = 2087, log_file: str | None = None) -> None:
+    """Entry point for `reqstool lsp` command."""
+    logging.basicConfig(level=logging.INFO, handlers=_log_handlers(log_file), force=True)
     try:
         if tcp:
             logger.info("Starting reqstool LSP server (TCP %s:%d)", host, port)

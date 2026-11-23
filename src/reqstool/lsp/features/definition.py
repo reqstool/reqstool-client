@@ -130,7 +130,7 @@ def find_id_in_yaml(yaml_file: str, raw_id: str) -> list[types.Location]:
         return []
 
     try:
-        with open(yaml_file) as f:
+        with open(yaml_file, encoding="utf-8") as f:
             lines = f.readlines()
     except OSError:
         return []
@@ -160,7 +160,7 @@ def _find_reference_in_yaml(yaml_file: str, raw_id: str) -> list[types.Location]
         return []
 
     try:
-        with open(yaml_file) as f:
+        with open(yaml_file, encoding="utf-8") as f:
             lines = f.readlines()
     except OSError:
         return []

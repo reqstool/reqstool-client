@@ -22,7 +22,7 @@ class JsonSchemaItem:
     schema_version = schema_module.__name__.split(".")[-1]
 
     def __post_init__(self):
-        self.schema = json.loads(files(self.schema_module).joinpath(self.short_uri).read_text())
+        self.schema = json.loads(files(self.schema_module).joinpath(self.short_uri).read_text(encoding="utf-8"))
 
 
 @unique

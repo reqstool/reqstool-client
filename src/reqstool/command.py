@@ -498,10 +498,6 @@ class Command:
             format=format,
         )
 
-        if output is sys.stdout and (sys.stdout.encoding or "").lower().replace("-", "") != "utf8":
-            # Redirected output on Windows defaults to cp1252, which cannot encode the report.
-            sys.stdout.reconfigure(encoding="utf-8")
-
         output.write(result.result)
 
     @Requirements("EXPORT_0004", "EXPORT_0005")
@@ -676,7 +672,22 @@ class Command:
         self.__parser.print_help(sys.stderr)
 
 
+def _use_utf8_standard_streams() -> None:
+    """Read and write the standard streams as UTF-8 whatever the platform default is.
+
+    Redirected stdio on Windows uses the ANSI code page (cp1252), which cannot encode the status symbols and report
+    characters reqstool writes, nor decode arbitrary UTF-8 on stdin. Streams that cannot be reconfigured (for example
+    ones replaced by a test harness) are left alone.
+    """
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        if (getattr(stream, "encoding", None) or "").lower().replace("-", "") != "utf8":
+            reconfigure = getattr(stream, "reconfigure", None)
+            if reconfigure is not None:
+                reconfigure(encoding="utf-8")
+
+
 def main():  # noqa: C901
+    _use_utf8_standard_streams()
     command = Command()
     args = command.get_arguments()
 

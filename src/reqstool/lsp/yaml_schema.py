@@ -23,7 +23,7 @@ YAML_TO_SCHEMA: dict[str, str] = {
 def load_schema(schema_name: str) -> dict | None:
     schema_path = os.path.join(SCHEMA_DIR, schema_name)
     try:
-        with open(schema_path) as f:
+        with open(schema_path, encoding="utf-8") as f:
             return json.load(f)
     except (OSError, json.JSONDecodeError) as e:
         logger.warning("Failed to load schema %s: %s", schema_name, e)
