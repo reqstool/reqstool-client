@@ -67,7 +67,7 @@ def _read_ignore_patterns(dirpath: str) -> list[str] | None:
     if not os.path.exists(ignore_file):
         return None
     try:
-        with open(ignore_file) as f:
+        with open(ignore_file, encoding="utf-8") as f:
             patterns = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
     except OSError:
         return None
@@ -101,7 +101,7 @@ def _quick_parse(req_dir: str) -> DiscoveredProject | None:
     req_file = os.path.join(req_dir, "requirements.yml")
     yaml = YAML()
     try:
-        with open(req_file) as f:
+        with open(req_file, encoding="utf-8") as f:
             data = yaml.load(f)
     except Exception as e:
         logger.warning("Failed to parse %s: %s", req_file, e)
