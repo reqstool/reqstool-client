@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+inheritance: true
+
+reviews:
+  path_filters:
+    - "!tests/resources/**"
+
+  path_instructions:
+    - path: "src/reqstool/**/*.py"
+      instructions: |
+        Flag a second derivation of the requirement "complete" verdict outside
+        StatisticsService, an `if variant == ...` gate in ingestion, an MCP tool
+        that captures `session.repo` instead of resolving it per request, and
+        LSP lookups that pass a bare `entity.id.id` instead of routing by urn.
+    - path: "src/reqstool/storage/**"
+      instructions: |
+        Data flows one way: parse, populate, filter, read-only queries. Commands
+        never mutate the database, and implementation-child requirements are
+        removed by DatabaseFilterProcessor, not at ingest.
+    - path: "tests/**"
+      instructions: |
+        Tests must not be weakened or deleted to make a change pass.
+    - path: "src/reqstool/**/server.py"
+      instructions: |
+        An LSP feature added or removed here needs matching edits to
+        docs/modules/ROOT/pages/lsp.adoc and
+        docs/modules/ROOT/lsp/reqstool-lsp.openrpc.json.
