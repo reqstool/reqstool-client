@@ -121,7 +121,9 @@ def test_uri_to_path_windows_drive_letter(monkeypatch):
     assert uri_to_path("file:///C:/Users/me/project") == "C:/Users/me/project"
 
 
-def test_uri_to_path_keeps_drive_like_directory_on_posix():
+def test_uri_to_path_keeps_drive_like_directory_on_posix(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "linux")
+
     assert uri_to_path("file:///c:/data") == "/c:/data"
 
 
