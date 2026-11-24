@@ -1,6 +1,8 @@
 # Copyright © LFV
 
 import os
+import sys
+from types import SimpleNamespace
 
 from reqstool.lsp.root_discovery import DiscoveredProject, discover_root_projects, _find_roots
 from reqstool.lsp.workspace_manager import WorkspaceManager, uri_to_path
@@ -110,6 +112,34 @@ def test_uri_to_path():
 
 def test_uri_to_path_encoded():
     assert uri_to_path("file:///home/user/my%20project") == "/home/user/my project"
+
+
+def test_uri_to_path_windows_drive_letter(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    assert uri_to_path("file:///c%3A/Users/me/my%20project") == "c:/Users/me/my project"
+    assert uri_to_path("file:///C:/Users/me/project") == "C:/Users/me/project"
+
+
+def test_uri_to_path_keeps_drive_like_directory_on_posix():
+    assert uri_to_path("file:///c:/data") == "/c:/data"
+
+
+def test_project_for_file_ignores_path_case_on_case_insensitive_filesystems(monkeypatch):
+    monkeypatch.setattr(os.path, "normcase", str.lower)
+    manager = WorkspaceManager()
+    project = SimpleNamespace(reqstool_path="/Ws/Proj/docs/reqstool")
+    manager._folder_projects["file:///WS"] = [project]
+
+    assert manager.project_for_file("file:///ws/proj/docs/reqstool/requirements.yml") is project
+    assert manager.project_for_file("file:///ws/proj/src/Main.java") is project
+
+
+def test_project_for_file_does_not_match_sibling_with_same_prefix():
+    manager = WorkspaceManager()
+    manager._folder_projects["file:///ws/proj"] = [SimpleNamespace(reqstool_path="/ws/proj/docs")]
+
+    assert manager.project_for_file("file:///ws/proj-other/docs/requirements.yml") is None
 
 
 def test_workspace_manager_add_folder(local_testdata_resources_rootdir_w_path):

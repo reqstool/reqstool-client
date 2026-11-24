@@ -128,10 +128,10 @@ class ProjectState(ProjectSession):
         return urn_paths.get(file_type)
 
     def _urn_for_yaml_path(self, file_path: str, file_type: str) -> str | None:
-        norm_target = os.path.normpath(file_path)
+        norm_target = os.path.normcase(os.path.normpath(file_path))
         for urn, paths in self._urn_source_paths.items():
             stored = paths.get(file_type)
-            if stored is not None and os.path.normpath(stored) == norm_target:
+            if stored is not None and os.path.normcase(os.path.normpath(stored)) == norm_target:
                 return urn
         return None
 

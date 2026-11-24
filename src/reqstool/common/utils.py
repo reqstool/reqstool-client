@@ -4,11 +4,13 @@ import logging
 import os
 import re
 import tarfile
+import sys
 import tempfile
 from importlib.metadata import version
 from itertools import chain
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
+from urllib.parse import unquote, urlparse
 from zipfile import ZipFile
 
 import expandvars
@@ -123,6 +125,16 @@ class Utils:
     def to_file_uri(path: str | Path) -> str:
         """Build a ``file:`` URI for a local path, percent-encoded and valid on Windows and POSIX."""
         return Path(Utils.strip_windows_extended_length_prefix(str(path))).absolute().as_uri()
+
+    @staticmethod
+    def uri_to_path(uri: str) -> str:
+        parsed = urlparse(uri)
+        if parsed.scheme != "file":
+            return uri
+        path = unquote(parsed.path)
+        if sys.platform == "win32" and re.match(r"/[A-Za-z]:", path):
+            return path[1:]
+        return path
 
     @staticmethod
     def open_file_https_file(uri: str, token=None, **kwargs):
