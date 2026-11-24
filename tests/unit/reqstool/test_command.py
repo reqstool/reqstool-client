@@ -536,3 +536,81 @@ def test_report_to_stdout_is_utf8_under_legacy_locale():
 
     assert result.returncode == 0, result.stderr.decode(errors="replace")
     assert _ZERO_WIDTH_SPACE in result.stdout.decode("utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Standard streams are UTF-8 for every command (redirected Windows stdio is cp1252)
+# ---------------------------------------------------------------------------
+
+
+def _run_cli_with_cp1252_stdio(*cli_args, stdin=None):
+    """Run the CLI the way a redirected Windows console does: all three std streams strictly cp1252."""
+    import os
+    import subprocess
+
+    env = {**os.environ, "PYTHONUTF8": "0", "PYTHONIOENCODING": "cp1252"}
+    return subprocess.run(
+        [sys.executable, "-m", "reqstool.command", *cli_args],
+        capture_output=True,
+        input=stdin,
+        env=env,
+        cwd=os.getcwd(),
+    )
+
+
+def test_validate_to_stdout_is_utf8_with_cp1252_stdio():
+    result = _run_cli_with_cp1252_stdio("validate", "local", "-p", _FIXTURE)
+
+    assert result.returncode == 0, result.stderr.decode(errors="replace")
+    assert "⚠" in result.stdout.decode("utf-8")  # U+26A0, not encodable in cp1252
+
+
+@pytest.mark.parametrize(
+    "cli_args",
+    [
+        ("status",),
+        ("report", "--format", "asciidoc"),
+        ("report", "--format", "markdown"),
+        ("export",),
+    ],
+)
+def test_other_commands_to_stdout_do_not_depend_on_stdio_encoding(cli_args):
+    result = _run_cli_with_cp1252_stdio(*cli_args, "local", "-p", _FIXTURE)
+
+    assert b"UnicodeEncodeError" not in result.stderr, result.stderr.decode(errors="replace")
+    assert result.stdout.strip()
+
+
+def test_enrich_reads_stdin_as_utf8_with_cp1252_stdio():
+    # "Á" is C3 81 in UTF-8; 0x81 is undefined in cp1252, so decoding stdin with that codec fails.
+    text = "Á – ✓\n".encode("utf-8")
+
+    result = _run_cli_with_cp1252_stdio("enrich", "--preset", "openspec:spec", "local", "-p", _FIXTURE, stdin=text)
+
+    assert result.returncode == 0, result.stderr.decode(errors="replace")
+    assert result.stdout == text
+
+
+def test_use_utf8_standard_streams_reconfigures_legacy_streams(monkeypatch):
+    from reqstool.command import _use_utf8_standard_streams
+
+    streams = {name: io.TextIOWrapper(io.BytesIO(), encoding="cp1252") for name in ("stdin", "stdout", "stderr")}
+    for name, stream in streams.items():
+        monkeypatch.setattr(sys, name, stream)
+
+    _use_utf8_standard_streams()
+
+    assert {name: stream.encoding for name, stream in streams.items()} == {
+        "stdin": "utf-8",
+        "stdout": "utf-8",
+        "stderr": "utf-8",
+    }
+
+
+def test_use_utf8_standard_streams_tolerates_streams_that_cannot_be_reconfigured(monkeypatch):
+    from reqstool.command import _use_utf8_standard_streams
+
+    for name in ("stdin", "stdout", "stderr"):
+        monkeypatch.setattr(sys, name, io.StringIO())
+
+    _use_utf8_standard_streams()  # must not raise

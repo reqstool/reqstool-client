@@ -29,45 +29,45 @@ permissions:
   contents: read
 
 jobs:
-  linting:
-    name: Reuse linting job
-    uses: ./.github/workflows/lint.yml
+  lint:
+    uses: reqstool/.github/.github/workflows/python-lint.yml@91cd368066d5458b5d46bdf34c4d8ca483f6633f # 1.2.2
 
-  build:
-    needs: linting
+  schema-checks:
+    name: Schema and codegen checks
     runs-on: ubuntu-latest
     steps:
-      # Full history and tags: hatch-vcs derives the version from git state, so a
-      # shallow clone would build the wrong number rather than fail.
       - name: Check out source repository
         uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
-          fetch-tags: true
-          ref: ${{ inputs.ref || github.ref }}
       - name: Set up Python
         uses: actions/setup-python@v7.1.0
         with:
           python-version: "3.13.18"
-      - name: Install dependencies
+      - name: Install pip package(s)
         # renovate: datasource=pypi depName=hatch
         run: pip install hatch==1.18.2
-      - name: Run unit tests
-        run: hatch run dev:pytest --junitxml=build/junit.xml --cov=reqstool --cov-report=html -o junit_family=xunit2
-      - name: Build project
-        run: hatch build
-      - name: Test reqstool-client from build by installing and running
-        run: |
-          WHL_FILE=$(ls dist/*.whl)
-          pip install $WHL_FILE
-          reqstool status local -p docs/reqstool
-      # Upload artifacts for later use
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: ${{ inputs.artifact-name || 'dist' }}
-          path: dist/
+      - name: Install pip package check-jsonschema
+        # renovate: datasource=pypi depName=check-jsonschema
+        run: pip install check-jsonschema==0.39.0
+      - name: Validate JSON Schemas
+        run: check-jsonschema --verbose --schemafile "https://json-schema.org/draft/2020-12/schema" src/reqstool/resources/schemas/*/*
+      - name: Validate generated Pydantic models are up to date
+        run: hatch run dev:codegen-check
+
+  build:
+    needs: [lint, schema-checks]
+    uses: reqstool/.github/.github/workflows/python-build-hatch.yml@91cd368066d5458b5d46bdf34c4d8ca483f6633f # 1.2.2
+    with:
+      coverage-source: reqstool
+      ref: ${{ inputs.ref }}
+      artifact-name: ${{ inputs.artifact-name || 'dist' }}
+
+  reqstool:
+    needs: build
+    uses: reqstool/.github/.github/workflows/common-reqstool-verify.yml@91cd368066d5458b5d46bdf34c4d8ca483f6633f # 1.2.2
+    with:
+      build-artifact: ${{ inputs.artifact-name || 'dist' }}-build
 
   # Installs the wheel built above (on Linux) on every supported OS and runs the CLI over the
   # reqstool-regression fixtures, so platform-specific breakage (e.g. #457 on Windows) turns CI red.
@@ -97,8 +97,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7.1.0
         with:
-          # Minor version only: the patch pinned for the build job is not available on every runner image.
-          python-version: "3.13.18"
+          python-version: "3.15"
       - name: Download built wheel
         uses: actions/download-artifact@v8.0.2
         with:
@@ -139,3 +138,14 @@ jobs:
             echo "::endgroup::"
           done
           exit $status
+
+  ci:
+    if: ${{ always() }}
+    needs: [lint, schema-checks, build, reqstool, smoke, smoke-compare]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every needed job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | python3 -c 'import json,sys; r={k:v["result"] for k,v in json.load(sys.stdin).items()}; print(r); sys.exit(0 if all(v=="success" for v in r.values()) else 1)'

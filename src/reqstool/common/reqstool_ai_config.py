@@ -27,7 +27,7 @@ def resolve_system_path(config_path: Path) -> Path:
     Raises ValueError if `system` or `system.path` is missing or not a string.
     """
     yaml = _YAML()
-    with open(config_path) as f:
+    with open(config_path, encoding="utf-8") as f:
         data = yaml.load(f) or {}
 
     system = data.get("system")
