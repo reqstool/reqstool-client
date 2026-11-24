@@ -108,7 +108,7 @@ def test_snippets_are_single_line(index):
     assert all("\n" not in h.snippet and "\r" not in h.snippet for h in hits)
 
 
-def test_like_fallback_treats_underscore_and_percent_literally():
+def test_like_fallback_treats_underscore_literally():
     database = RequirementsDatabase()
     _req(database, "a", "REQ_PRIV_001", "Title", "text")
     _req(database, "a", "REQ_PRIVXYZ", "Other", "100% sure")
