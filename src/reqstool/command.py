@@ -48,7 +48,6 @@ from reqstool.locations.maven_location import MavenLocation
 from reqstool.locations.npm_location import NpmLocation
 from reqstool.locations.pypi_location import PypiLocation
 
-
 _LOCATION_DEFS = [
     {
         "name": "local",

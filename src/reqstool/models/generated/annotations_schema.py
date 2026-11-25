@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, RootModel, constr
+from pydantic import BaseModel, ConfigDict, RootModel, StringConstraints
 
 
 class ElementKind(Enum):
@@ -41,11 +42,11 @@ class RequirementAnnotations(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    implementations: dict[constr(pattern=r'^.*$'), list[Requirement]] | None = None
+    implementations: dict[Annotated[str, StringConstraints(pattern=r'^.*$')], list[Requirement]] | None = None
     """
     requirement annotation used in implementation
     """
-    tests: dict[constr(pattern=r'^.*$'), list[Requirement]] | None = None
+    tests: dict[Annotated[str, StringConstraints(pattern=r'^.*$')], list[Requirement]] | None = None
     """
     requirement annotation used in test
     """
@@ -65,15 +66,15 @@ class RequirementAnnotationsModel(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    implementations: dict[constr(pattern=r'^.*$'), list[Requirement]] | None = None
+    implementations: dict[Annotated[str, StringConstraints(pattern=r'^.*$')], list[Requirement]] | None = None
     """
     requirement annotation used in implementation
     """
-    tests: dict[constr(pattern=r'^.*$'), list[Requirement]] | None = None
+    tests: dict[Annotated[str, StringConstraints(pattern=r'^.*$')], list[Requirement]] | None = None
     """
     requirement annotation used in test
     """
 
 
-class Annotation(RootModel[dict[constr(pattern=r'^.*$'), list[Requirement]]]):
-    root: dict[constr(pattern=r'^.*$'), list[Requirement]]
+class Annotation(RootModel[dict[Annotated[str, StringConstraints(pattern=r'^.*$')], list[Requirement]]]):
+    root: dict[Annotated[str, StringConstraints(pattern=r'^.*$')], list[Requirement]]

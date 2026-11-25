@@ -8,7 +8,6 @@ from reqstool.common.models.urn_id import UrnId
 from reqstool.filters.requirements_filters import RequirementFilter
 from reqstool.filters.svcs_filters import SVCFilter
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, StringConstraints
 
 
 class Model(RootModel[Any]):
@@ -135,8 +135,8 @@ class Filters(BaseModel):
     """
 
 
-class Filters1(RootModel[dict[constr(pattern=r'^.+$'), Filters]]):
-    root: dict[constr(pattern=r'^.+$'), Filters]
+class Filters1(RootModel[dict[Annotated[str, StringConstraints(pattern=r'^.+$')], Filters]]):
+    root: dict[Annotated[str, StringConstraints(pattern=r'^.+$')], Filters]
     """
     Filters allows importing just subset of the requirements/verification cases present in the parent system
     """
