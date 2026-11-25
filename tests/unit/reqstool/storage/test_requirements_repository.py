@@ -141,6 +141,18 @@ def test_get_all_requirements(db):
     assert reqs[REQ_ID].implementation == IMPLEMENTATION.IN_CODE
 
 
+def test_get_requirement(db):
+    _insert_requirement(db, REQ_ID)
+    _insert_requirement(db, REQ_ID_2)
+    db.commit()
+
+    repo = RequirementsRepository(db)
+    req = repo.get_requirement(REQ_ID_2)
+    assert req.id == REQ_ID_2
+    assert req.title == "Requirement"
+    assert repo.get_requirement(UrnId(urn=URN, id="REQ_NOPE")) is None
+
+
 def test_get_all_requirements_categories(db):
     _insert_requirement(db)
     db.commit()

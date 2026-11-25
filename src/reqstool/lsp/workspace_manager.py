@@ -3,9 +3,9 @@
 
 import logging
 import os
-from urllib.parse import unquote, urlparse
 
 from reqstool.common.models.urn_id import UrnId
+from reqstool.common.utils import Utils
 from reqstool.lsp.project_state import ProjectState
 from reqstool.lsp.root_discovery import discover_root_projects
 
@@ -64,8 +64,7 @@ class WorkspaceManager:
         return project
 
     def project_for_file(self, file_uri: str) -> ProjectState | None:
-        file_path = uri_to_path(file_uri)
-        norm_file = os.path.normpath(file_path)
+        norm_file = os.path.normpath(uri_to_path(file_uri))
         best_match: ProjectState | None = None
         best_depth = -1
 
@@ -73,7 +72,7 @@ class WorkspaceManager:
         for projects in self._folder_projects.values():
             for project in projects:
                 reqstool_path = os.path.normpath(project.reqstool_path)
-                if norm_file.startswith(reqstool_path + os.sep) or norm_file == reqstool_path:
+                if _is_within(norm_file, reqstool_path):
                     depth = reqstool_path.count(os.sep)
                     if depth > best_depth:
                         best_match = project
@@ -87,9 +86,7 @@ class WorkspaceManager:
         for folder_uri, projects in self._folder_projects.items():
             if not projects:
                 continue
-            folder_path = uri_to_path(folder_uri)
-            norm_folder = os.path.normpath(folder_path)
-            if norm_file.startswith(norm_folder + os.sep) or norm_file == norm_folder:
+            if _is_within(norm_file, uri_to_path(folder_uri)):
                 return max(projects, key=lambda p: os.path.normpath(p.reqstool_path).count(os.sep))
 
         return None
@@ -132,7 +129,10 @@ class WorkspaceManager:
 
 
 def uri_to_path(uri: str) -> str:
-    parsed = urlparse(uri)
-    if parsed.scheme == "file":
-        return unquote(parsed.path)
-    return uri
+    return Utils.uri_to_path(uri)
+
+
+def _is_within(path: str, root: str) -> bool:
+    norm_path = os.path.normcase(os.path.normpath(path))
+    norm_root = os.path.normcase(os.path.normpath(root))
+    return norm_path == norm_root or norm_path.startswith(norm_root + os.sep)

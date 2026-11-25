@@ -1,5 +1,6 @@
 # Copyright © LFV
 
+from reqstool.common.models.lifecycle import LIFECYCLESTATE
 from reqstool.common.models.urn_id import UrnId
 from reqstool.services.statistics_service import compute_requirement_status
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -20,17 +21,21 @@ def search_project(
     unknown = sorted(set(kinds or []) - set(KINDS))
     if unknown:
         raise ValueError(f"Unknown kind(s) {unknown}. Valid: {list(KINDS)}")
+    states = [s.value for s in LIFECYCLESTATE]
+    if lifecycle_state is not None and lifecycle_state not in states:
+        raise ValueError(f"Unknown lifecycle_state {lifecycle_state!r}. Valid: {states}")
+    if urn is not None and repo.get_urn_info(urn) is None:
+        raise ValueError(f"Unknown urn {urn!r}")
     limit = max(1, min(limit, MAX_LIMIT))
 
     hits, ranked = repo.search(query, kinds=kinds, urn=urn, lifecycle_state=lifecycle_state, limit=limit)
 
-    reqs = repo.get_all_requirements() if any(h.kind == "requirement" for h in hits) else {}
     results = []
     for h in hits:
         entry = {"kind": h.kind, "id": h.id, "urn": h.urn, "snippet": h.snippet}
         urn_id = UrnId(urn=h.urn, id=h.id)
         if h.kind == "requirement":
-            req = reqs[urn_id]
+            req = repo.get_requirement(urn_id)
             entry["title"] = req.title
             entry["lifecycle_state"] = req.lifecycle.state.value
             entry["completed"] = compute_requirement_status(req, repo).completed

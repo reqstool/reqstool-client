@@ -2,10 +2,10 @@
 
 
 import os
-from urllib.parse import unquote, urlparse
 
 from lsprotocol import types
 
+from reqstool.common.utils import Utils
 from reqstool.lsp.project_state import ProjectState
 from reqstool.models.mvrs import MVRData
 from reqstool.models.requirements import RequirementData
@@ -184,7 +184,4 @@ def _selection_range(item, fallback_line: int) -> types.Range:
 
 
 def _uri_to_path(uri: str) -> str:
-    parsed = urlparse(uri)
-    if parsed.scheme == "file":
-        return unquote(parsed.path)
-    return uri
+    return Utils.uri_to_path(uri)
