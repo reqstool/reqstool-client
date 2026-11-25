@@ -105,6 +105,13 @@ class RequirementsRepository:
             result[urn_id] = self._row_to_requirement_data(row)
         return result
 
+    def get_requirement(self, req_urn_id: UrnId) -> RequirementData | None:
+        row = self._db.connection.execute(
+            "SELECT * FROM requirements WHERE urn = ? AND id = ?",
+            (req_urn_id.urn, req_urn_id.id),
+        ).fetchone()
+        return self._row_to_requirement_data(row) if row else None
+
     def get_dangling_requirement_references(self) -> list[tuple[UrnId, UrnId]]:
         """Return ``(referencing requirement, missing target)`` pairs for every
         ``references.requirement_ids`` entry whose target is not a requirement in the database."""

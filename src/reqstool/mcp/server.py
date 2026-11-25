@@ -17,8 +17,8 @@ from reqstool.common.queries.details import (
     get_svc_details,
     get_urn_details as _get_urn_details,
 )
-from reqstool.common.queries.search import search_project
 from reqstool.common.queries.list import get_mvrs_list, get_requirements_list, get_svcs_list, get_urns_list
+from reqstool.common.queries.search import search_project
 from reqstool.locations.location import LocationInterface
 from reqstool.services.statistics_service import StatisticsService
 from reqstool.storage.requirements_repository import RequirementsRepository
@@ -146,9 +146,10 @@ def start_server(  # noqa: C901
     ) -> dict:
         """Full-text search over IDs, titles, descriptions and rationale of requirements, SVC titles,
         descriptions and instructions, and MVR comments. Returns ranked hits with kind, id, urn, a
-        snippet and, for requirements, `completed` (same verdict as `status`).
+        snippet and, for requirements, `completed` (same verdict as `status`, build-phase scope).
         Filter by kinds (requirement|svc|mvr), urn and lifecycle_state (draft|effective|deprecated|obsolete;
-        excludes MVRs). Terms are ANDed; word stems and prefixes match (erase -> erased, erasure)."""
+        excludes MVRs); an invalid lifecycle_state or unknown urn is an error. Terms are ANDed; word stems and
+        prefixes match (erase -> erased, erasure). IDs match by prefix only (REQ_PRIV finds REQ_PRIV_001)."""
         try:
             return search_project(_repo(), query, kinds=kinds, urn=urn, lifecycle_state=lifecycle_state, limit=limit)
         except ValueError as exc:
