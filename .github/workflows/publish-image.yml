@@ -34,7 +34,7 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          if [[ "$VERSION" =~ (a|b|rc)\.?[0-9]+$ ]]; then
+          if [[ "${VERSION%%+*}" =~ (a|b|rc)\.?[0-9]+$ ]]; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
