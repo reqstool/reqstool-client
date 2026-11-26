@@ -11,7 +11,6 @@ from reqstool.lsp.features.definition import (
     _path_to_uri,
 )
 
-
 # -- Source → YAML definition --
 
 

@@ -4,7 +4,6 @@ from lsprotocol import types
 
 from reqstool.lsp.features.completion import handle_completion, _yaml_value_context
 
-
 # -- Source code completion --
 
 

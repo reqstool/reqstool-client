@@ -94,8 +94,7 @@ def test_requirements_symbol_selection_range_is_non_empty(ms001_project):
 def test_filter_only_requirements_yml_returns_empty(tmp_path):
     """Regression for #359: a requirements.yml with only metadata/implementations/filters
     must not produce ghost symbols with empty names."""
-    yml = textwrap.dedent(
-        """\
+    yml = textwrap.dedent("""\
         metadata:
           urn: filter-only
           variant: microservice
@@ -107,8 +106,7 @@ def test_filter_only_requirements_yml_returns_empty(tmp_path):
           some-other-urn:
             custom:
               includes: ids == /CORE_.*/
-        """
-    )
+        """)
     req_file = tmp_path / "requirements.yml"
     req_file.write_text(yml)
 

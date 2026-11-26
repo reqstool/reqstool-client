@@ -4,7 +4,6 @@ from lsprotocol import types
 
 from reqstool.lsp.features.diagnostics import compute_diagnostics
 
-
 # -- Source code diagnostics --
 
 

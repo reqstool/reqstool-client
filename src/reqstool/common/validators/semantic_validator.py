@@ -117,11 +117,9 @@ class SemanticValidator:
                     all_svcs.add(svc_id)
                 else:
                     self._validation_error_holder.add_error(
-                        ValidationError(
-                            msg=f"""SVC {svc_id} has already been parsed. Value will not be updated.
+                        ValidationError(msg=f"""SVC {svc_id} has already been parsed. Value will not be updated.
                             The svc relates to {case['requirement_ids']}
-                            """
-                        )
+                            """)
                     )
 
         return self._validation_error_holder.get_no_of_errors() > 0
@@ -145,13 +143,9 @@ class SemanticValidator:
                             requirement_id=urn_req_id, combined_raw_dataset=combined_raw_dataset
                         ):
                             svc_id = svc_data.id
-                            errors.append(
-                                ValidationError(
-                                    msg=f"""SVC '{self.prettify_urn_id(svc_id)}' refers to
+                            errors.append(ValidationError(msg=f"""SVC '{self.prettify_urn_id(svc_id)}' refers to
                                     non-existing requirement id: {self.prettify_urn_id(urn_req_id)}
-                                    """
-                                )
-                            )
+                                    """))
 
         return errors
 
@@ -173,13 +167,9 @@ class SemanticValidator:
                 if not self._requirement_id_exists(
                     requirement_id=requirement_id, combined_raw_dataset=combined_raw_dataset
                 ):
-                    errors.append(
-                        ValidationError(
-                            msg=f"""Annotation refers to
+                    errors.append(ValidationError(msg=f"""Annotation refers to
                             non-existing requirement id: {self.prettify_urn_id(requirement_id)}
-                            """
-                        )
-                    )
+                            """))
 
         return errors
 
@@ -283,20 +273,16 @@ class SemanticValidator:
                     and "excludes" in urn_filter["svc_ids"]
                 ):
                     self._validation_error_holder.add_error(
-                        ValidationError(
-                            msg=f"""Both imports and exclude filters applied to svc! (urn: {urn})
+                        ValidationError(msg=f"""Both imports and exclude filters applied to svc! (urn: {urn})
                             Exclude filter will be used as default
-                            """
-                        )
+                            """)
                     )
                 if "custom" in urn_filter:
                     if "includes" in urn_filter["custom"] and "excludes" in urn_filter["custom"]:
                         self._validation_error_holder.add_error(
-                            ValidationError(
-                                msg=f"""Both custom imports and exclude filters applied to svc! (urn: {urn})
+                            ValidationError(msg=f"""Both custom imports and exclude filters applied to svc! (urn: {urn})
                                 Exclude filter will be used as default
-                                """
-                            )
+                                """)
                         )
 
         return self._validation_error_holder.get_no_of_errors() > 0
@@ -311,20 +297,16 @@ class SemanticValidator:
                     and "excludes" in urn_filter["requirement_ids"]
                 ):
                     self._validation_error_holder.add_error(
-                        ValidationError(
-                            msg=f"""Both imports and exclude filters applied to req! (urn: {urn})
+                        ValidationError(msg=f"""Both imports and exclude filters applied to req! (urn: {urn})
                             Exclude filter will be used as default
-                            """
-                        )
+                            """)
                     )
                 if "custom" in urn_filter:
                     if "includes" in urn_filter["custom"] and "excludes" in urn_filter["custom"]:
                         self._validation_error_holder.add_error(
-                            ValidationError(
-                                msg=f"""Both custom imports and exclude filters applied to req! (urn: {urn})
+                            ValidationError(msg=f"""Both custom imports and exclude filters applied to req! (urn: {urn})
                                 Exclude filter will be used as default
-                                """
-                            )
+                                """)
                         )
 
         return self._validation_error_holder.get_no_of_errors() > 0

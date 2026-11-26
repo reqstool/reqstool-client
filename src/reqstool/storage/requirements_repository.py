@@ -242,8 +242,7 @@ class RequirementsRepository:
         Uses a single aggregation query — one effective MVR per SVC, with the
         same datetime() ranking used by get_effective_mvr_for_svc.
         """
-        row = self._db.connection.execute(
-            """
+        row = self._db.connection.execute("""
             SELECT
                 COUNT(*) AS total,
                 SUM(passed) AS passed,
@@ -256,8 +255,7 @@ class RequirementsRepository:
                 FROM mvrs m
                 JOIN mvr_svc_links l ON m.urn = l.mvr_urn AND m.id = l.mvr_id
             ) WHERE rn = 1
-            """
-        ).fetchone()
+            """).fetchone()
         if row is None:
             return (0, 0, 0)
         return (row["total"] or 0, row["passed"] or 0, row["failed"] or 0)

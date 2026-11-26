@@ -2,7 +2,6 @@
 
 from reqstool.lsp.annotation_parser import annotation_at_position, find_all_annotations, is_inside_annotation
 
-
 # -- find_all_annotations: Python/Java (source annotations) --
 
 

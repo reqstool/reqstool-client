@@ -9,7 +9,6 @@ from reqstool.locations.local_location import LocalLocation
 from reqstool.models.requirements import IMPLEMENTATION
 from reqstool.services.statistics_service import RequirementStatus, TestStats
 
-
 # ---------------------------------------------------------------------------
 # _incomplete_reasons
 # ---------------------------------------------------------------------------

@@ -18,7 +18,6 @@ from reqstool.services.export_service import ExportService
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.requirements_repository import RequirementsRepository
 
-
 URN = "ms-001"
 REQ_ID = UrnId(urn=URN, id="REQ_001")
 REQ_ID_2 = UrnId(urn=URN, id="REQ_002")
