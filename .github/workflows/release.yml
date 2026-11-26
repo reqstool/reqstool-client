@@ -12,7 +12,7 @@ on:
         required: false
         type: string
       prerelease:
-        description: "Publish as a release candidate instead of a release: verified like any release, but never promoted to latest. The number is chosen for you (0.2.0 -> 0.2.0rc1, then the next)."
+        description: "Publish as a release candidate instead of a release: verified like any release, but never marked as latest. The number is chosen for you (0.2.0 -> 0.2.0rc1, then the next)."
         required: false
         type: choice
         options: [none, rc, b, a]
@@ -132,17 +132,20 @@ jobs:
 
   # Last, deliberately. Everything above can fail, and until this runs nothing
   # resolving "the latest release" can see what was built -- the release is still
-  # a prerelease. Promotion itself is one API call against a release that already
+  # a prerelease. Marking it latest is one API call against a release that already
   # has its artifacts.
   #
   # The guard is `no job failed`, not the default `every job succeeded`: on a dry
   # run every job above is skipped, which would make plain success() false too --
   # `!inputs.dry-run` is what actually gates this job then, and `no job failed`
   # is what confirms nothing above it errored on a real run.
-  promote:
+  #
+  # `publish-image-to-ghcr` must also have succeeded: a failure upstream leaves it skipped,
+  # not failed, and a skip alone does not trip `no job failed`.
+  finalize:
     needs: [prepare, assets, publish-to-pypi, publish-image-to-ghcr]
-    if: ${{ !inputs.dry-run && !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
-    uses: reqstool/.github/.github/workflows/common-release-promote.yml@6340edb1ebc6c9cbeb3f533738ba8f9672a4d313 # 1.2.3
+    if: ${{ !inputs.dry-run && !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.publish-image-to-ghcr.result == 'success' }}
+    uses: reqstool/.github/.github/workflows/common-release-finalize.yml@6340edb1ebc6c9cbeb3f533738ba8f9672a4d313 # 1.2.3
     permissions:
       contents: write
     with:
