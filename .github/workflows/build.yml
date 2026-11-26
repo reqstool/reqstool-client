@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   lint:
-    uses: reqstool/.github/.github/workflows/python-lint.yml@91cd368066d5458b5d46bdf34c4d8ca483f6633f # 1.2.2
+    uses: reqstool/.github/.github/workflows/python-lint.yml@6340edb1ebc6c9cbeb3f533738ba8f9672a4d313 # 1.2.3
 
   schema-checks:
     name: Schema and codegen checks
@@ -57,7 +57,7 @@ jobs:
 
   build:
     needs: [lint, schema-checks]
-    uses: reqstool/.github/.github/workflows/python-build-hatch.yml@91cd368066d5458b5d46bdf34c4d8ca483f6633f # 1.2.2
+    uses: reqstool/.github/.github/workflows/python-build-hatch.yml@6340edb1ebc6c9cbeb3f533738ba8f9672a4d313 # 1.2.3
     with:
       coverage-source: reqstool
       ref: ${{ inputs.ref }}
@@ -65,7 +65,7 @@ jobs:
 
   reqstool:
     needs: build
-    uses: reqstool/.github/.github/workflows/common-reqstool-verify.yml@91cd368066d5458b5d46bdf34c4d8ca483f6633f # 1.2.2
+    uses: reqstool/.github/.github/workflows/common-reqstool-verify.yml@6340edb1ebc6c9cbeb3f533738ba8f9672a4d313 # 1.2.3
     with:
       build-artifact: ${{ inputs.artifact-name || 'dist' }}-build
 
