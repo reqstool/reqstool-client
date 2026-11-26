@@ -29,17 +29,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
 
+      - name: Detect prerelease
+        id: pre
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "$VERSION" =~ (a|b|rc)[0-9]+$ ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}},value=${{ inputs.version }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.version }}
-            type=semver,pattern={{major}},value=${{ inputs.version }},enable=${{ !startsWith(inputs.version, '0.') }}
+            type=raw,value=${{ inputs.version }},enable=${{ steps.pre.outputs.prerelease == 'true' }}
+            type=semver,pattern={{version}},value=${{ inputs.version }},enable=${{ steps.pre.outputs.prerelease != 'true' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.version }},enable=${{ steps.pre.outputs.prerelease != 'true' }}
+            type=semver,pattern={{major}},value=${{ inputs.version }},enable=${{ steps.pre.outputs.prerelease != 'true' && !startsWith(inputs.version, '0.') }}
             type=sha
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ steps.pre.outputs.prerelease != 'true' }}
 
       # Probe with pip itself: the JSON API lists a release before the /simple/
       # index pip reads from does, and the build below failed in that gap.
