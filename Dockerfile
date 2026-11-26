@@ -14,5 +14,8 @@ LABEL org.opencontainers.image.source="https://github.com/reqstool/reqstool-clie
 LABEL org.opencontainers.image.url="https://github.com/reqstool/reqstool-client"
 
 RUN --mount=type=bind,from=wheels,target=/wheels \
-    pip install --no-cache-dir --find-links /wheels "reqstool==${REQSTOOL_VERSION}"
+    set -- /wheels/reqstool-*.whl; \
+    if [ ! -e "$1" ]; then set -- "reqstool==${REQSTOOL_VERSION}"; fi; \
+    test $# -eq 1 || { echo "expected exactly one reqstool wheel in /wheels" >&2; exit 1; }; \
+    pip install --no-cache-dir "$1"
 
