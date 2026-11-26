@@ -173,3 +173,4 @@ Full rationale in `docs/DESIGN.md`.
 - `assert` statements are used for invariant checks in the generators (not for user-facing validation).
 - Tests under `tests/unit` use file-based fixtures from `tests/resources/`.
 - After code changes, also verify scenarios in `TEST_MATRIX.md`.
+- Changes to the risk paths listed in `CONTRIBUTING.md` need a mutation or property test; commit the failing test before the fix.
