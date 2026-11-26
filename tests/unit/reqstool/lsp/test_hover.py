@@ -4,7 +4,6 @@ from lsprotocol import types
 
 from reqstool.lsp.features.hover import handle_hover, _yaml_field_path_at_line
 
-
 # -- Source code hover --
 
 

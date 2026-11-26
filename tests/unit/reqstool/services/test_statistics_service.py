@@ -18,7 +18,6 @@ from reqstool.services.statistics_service import StatisticsService, TestStats, c
 from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.requirements_repository import RequirementsRepository
 
-
 URN = "ms-001"
 REQ_ID = UrnId(urn=URN, id="REQ_001")
 SVC_ID = UrnId(urn=URN, id="SVC_001")

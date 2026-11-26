@@ -38,8 +38,7 @@ class DatabaseFilterProcessor:
         perspective. CASCADE removes SVCs/MVRs/annotations that only linked to those
         requirements; evidence rows linking to in-scope requirements survive.
         """
-        self._db.connection.execute(
-            """
+        self._db.connection.execute("""
             DELETE FROM requirements WHERE urn IN (
                 SELECT DISTINCT child_urn FROM parsing_graph WHERE edge_type = 'implementation'
                 EXCEPT
@@ -47,8 +46,7 @@ class DatabaseFilterProcessor:
                 EXCEPT
                 SELECT value FROM metadata WHERE key = 'initial_urn'
             )
-            """
-        )
+            """)
         self._db.connection.commit()
 
     # -- Requirement filters --

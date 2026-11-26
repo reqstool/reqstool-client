@@ -8,7 +8,6 @@ from reqstool.lsp.root_discovery import DiscoveredProject, discover_root_project
 from reqstool.lsp.workspace_manager import WorkspaceManager, uri_to_path
 from reqstool.models.requirements import VARIANTS
 
-
 # -- root_discovery tests --
 
 

@@ -31,7 +31,6 @@ from reqstool.storage.database import RequirementsDatabase
 from reqstool.storage.pipeline import build_database
 from reqstool.storage.requirements_repository import RequirementsRepository
 
-
 _ORANGE = "dark_orange"
 _DIM = "dim"
 _MIN_CONSOLE_WIDTH = 80

@@ -14,7 +14,6 @@ from reqstool.common.enrichment.enricher import (
 )
 from reqstool.common.models.urn_id import UrnId
 
-
 # ---------------------------------------------------------------------------
 # _block_field
 # ---------------------------------------------------------------------------

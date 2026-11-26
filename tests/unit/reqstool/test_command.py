@@ -22,7 +22,6 @@ from reqstool.locations.local_npm_location import LocalNpmLocation
 from reqstool.locations.npm_location import NpmLocation
 from reqstool_python_decorators.decorators.decorators import SVCs
 
-
 # ---------------------------------------------------------------------------
 # Routing tests
 # ---------------------------------------------------------------------------
