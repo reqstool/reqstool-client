@@ -1,5 +1,5 @@
 
-FROM python:3.13.7-alpine
+FROM python:3.15.2-alpine
 
 ENV PYTHONUNBUFFERED=1
 ARG REQSTOOL_VERSION
