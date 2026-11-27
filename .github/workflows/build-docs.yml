@@ -15,4 +15,4 @@ permissions:
 
 jobs:
   build:
-    uses: reqstool/.github/.github/workflows/common-build-docs.yml@6340edb1ebc6c9cbeb3f533738ba8f9672a4d313 # 1.2.3
+    uses: reqstool/.github/.github/workflows/common-build-docs.yml@84c822d93b538ed6c2e650ba1085aab271d018f3 # 1.3.0
