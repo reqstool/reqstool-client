@@ -65,29 +65,28 @@ class WorkspaceManager:
 
     def project_for_file(self, file_uri: str) -> ProjectState | None:
         norm_file = os.path.normpath(uri_to_path(file_uri))
-        best_match: ProjectState | None = None
-        best_depth = -1
 
-        # First: exact match — file is under the reqstool_path directory itself
-        for projects in self._folder_projects.values():
-            for project in projects:
-                reqstool_path = os.path.normpath(project.reqstool_path)
-                if _is_within(norm_file, reqstool_path):
-                    depth = reqstool_path.count(os.sep)
-                    if depth > best_depth:
-                        best_match = project
-                        best_depth = depth
-
-        if best_match is not None:
-            return best_match
+        # First: file is under the reqstool_path directory itself; exact case before case-folded
+        for fold in (False, True):
+            best_match: ProjectState | None = None
+            best_depth = -1
+            for projects in self._folder_projects.values():
+                for project in projects:
+                    reqstool_path = os.path.normpath(project.reqstool_path)
+                    if _is_within(norm_file, reqstool_path, fold):
+                        depth = reqstool_path.count(os.sep)
+                        if depth > best_depth:
+                            best_match = project
+                            best_depth = depth
+            if best_match is not None:
+                return best_match
 
         # Fallback: file is anywhere within the workspace folder that contains the project
         # (e.g. a Java source file in src/ belonging to a project whose reqstool_path is docs/reqstool/)
-        for folder_uri, projects in self._folder_projects.items():
-            if not projects:
-                continue
-            if _is_within(norm_file, uri_to_path(folder_uri)):
-                return max(projects, key=lambda p: os.path.normpath(p.reqstool_path).count(os.sep))
+        for fold in (False, True):
+            for folder_uri, projects in self._folder_projects.items():
+                if projects and _is_within(norm_file, uri_to_path(folder_uri), fold):
+                    return max(projects, key=lambda p: os.path.normpath(p.reqstool_path).count(os.sep))
 
         return None
 
@@ -132,7 +131,10 @@ def uri_to_path(uri: str) -> str:
     return Utils.uri_to_path(uri)
 
 
-def _is_within(path: str, root: str) -> bool:
-    norm_path = os.path.normcase(os.path.normpath(path))
-    norm_root = os.path.normcase(os.path.normpath(root))
+def _is_within(path: str, root: str, fold_case: bool = True) -> bool:
+    norm_path = os.path.normpath(path)
+    norm_root = os.path.normpath(root)
+    if fold_case:
+        norm_path = os.path.normcase(norm_path)
+        norm_root = os.path.normcase(norm_root)
     return norm_path == norm_root or norm_path.startswith(norm_root + os.sep)

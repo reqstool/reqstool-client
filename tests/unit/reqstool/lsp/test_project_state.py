@@ -135,3 +135,16 @@ def test_urn_for_yaml_path_ignores_path_case_on_case_insensitive_filesystems(mon
     state._urn_source_paths = {"ms-001": {"requirements": "/Data/Reqs/requirements.yml"}}
 
     assert state._urn_for_yaml_path("/data/reqs/requirements.yml", "requirements") == "ms-001"
+
+
+def test_urn_for_yaml_path_prefers_exact_case_match_over_case_folded(monkeypatch):
+    monkeypatch.setattr(os.path, "normcase", str.lower)
+    state = ProjectState(reqstool_path="/x")
+    state._urn_source_paths = {
+        "upper": {"requirements": "/Data/Reqs/requirements.yml"},
+        "lower": {"requirements": "/data/reqs/requirements.yml"},
+    }
+
+    assert state._urn_for_yaml_path("/data/reqs/requirements.yml", "requirements") == "lower"
+    assert state._urn_for_yaml_path("/Data/Reqs/requirements.yml", "requirements") == "upper"
+    assert state._urn_for_yaml_path("/DATA/REQS/requirements.yml", "requirements") == "upper"
