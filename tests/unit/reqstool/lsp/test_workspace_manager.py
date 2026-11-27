@@ -136,6 +136,30 @@ def test_project_for_file_ignores_path_case_on_case_insensitive_filesystems(monk
     assert manager.project_for_file("file:///ws/proj/src/Main.java") is project
 
 
+def test_project_for_file_prefers_exact_case_match_over_case_folded(monkeypatch):
+    monkeypatch.setattr(os.path, "normcase", str.lower)
+    upper = SimpleNamespace(reqstool_path="/ws/Proj/docs/reqstool")
+    lower = SimpleNamespace(reqstool_path="/ws/proj/docs/reqstool")
+    manager = WorkspaceManager()
+    manager._folder_projects["file:///ws"] = [upper, lower]
+
+    assert manager.project_for_file("file:///ws/proj/docs/reqstool/requirements.yml") is lower
+    assert manager.project_for_file("file:///ws/Proj/docs/reqstool/requirements.yml") is upper
+    assert manager.project_for_file("file:///ws/PROJ/docs/reqstool/requirements.yml") is upper
+
+
+def test_project_for_file_workspace_fallback_prefers_exact_case_match(monkeypatch):
+    monkeypatch.setattr(os.path, "normcase", str.lower)
+    upper = SimpleNamespace(reqstool_path="/ws/Proj/docs")
+    lower = SimpleNamespace(reqstool_path="/ws/proj/docs")
+    manager = WorkspaceManager()
+    manager._folder_projects["file:///ws/Proj"] = [upper]
+    manager._folder_projects["file:///ws/proj"] = [lower]
+
+    assert manager.project_for_file("file:///ws/proj/src/Main.java") is lower
+    assert manager.project_for_file("file:///ws/Proj/src/Main.java") is upper
+
+
 def test_project_for_file_does_not_match_sibling_with_same_prefix():
     manager = WorkspaceManager()
     manager._folder_projects["file:///ws/proj"] = [SimpleNamespace(reqstool_path="/ws/proj/docs")]
