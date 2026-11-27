@@ -56,6 +56,21 @@ hatch run dev:black src tests
 hatch run dev:flake8
 ```
 
+## Risk paths
+
+Changes to these paths need a mutation or property test in addition to the usual tests, and the
+PR's Checks section says whether it ran:
+
+| Path | Why |
+|------|-----|
+| `src/reqstool/services/statistics_service.py` | the single requirement "complete" verdict (#411) |
+| `src/reqstool/model_generators/testdata_model_generator.py` | JUnit status mapping (#494) |
+| `src/reqstool/common/utils.py` (`to_file_uri`, `uri_to_path`, `strip_windows_extended_length_prefix`), `src/reqstool/lsp/workspace_manager.py` | path and URI normalisation (#457) |
+| `src/reqstool/storage/el_to_sql_compiler.py` | filter expressions compiled into SQL |
+
+Neither Hypothesis nor a mutation tool is a project dependency yet. Install one ad hoc in the dev
+environment (for example `hatch run dev:pip install hypothesis mutmut`) and say which one you used.
+
 ## Model Generation
 
 Pydantic data models in `src/reqstool/models/generated/` are auto-generated from the JSON Schemas
