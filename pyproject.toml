@@ -53,7 +53,7 @@ dependencies = [
     "rich==15.0.0",
     "ruamel.yaml==0.19.1",
     "reqstool-python-decorators==1.0.0",
-    "packaging==26.3",
+    "packaging==26.4",
     "requests==2.34.2",
     "beautifulsoup4==4.15.0",
     "defusedxml==0.7.1",
