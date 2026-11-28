@@ -41,7 +41,7 @@ permissions:
 
 jobs:
   prepare:
-    uses: reqstool/.github/.github/workflows/common-release-prepare.yml@ff7323b2f1214898e8f3191ffab3d8bdf478f208 # 1.3.1
+    uses: reqstool/.github/.github/workflows/common-release-prepare.yml@ea3dbab0d008dc916896835d211f9238d0a4b113 # 1.3.2
     permissions:
       contents: read
     with:
@@ -67,7 +67,7 @@ jobs:
   tag:
     needs: [prepare, checks]
     if: ${{ !inputs.dry-run }}
-    uses: reqstool/.github/.github/workflows/common-release-tag.yml@ff7323b2f1214898e8f3191ffab3d8bdf478f208 # 1.3.1
+    uses: reqstool/.github/.github/workflows/common-release-tag.yml@ea3dbab0d008dc916896835d211f9238d0a4b113 # 1.3.2
     permissions:
       contents: write
     with:
@@ -88,7 +88,7 @@ jobs:
 
   assets:
     needs: [prepare, build-tagged]
-    uses: reqstool/.github/.github/workflows/common-release-assets.yml@ff7323b2f1214898e8f3191ffab3d8bdf478f208 # 1.3.1
+    uses: reqstool/.github/.github/workflows/common-release-assets.yml@ea3dbab0d008dc916896835d211f9238d0a4b113 # 1.3.2
     permissions:
       contents: write
     with:
@@ -109,7 +109,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: reqstool/.github/.github/actions/download-dists@ff7323b2f1214898e8f3191ffab3d8bdf478f208 # 1.3.1
+      - uses: reqstool/.github/.github/actions/download-dists@ea3dbab0d008dc916896835d211f9238d0a4b113 # 1.3.2
         with:
           artifact: dist-tagged
       # Inline, not inside download-dists: nesting this Docker action in a
@@ -145,7 +145,7 @@ jobs:
   finalize:
     needs: [prepare, assets, publish-to-pypi, publish-image-to-ghcr]
     if: ${{ !inputs.dry-run && !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && needs.publish-image-to-ghcr.result == 'success' }}
-    uses: reqstool/.github/.github/workflows/common-release-finalize.yml@ff7323b2f1214898e8f3191ffab3d8bdf478f208 # 1.3.1
+    uses: reqstool/.github/.github/workflows/common-release-finalize.yml@ea3dbab0d008dc916896835d211f9238d0a4b113 # 1.3.2
     permissions:
       contents: write
     with:
